@@ -24,16 +24,16 @@ That gives this project three practical goals:
 
 Here is the rough correspondence used in this repo.
 
-| React idea                  | This repo in Koka                                                        |
-| --------------------------- | ------------------------------------------------------------------------ |
-| function component          | `demo/*panel.kk` functions that return `vnode`                           |
-| application state           | `demo/model.kk` immutable `model`                                        |
-| `setState` / reducer update | reducer functions returning a fresh `model`                              |
-| context                     | `val` effects like `current_filter`, `current_operator`                  |
-| async service layer         | effect operations like `wait_ms`, `fetch_lab_snapshot`, `post_lab_reply` |
-| controlled inputs           | reducer + input listeners + host sync / `value` attrs                    |
-| local component state       | path-keyed local state tree in `respo/state.kk`                          |
-| test doubles                | handlers in `demo/tests.kk`                                              |
+| React idea                  | This repo in Koka                                                         |
+| --------------------------- | ------------------------------------------------------------------------- |
+| function component          | `demo/*panel.kk` functions that return `vnode`                            |
+| application state           | `demo/model.kk` immutable `model` plus seeded boot data in `demo/seed.kk` |
+| `setState` / reducer update | reducer functions returning a fresh `model`                               |
+| context                     | `val` effects like `current_filter`, `current_operator`                   |
+| async service layer         | effect operations like `wait_ms`, `fetch_lab_snapshot`, `post_lab_reply`  |
+| controlled inputs           | reducer + input listeners + host sync / `value` attrs                     |
+| local component state       | path-keyed local state tree in `respo/state.kk`                           |
+| test doubles                | handlers in `demo/tests/support.kk` and focused case modules              |
 
 The important difference is that React usually hides effects behind conventions, while Koka makes them explicit in function types.
 
@@ -41,11 +41,13 @@ The important difference is that React usually hides effects behind conventions,
 
 - `koka/respo/core.kk`: VDOM data structures and helpers.
 - `koka/respo/renderer.kk`: render, diff, and patch planning.
-- `koka/respo/state.kk`: path-keyed local state tree for UI-local flags and drafts.
-- `koka/demo/model.kk`: application model, reducers, and effect surface.
-- `koka/demo/todopanel.kk`: Todo UI, including local item editing.
-- `koka/demo/labpanel.kk`: richer workflow demo with time, mock server data, and local per-card drafts.
-- `koka/demo/tests.kk`: effect-driven tests.
+- `koka/respo/state.kk`: generic slot-based local state runtime with codec-backed `use_state` / `set_state`.
+- `koka/demo/model.kk`: domain types, shared selectors, route normalization, and effect surface declarations.
+- `koka/demo/seed.kk`: seeded initial model plus deterministic lab snapshot / reply mocks.
+- `koka/demo/todo/state.kk`, `view.kk`, `events.kk`: Todo local state, rendering, and routed interactions.
+- `koka/demo/lab/state.kk`, `view.kk`, `events.kk`, `workflow.kk`: lab local state, rendering, routed interactions, and staged workflow actions.
+- `koka/demo/todopanel.kk` and `koka/demo/labpanel.kk`: thin public facades over the split feature modules.
+- `koka/demo/tests/support.kk` and `koka/demo/tests/*.kk`: effect-driven tests split by concern.
 - `koka/app.kk`: browser orchestration and handler installation.
 - `koka/runtime/inline/dom.js`: DOM/system bridge only.
 
@@ -134,13 +136,13 @@ This repo uses a small path-keyed state tree in `koka/respo/state.kk`:
 pub struct state_entry(path : string, kind : string, text_value : string, flag_value : bool)
 ```
 
-The API is intentionally tiny:
+The current API centers on generic local slots:
 
-- `state_text`
-- `state_flag`
-- `assoc_text`
-- `assoc_flag`
-- `clear_state`
+- `slot(...)` and `named_slot(...)`
+- `use_state(...)` and `set_state(...)`
+- codec values such as `text_state_codec` and `flag_state_codec`
+- `run_local_state(...)` for handler-backed local commits
+- `read_local_state(...)` for render-time reads from a concrete tree
 
 ### Todo item editing
 
@@ -149,12 +151,11 @@ Each todo item now has local edit state:
 - `todo/tasks/<id>/editing`
 - `todo/tasks/<id>/draft`
 
-The reducer layer in `demo/model.kk` exposes operations such as:
+The todo feature is now split across dedicated modules:
 
-- `start_task_edit`
-- `set_task_edit_draft`
-- `save_task_edit`
-- `cancel_task_edit`
+- `demo/todo/state.kk` owns slot identities and local commit helpers
+- `demo/todo/view.kk` renders item editing state directly through `use_state`
+- `demo/todo/events.kk` routes click and input actions into those local commits
 
 This is deliberately React-like in user experience:
 
@@ -191,15 +192,17 @@ This models a realistic front-end workflow:
 - operator identity
 - audit side effects
 
-The reducers stay high-level:
+The workflow actions stay high-level, but they no longer live in the main model file:
 
-- `load_lab_snapshot`
-- `perform_lab_sync`
-- `send_lab_reply`
+- `load_snapshot`
+- `perform_sync`
+- `send_reply`
+
+Those actions now live in `koka/demo/lab/workflow.kk`, while `demo/lab/events.kk` decides when to call them and `demo/lab/state.kk` handles per-card local draft / expanded state.
 
 Each function reads like business logic instead of callback plumbing.
 
-For example, `send_lab_reply` can express:
+For example, `send_reply` can express:
 
 1. validate local draft
 2. emit audit
@@ -222,7 +225,7 @@ Here the logic remains inside one typed Koka reducer.
 
 This is where the design pays off hardest.
 
-`koka/demo/tests.kk` does not need a fake browser or a fake HTTP client framework. It just installs different handlers.
+The split test modules under `koka/demo/tests/` do not need a fake browser or a fake HTTP client framework. They just install different handlers.
 
 For example, timer-heavy logic is tested by handling `wait_ms` and recording the delays immediately:
 
@@ -287,11 +290,12 @@ yarn test:koka
 Useful reading order in the codebase:
 
 1. `koka/app.kk`
-2. `koka/demo/model.kk`
-3. `koka/demo/todopanel.kk`
-4. `koka/demo/labpanel.kk`
-5. `koka/demo/tests.kk`
-6. `koka/respo/state.kk`
+2. `koka/demo/seed.kk`
+3. `koka/demo/model.kk`
+4. `koka/demo/todo/state.kk`, `view.kk`, `events.kk`
+5. `koka/demo/lab/state.kk`, `view.kk`, `events.kk`, `workflow.kk`
+6. `koka/demo/tests/support.kk` and `koka/demo/tests/*.kk`
+7. `koka/respo/state.kk`
 
 ## Takeaway
 

@@ -1,7 +1,7 @@
 module demo/effectspanel
 
 import demo/model
-import demo/tests
+import demo/tests/support
 import demo/shared
 import respo/core
 

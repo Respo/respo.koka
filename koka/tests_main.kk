@@ -1,6 +1,7 @@
 module tests_main
 
 import demo/tests
+import demo/tests/support
 
 fun result_line(item : test_result) : string
   (if test_passed(item) then "[pass] " else "[fail] ") ++ test_name(item) ++ " - " ++ test_detail(item)

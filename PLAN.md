@@ -1,127 +1,68 @@
-# Koka Respo Exploration Plan
+# Koka Respo Plan
 
-## Goal
+## Current Status
 
-Build a small frontend framework in Koka that follows a React-like mental model:
+The exploration phase is complete. This repo now has a working `jsweb`-target Koka UI runtime with:
 
-- immutable state and explicit updates
-- Virtual DOM diffing and patching
-- component-local state by path
-- effect handlers for business flows rather than DOM mutation scheduling
+- VDOM render, diff, and patch in Koka
+- thin browser handlers in `koka/app.kk` and `koka/runtime/*`
+- slot-based generic local UI state in `koka/respo/state.kk`
+- split feature modules for todo and workflow lab
+- deterministic in-process tests and a production build pipeline
+- CI/deploy support for the static site build
 
-The first milestone is a working Todolist rendered from a Koka program compiled with `--target=wasmweb`, loaded by a Vite page.
+## What Is Done
 
-## Feasibility Notes
+### Runtime and host
 
-### What is already verified locally
+- `yarn dev`, `yarn build`, and `yarn test:koka` are the normal entry points
+- browser integration is intentionally thin: DOM patching, event delegation, route hash, confirm, and timestamps
+- build output is deployed as a static app with relative asset paths
 
-- `koka` is installed and available at `/usr/local/bin/koka`
-- Koka `3.2.3` supports `jsweb` and `wasmweb` targets
-- Koka stdlib already uses `extern import js file "..."` for backend interop
+### State model
 
-### Why this is a reasonable direction
+- global application data remains in `demo/model.kk`
+- seeded boot data and mock lab responses moved into `demo/seed.kk`
+- component-local state is no longer ad hoc text/bool helpers; it now uses generic `use_state` / `set_state` with codecs
+- render-time local reads were normalized through `read_local_state(...)`
 
-React Hooks were influenced by algebraic effects at the model level, but React itself is not an algebraic-effects runtime. Koka lets us push that idea further:
+### Feature structure
 
-- use effect handlers to model ambient services and business capabilities
-- keep rendering as a pure tree transform from state to VDOM
-- isolate imperative DOM work behind a renderer boundary
+- todo is split into `demo/todo/state.kk`, `view.kk`, and `events.kk`
+- workflow lab is split into `demo/lab/state.kk`, `view.kk`, `events.kk`, and `workflow.kk`
+- `demo/todopanel.kk` and `demo/labpanel.kk` are thin facades so outer call sites stay stable
+- `demo/model.kk` is now closer to a domain shell plus shared selectors and effect declarations, instead of also owning feature reducers
 
-That means we do not need to re-implement React. We can build a smaller system whose design is:
+### Tests
 
-- React-like in component shape and unidirectional updates
-- Respo-like in immutable tree state and cursor-based local state
-- Koka-like in typed effects for workflows such as confirmation, filtering, drafts, persistence stubs, or undo
+- tests are split into `demo/tests/support.kk`, `basics.kk`, `statecases.kk`, `todocases.kk`, and `labcases.kk`
+- the test suite validates render snapshots, local state, effect handling, and workflow behavior under mocked handlers
 
-## Source Inspirations
+## Current Module Map
 
-### From Respo / Respo.rs / respo.mbt
+- `koka/app.kk`: browser boot and handler installation
+- `koka/demo/model.kk`: shared types, selectors, routes, and effect declarations
+- `koka/demo/seed.kk`: initial model and deterministic lab mocks
+- `koka/demo/todo/*`: todo local state, events, and rendering
+- `koka/demo/lab/*`: workflow lab local state, events, workflow actions, and rendering
+- `koka/demo/tests/*`: support helpers and focused case files
+- `koka/respo/*`: VDOM core, renderer, and local state runtime
 
-- immutable store and render skipping based on equality
-- local state stored by path or cursor
-- effects attached to component lifecycle are limited and explicit
-- Todolist is a good first benchmark because it exercises local state, list diffing, and keyed updates
+## Next Cuts
 
-### From Koka samples
+### Near term
 
-- `handlers/basic.kk`: state, exceptions, iteration, resumption
-- `handlers/ambient.kk`: ambient values and dynamically scoped capabilities
-- `handlers/yield.kk`: producer-style effects that can be used for UI or event streams
+- keep shrinking `demo/model.kk` so it stays focused on shared domain data and cross-feature selectors only
+- decide whether lab counting/selector helpers should also move into `demo/lab/*`
+- add a few more behavior-scoped tests around route fallback and unknown action handling
 
-## Architecture Decision
+### Optional follow-up
 
-### Runtime split
+- split `demo/tests/basics.kk` further if render/effect cases continue growing
+- add another demo feature that exercises the same slot-state and effect-handler runtime without copying todo/lab structure
 
-- Koka owns data types, update logic, Virtual DOM, diffing, and effectful business flows
-- TypeScript owns Vite dev server, CSS, and the tiny browser bootstrap that loads the wasm output
-- JavaScript FFI files are allowed only at the renderer boundary and for browser APIs
+## Non-Goals
 
-### Initial module plan
-
-- `koka/app.kk`: app entry and bootstrapping
-- `koka/vdom/node.kk`: VDOM node definitions
-- `koka/vdom/diff.kk`: tree diff
-- `koka/vdom/patch.kk`: patch representation and patch execution bridge
-- `koka/runtime/dom.kk`: browser FFI bindings
-- `koka/runtime/state.kk`: store, cursors, local state helpers
-- `koka/features/todolist/*.kk`: demo application
-- `koka/features/effects/*.kk`: business cases centered on algebraic effects
-
-### UI model
-
-- `view(model) -> vnode`
-- `update(action, model) -> model`
-- `dispatch(action)` schedules re-render
-- list children use stable keys
-- local state is addressed by a path, similar to Respo states tree
-
-## Planned Milestones
-
-### Milestone 1: host app and build pipeline
-
-- scaffold a Vite host
-- add a build script that compiles Koka to `wasmweb`
-- load the emitted module from the page
-
-### Milestone 2: minimal renderer
-
-- define a typed VDOM
-- render initial tree to DOM
-- add keyed child diffing for Todolist-level updates
-
-### Milestone 3: Todolist
-
-- add item
-- toggle done
-- remove item
-- filter done items
-- draft text local state
-
-### Milestone 4: algebraic effects features
-
-- confirmation effect before destructive delete
-- ambient filter policy effect for alternate views
-- undo or transient notification effect
-- optional persistence capability effect with an in-memory handler first
-
-## Non-Goals For The First Iteration
-
-- SSR
-- hydration
-- general-purpose hook parity with React
-- aggressive renderer optimization beyond keyed diffing
-
-## Risk Notes
-
-- Koka `wasmweb` browser interop may require small JS adapters
-- the first renderer should prefer correctness over minimal DOM mutations
-- keyed diffing should be limited to what the Todolist actually needs first
-
-## Immediate Build Order
-
-1. Initialize Vite in the empty folder.
-2. Add Koka source layout and build scripts.
-3. Prove `hello from wasmweb` renders into the page.
-4. Replace direct DOM demo with Koka-managed VDOM rendering.
-5. Build Todolist.
-6. Add algebraic-effects-driven features.
+- SSR or hydration
+- React hook parity as a goal by itself
+- premature DOM optimization beyond what the current diff/patch runtime already supports

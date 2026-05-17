@@ -5,6 +5,8 @@ import runtime/dom
 import respo/core
 import respo/renderer
 import demo/model
+import demo/seed
+import demo/controller
 import demo/view
 import demo/tests
 
@@ -38,11 +40,11 @@ fun commit(item : model, pending_focus : maybe<string>) : <io,div> ()
     Nothing -> ()
 
 fun dispatch_click(payload : string) : <io,div> ()
-  val (next_model, pending_focus) = with_browser(fn() reduce_click(payload, !model_ref))
+  val (next_model, pending_focus) = with_browser(fn() controller/dispatch_click(payload, !model_ref))
   commit(next_model, pending_focus)
 
 fun dispatch_input(channel : string, value : string) : <io,div> ()
-  commit(reduce_input(channel, value, !model_ref), Nothing)
+  commit(controller/dispatch_input(channel, value, !model_ref), Nothing)
 
 pub fun dispatch_click_bridge(payload : string) : <io,div> ()
   dispatch_click(payload)

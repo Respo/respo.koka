@@ -1,7 +1,7 @@
 module demo/layout
 
 import demo/model
-import demo/tests
+import demo/tests/support
 import demo/routebar
 import demo/todopanel
 import demo/labpanel

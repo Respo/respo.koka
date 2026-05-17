@@ -1,7 +1,7 @@
 module demo/view
 
 import demo/model
-import demo/tests
+import demo/tests/support
 import demo/layout
 import respo/core
 

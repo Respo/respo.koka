@@ -1,6 +1,6 @@
 module demo/testspanel
 
-import demo/tests
+import demo/tests/support
 import demo/shared
 import respo/core
 
