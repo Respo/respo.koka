@@ -3,13 +3,15 @@ module respo/state
 pub effect fun use_state<a>(entry_slot : state_slot, codec : state_codec<a>, fallback : a) : a
 pub effect fun set_state<a>(entry_slot : state_slot, codec : state_codec<a>, value : a) : ()
 pub effect fun clear_local_state(path : string) : ()
-pub effect fun use_effect(field_name : string) : ()
+pub effect fun use_effect(effect_slot : state_slot, deps : list<string>, action : (string) -> io ()) : ()
 
 pub struct state_slot(path : string)
 
 pub struct state_codec<a>(kind : string, read : (state_entry) -> a, write : (string, a) -> state_entry)
 
 pub struct state_entry(path : string, kind : string, text_value : string, flag_value : bool)
+
+pub struct scheduled_effect(path : string, run : (string) -> io ())
 
 pub fun state_slot_path(item : state_slot) : string
   match item
@@ -66,6 +68,14 @@ pub fun state_entry_text_value(item : state_entry) : string
 pub fun state_entry_flag_value(item : state_entry) : bool
   match item
     State_entry(_, _, _, flag_value) -> flag_value
+
+pub fun scheduled_effect_path(item : scheduled_effect) : string
+  match item
+    Scheduled_effect(path, _) -> path
+
+pub fun run_scheduled_effect(item : scheduled_effect, root_id : string) : io ()
+  match item
+    Scheduled_effect(_, run) -> run(root_id)
 
 pub fun slot_text(tree : list<state_entry>, entry_slot : state_slot, fallback : string) : <div> string
   state_value(tree, entry_slot, text_state_codec, fallback)
@@ -135,17 +145,43 @@ pub fun clear_state(tree : list<state_entry>, path : string) : <div> list<state_
     Nil -> Nil
     Cons(item, rest) -> if state_entry_path(item) == path then rest else Cons(item, clear_state(rest, path))
 
+fun append_scheduled_effect(items : list<scheduled_effect>, item : scheduled_effect) : <div> list<scheduled_effect>
+  match items
+    Nil -> [item]
+    Cons(head, rest) -> Cons(head, append_scheduled_effect(rest, item))
+
+pub fun append_scheduled_effects(left : list<scheduled_effect>, right : list<scheduled_effect>) : <div> list<scheduled_effect>
+  match left
+    Nil -> right
+    Cons(head, rest) -> Cons(head, append_scheduled_effects(rest, right))
+
+fun effect_signature(deps : list<string>) : <div> string
+  match deps
+    Nil -> ""
+    Cons(head, rest) ->
+      if rest == Nil then head else head ++ "\u001f" ++ effect_signature(rest)
+
+fun effect_entry(slot_item : state_slot, deps : list<string>) : <div> state_entry
+  State_entry(state_slot_path(slot_item), "effect", effect_signature(deps), False)
+
 pub fun count_entries(tree : list<state_entry>) : <div> int
   match tree
     Nil -> 0
     Cons(_, rest) -> 1 + count_entries(rest)
 
-pub fun run_local_state(tree : list<state_entry>, action : () -> <use_state,set_state,clear_local_state,use_effect,div|e> a) : <div|e> (a, list<state_entry>, maybe<string>)
+pub fun run_local_state(tree : list<state_entry>, action : () -> <use_state,set_state,clear_local_state,use_effect,div|e> a) : <div|e> (a, list<state_entry>, list<scheduled_effect>)
   var next_tree := tree
-  var pending_effect := Nothing
-  with return(result) (result, next_tree, pending_effect)
+  var pending_effects := Nil
+  with return(result) (result, next_tree, pending_effects)
   with fun use_state(entry_slot, codec, fallback) state_value(next_tree, entry_slot, codec, fallback)
   with fun set_state(entry_slot, codec, value) next_tree := assoc_slot_value(next_tree, entry_slot, codec, value)
   with fun clear_local_state(path) next_tree := clear_state(next_tree, path)
-  with fun use_effect(field_name) pending_effect := Just(field_name)
+  with fun use_effect(effect_slot, deps, callback) {
+    val next_entry = effect_entry(effect_slot, deps)
+    val changed = match find_state(next_tree, state_slot_path(effect_slot))
+      Just(found) -> state_entry_kind(found) != "effect" || state_entry_text_value(found) != state_entry_text_value(next_entry)
+      Nothing -> True
+    next_tree := assoc_entry(next_tree, next_entry)
+    if changed then pending_effects := append_scheduled_effect(pending_effects, Scheduled_effect(state_slot_path(effect_slot), callback)) else ()
+  }
   action()

@@ -22,7 +22,7 @@ pub fun confirm_decline_test() : <div> test_result
   with fun confirm_action(_message) False
   with fun audit(_message) ()
   val next = match handle_todo_click("remove-1", initial_model())
-    Just(result) -> fst(result)
+    Just(result) -> result
     Nothing -> initial_model()
   bool_result("Confirm decline keeps state", model_notice(next), count_all(model_tasks(next)) == 3)
 
@@ -30,7 +30,7 @@ pub fun confirm_accept_test() : <div> test_result
   with fun confirm_action(_message) True
   with fun audit(_message) ()
   val next = match handle_todo_click("remove-1", initial_model())
-    Just(result) -> fst(result)
+    Just(result) -> result
     Nothing -> initial_model()
   bool_result("Confirm accept removes task", "Remaining tasks: " ++ count_all(model_tasks(next)).show, count_all(model_tasks(next)) == 2)
 

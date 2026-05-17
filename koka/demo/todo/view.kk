@@ -3,19 +3,28 @@ module demo/todo/view
 import demo/model
 import demo/shared
 import demo/todo/state
+import runtime/dom
 import respo/core
 import respo/state
 
 fun status_text(done : bool) : string
   if done then "done" else "open"
 
-fun task_item_view(item : task) : <use_state,div> vnode
-  val local = task_editor(item)
-  val editing = task_editor_editing(local)
-  val draft = task_editor_draft(local)
+fun is_recent_add(owner : model) : bool
+  model_notice(owner) == "Added a new task from the Koka store."
+
+fun task_item_view(item : task) : <use_state,use_effect,div> vnode
+  val editing = use_state(task_editing_slot(item), flag_state_codec, False)
+  val draft = use_state(task_draft_slot(item), text_state_codec, task_title(item))
+  use_effect(task_focus_effect_slot(item), [task_id(item).show, if editing then "editing" else "idle"], fn(root_id) {
+    if editing then {
+      browser_focus(root_id, task_draft_channel(item))
+      browser_flash_marker(root_id, task_draft_channel(item), "effect-pulse")
+    } else ()
+  })
   val detail = if editing then
       el("div", "editor-" ++ task_id(item).show, [class_attr("task-main")], Nil, "", [
-        el("input", task_draft_channel(item), [class_attr("input"), text_attr("type", "text"), text_attr("value", draft), text_attr("placeholder", "Edit title locally before saving...")], [input_listener(task_draft_channel(item)), enter_listener(task_save_id(item))], "", Nil),
+        el("input", task_draft_channel(item), [class_attr("input"), text_attr("type", "text"), text_attr("value", draft), text_attr("placeholder", "Edit title locally before saving..."), text_attr("data-k-effect", task_draft_channel(item))], [input_listener(task_draft_channel(item)), enter_listener(task_save_id(item))], "", Nil),
       ])
     else
       el("div", "meta-" ++ task_id(item).show, [class_attr("task-main")], Nil, "", [
@@ -38,22 +47,29 @@ fun task_item_view(item : task) : <use_state,div> vnode
     el("div", "actions-" ++ task_id(item).show, [class_attr("task-actions")], Nil, "", actions),
   ])
 
-fun render_task_items_view(tasks : list<task>) : <use_state,div> list<vnode>
+fun render_task_items_view(tasks : list<task>) : <use_state,use_effect,div> list<vnode>
   match tasks
     Nil -> Nil
     Cons(item, rest) -> Cons(task_item_view(item), render_task_items_view(rest))
 
-fun task_list(owner : model, key : string, tasks : list<task>) : <div> vnode
+fun task_list(key : string, tasks : list<task>) : <use_state,use_effect,div> vnode
   match tasks
     Nil -> el("p", key ++ "-empty", [class_attr("empty")], Nil, "No tasks in this view.", Nil)
-    Cons(_, _) -> read_local_state(model_todo_local_tree(owner), fn() el("ul", key, [class_attr("task-list")], Nil, "", render_task_items_view(tasks)))
+    Cons(_, _) -> el("ul", key, [class_attr("task-list")], Nil, "", render_task_items_view(tasks))
 
 fun filter_button(label : string, value : string, active : bool) : vnode
   val class_name = if active then "button button-active" else "button"
   el("button", value, [class_attr(class_name)], [click_listener("set-filter-" ++ value)], label, Nil)
 
-pub fun render_todo_panel(item : model) : <div> vnode
+pub fun render_todo_panel(item : model) : <use_state,use_effect,div> vnode
   val visible = tasks_for(model_filter_name(item), model_tasks(item))
+  val total = count_all(model_tasks(item))
+  use_effect(todo_draft_focus_slot(), [model_notice(item), model_draft(item), total.show], fn(root_id) {
+    if is_recent_add(item) then browser_focus(root_id, "draft") else ()
+  })
+  use_effect(todo_notice_pulse_slot(), [model_notice(item), total.show], fn(root_id) {
+    if is_recent_add(item) then browser_flash_marker(root_id, "todo-note", "effect-pulse") else ()
+  })
   panel("Todo", model_notice(item), "todo", "todo-panel", [
     el("div", "summary", [class_attr("summary-row")], Nil, "", [
       summary_chip("Tasks", count_all(model_tasks(item)).show),
@@ -70,5 +86,5 @@ pub fun render_todo_panel(item : model) : <div> vnode
       filter_button("Active", "active", model_filter_name(item) == "active"),
       filter_button("Done", "done", model_filter_name(item) == "done"),
     ]),
-    task_list(item, "visible-tasks", visible),
+    task_list("visible-tasks", visible),
   ])

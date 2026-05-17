@@ -190,6 +190,23 @@ function _browser_focus(rootId, fieldName) {
   }
 }
 
+function _browser_flash_marker(rootId, markerName, className) {
+  const root = _root_of(rootId);
+  const target = root.querySelector(`[data-k-effect="${markerName}"]`);
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  target.classList.remove(className);
+  void target.offsetWidth;
+  target.classList.add(className);
+
+  window.setTimeout(() => {
+    target.classList.remove(className);
+  }, 360);
+}
+
 function _browser_now_label() {
   return new Date().toLocaleTimeString("en-US", {
     hour12: false,

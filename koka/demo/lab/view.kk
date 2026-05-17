@@ -69,9 +69,9 @@ fun activity_panel(lab : workflow_lab) : <div> vnode
     el("ul", "lab-activity-list", [class_attr("activity-list")], Nil, "", render_activity_items(lab_activity_log(lab), 0)),
   ])
 
-pub fun render_lab_panel(item : model) : <div> vnode
+pub fun render_lab_panel(item : model) : <use_state,div> vnode
   val lab = model_lab(item)
-  read_local_state(lab_local_tree(lab), fn() panel("Workflow lab", "This demo mixes component-local draft state, staged waits, a mocked server snapshot, and an ambient operator identity.", "lab", "lab-panel", [
+  panel("Workflow lab", "This demo mixes component-local draft state, staged waits, a mocked server snapshot, and an ambient operator identity.", "lab", "lab-panel", [
     el("div", "lab-summary", [class_attr("summary-row")], Nil, "", [
       summary_chip("Incidents", lab_incident_count(lab).show),
       summary_chip("Open", lab_open_count(lab).show),
@@ -88,4 +88,4 @@ pub fun render_lab_panel(item : model) : <div> vnode
       incident_grid(lab),
       activity_panel(lab),
     ]),
-  ]))
+  ])

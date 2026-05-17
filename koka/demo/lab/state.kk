@@ -18,7 +18,7 @@ pub fun lab_incident_expanded(item : workflow_lab, incident_id : int) : <div> bo
 pub fun lab_incident_draft(item : workflow_lab, incident_id : int) : <div> string
   slot_text(lab_local_tree(item), incident_draft_slot(incident_id), "")
 
-fun set_lab_local_tree(owner : model, next_tree : list<state_entry>) : model
+pub fun set_lab_local_tree(owner : model, next_tree : list<state_entry>) : model
   val lab = model_lab(owner)
   set_lab(owner, Workflow_lab(lab_incidents(lab), lab_activity_log(lab), next_tree, lab_sync_status(lab), lab_last_sync_label(lab)))
 

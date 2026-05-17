@@ -30,6 +30,9 @@ pub extern browser_set_hash(route_name : string) : io ()
 pub extern browser_focus(root_id : string, field_name : string) : io ()
   js "_browser_focus"
 
+pub extern browser_flash_marker(root_id : string, marker_name : string, class_name : string) : io ()
+  js "_browser_flash_marker"
+
 pub extern browser_now_label() : string
   js "_browser_now_label"
 

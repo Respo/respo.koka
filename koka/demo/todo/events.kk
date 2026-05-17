@@ -84,12 +84,11 @@ fun task_id_from_cancel(payload : string, tasks : list<task>) : <div> maybe<int>
     Nil -> Nothing
     Cons(item, rest) -> if payload == task_cancel_id(item) then Just(task_id(item)) else task_id_from_cancel(payload, rest)
 
-fun todo_add_task(owner : model) : <audit,use_effect,div> model
+fun todo_add_task(owner : model) : <audit,div> model
   if model_draft(owner) == "" then
     set_notice(owner, "Draft is empty. Type something before adding.")
   else {
     audit("Added task: " ++ model_draft(owner))
-    use_effect("draft")
     val next_task = Task(model_next_id(owner), model_draft(owner), False)
     val with_task = set_tasks(owner, append_tasks(model_tasks(owner), next_task))
     val with_draft = set_draft(with_task, "")
@@ -97,13 +96,12 @@ fun todo_add_task(owner : model) : <audit,use_effect,div> model
     set_notice(with_next_id, "Added a new task from the Koka store.")
   }
 
-fun todo_start_task_edit(owner : model, target_id : int) : <audit,set_state,use_effect,div> model
+fun todo_start_task_edit(owner : model, target_id : int) : <audit,set_state,div> model
   match find_task_by_id(target_id, model_tasks(owner))
     Nothing -> set_notice(owner, "Task not found for local editing.")
     Just(found) -> {
       audit("Opened local edit state for task #" ++ target_id.show)
       write_task_editor(found, Task_editor_state(True, task_title(found)))
-      use_effect(task_draft_channel(found))
       set_notice(owner, "Editing task locally before committing the title.")
     }
 
@@ -127,8 +125,7 @@ fun todo_save_task_edit(owner : model, target_id : int) : <use_state,clear_local
   match find_task_by_id(target_id, model_tasks(owner))
     Nothing -> set_notice(owner, "Task not found while saving the local edit.")
     Just(found) -> {
-      val local = task_editor(found)
-      val draft = task_editor_draft(local)
+      val draft = use_state(task_draft_slot(found), text_state_codec, task_title(found))
       if draft == "" then
         set_notice(owner, "Task title cannot be empty.")
       else {
@@ -166,33 +163,33 @@ fun todo_handle_clear_completed(owner : model) : <confirm_action,audit,clear_loc
   } else
     set_notice(owner, "Clear completed cancelled.")
 
-pub fun route_todo_click(payload : string, owner : model) : <confirm_action,audit,div> maybe<(model, maybe<string>)>
+pub fun route_todo_click(payload : string, owner : model) : <confirm_action,audit,div> maybe<model>
   if payload == "add-task" then
     Just(commit_task_hooks(owner, fn() todo_add_task(owner)))
   else if payload == "set-filter-all" then
-    Just((set_filter(owner, "all"), Nothing))
+    Just(set_filter(owner, "all"))
   else if payload == "set-filter-active" then
-    Just((set_filter(owner, "active"), Nothing))
+    Just(set_filter(owner, "active"))
   else if payload == "set-filter-done" then
-    Just((set_filter(owner, "done"), Nothing))
+    Just(set_filter(owner, "done"))
   else if payload == "clear-completed" then
     Just(commit_task_hooks(owner, fn() todo_handle_clear_completed(owner)))
   else if has_toggle(payload, model_tasks(owner)) then
-    Just((todo_handle_toggle(owner, payload), Nothing))
+    Just(todo_handle_toggle(owner, payload))
   else if has_remove(payload, model_tasks(owner)) then
     Just(commit_task_hooks(owner, fn() todo_handle_remove(owner, payload)))
   else if has_edit(payload, model_tasks(owner)) then
     match task_id_from_edit(payload, model_tasks(owner))
       Just(target_id) -> Just(commit_task_hooks(owner, fn() todo_start_task_edit(owner, target_id)))
-      Nothing -> Just((set_notice(owner, "Task edit target was missing."), Nothing))
+      Nothing -> Just(set_notice(owner, "Task edit target was missing."))
   else if has_save(payload, model_tasks(owner)) then
     match task_id_from_save(payload, model_tasks(owner))
       Just(target_id) -> Just(commit_task_hooks(owner, fn() todo_save_task_edit(owner, target_id)))
-      Nothing -> Just((set_notice(owner, "Task save target was missing."), Nothing))
+      Nothing -> Just(set_notice(owner, "Task save target was missing."))
   else if has_cancel(payload, model_tasks(owner)) then
     match task_id_from_cancel(payload, model_tasks(owner))
-      Just(target_id) -> Just((commit_task_tree(owner, fn() todo_cancel_task_edit(owner, target_id)), Nothing))
-      Nothing -> Just((set_notice(owner, "Task cancel target was missing."), Nothing))
+      Just(target_id) -> Just(commit_task_tree(owner, fn() todo_cancel_task_edit(owner, target_id)))
+      Nothing -> Just(set_notice(owner, "Task cancel target was missing."))
   else
     Nothing
 

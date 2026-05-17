@@ -19,7 +19,7 @@ pub fun lab_local_routing_test() : <div> test_result
     Just(result) -> result
     Nothing -> base
   val toggled = match handle_lab_click("lab-toggle-101", drafted)
-    Just(result) -> fst(result)
+    Just(result) -> result
     Nothing -> drafted
   val lab = model_lab(toggled)
   bool_result("Workflow lab local routing", "draft=" ++ lab_incident_draft(lab, 101) ++ ", expanded=" ++ lab_incident_expanded(lab, 101).show, lab_incident_draft(lab, 101) == "Shift traffic to backup POP." && lab_incident_expanded(lab, 101))

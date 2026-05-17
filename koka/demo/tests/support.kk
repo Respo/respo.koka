@@ -3,6 +3,7 @@ module demo/tests/support
 import demo/model
 import demo/seed
 import respo/core
+import respo/state
 
 pub struct test_result(name : string, detail : string, passed : bool)
 
@@ -25,6 +26,16 @@ pub fun maybe_text(target : maybe<string>) : string
   match target
     Just(name) -> name
     Nothing -> "<none>"
+
+pub fun count_effects(xs : list<scheduled_effect>) : <div> int
+  match xs
+    Nil -> 0
+    Cons(_, rest) -> 1 + count_effects(rest)
+
+pub fun has_effect(path : string, xs : list<scheduled_effect>) : <div> bool
+  match xs
+    Nil -> False
+    Cons(item, rest) -> if scheduled_effect_path(item) == path then True else has_effect(path, rest)
 
 pub fun count_ints(xs : list<int>) : <div> int
   match xs

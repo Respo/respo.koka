@@ -8,6 +8,7 @@ import demo/labpanel
 import demo/effectspanel
 import demo/testspanel
 import respo/core
+import respo/state
 
 fun intro_panel(item : model) : <div> vnode
   el("header", "intro", [class_attr("panel intro-panel")], Nil, "", [
@@ -18,37 +19,42 @@ fun intro_panel(item : model) : <div> vnode
     el("p", "intro-note", [class_attr("section-note")], Nil, "`respo/*` holds VDOM helpers; `demo/*` now includes a workflow lab with local state, staged waits, mocked server handlers, and route-level demos.", Nil),
   ])
 
-fun overview_stage(item : model, results : list<test_result>) : <div> vnode
-  el("div", "overview", [class_attr("overview-grid")], Nil, "", [
+fun overview_stage(item : model, results : list<test_result>) : <div> (model, vnode, list<scheduled_effect>)
+  val (item_with_todo, todo_node, todo_effects) = run_todo_panel(item)
+  val (next_item, lab_node, lab_effects) = run_lab_panel(item_with_todo)
+  (next_item, el("div", "overview", [class_attr("overview-grid")], Nil, "", [
     el("div", "overview-main", [class_attr("overview-main")], Nil, "", [
-      todo_panel(item),
+      todo_node,
     ]),
     el("aside", "overview-side", [class_attr("overview-side")], Nil, "", [
       tests_panel(results),
     ]),
     el("div", "overview-wide", [class_attr("overview-wide")], Nil, "", [
-      lab_panel(item),
+      lab_node,
     ]),
     el("div", "overview-wide-effects", [class_attr("overview-wide")], Nil, "", [
-      effects_panel(item, results),
+      effects_panel(next_item, results),
     ]),
-  ])
+  ]), append_scheduled_effects(todo_effects, lab_effects))
 
-fun route_stage(item : model, results : list<test_result>) : <div> vnode
+fun route_stage(item : model, results : list<test_result>) : <div> (model, vnode, list<scheduled_effect>)
   if model_route_name(item) == "todo" then
-    el("div", "todo-stage", [class_attr("single-stage")], Nil, "", [todo_panel(item)])
+    val (next_item, todo_node, pending_effects) = run_todo_panel(item)
+    (next_item, el("div", "todo-stage", [class_attr("single-stage")], Nil, "", [todo_node]), pending_effects)
   else if model_route_name(item) == "lab" then
-    el("div", "lab-stage", [class_attr("single-stage")], Nil, "", [lab_panel(item)])
+    val (next_item, lab_node, pending_effects) = run_lab_panel(item)
+    (next_item, el("div", "lab-stage", [class_attr("single-stage")], Nil, "", [lab_node]), pending_effects)
   else if model_route_name(item) == "effects" then
-    el("div", "effects-stage", [class_attr("single-stage")], Nil, "", [effects_panel(item, results)])
+    (item, el("div", "effects-stage", [class_attr("single-stage")], Nil, "", [effects_panel(item, results)]), Nil)
   else if model_route_name(item) == "checks" then
-    el("div", "checks-stage", [class_attr("single-stage")], Nil, "", [tests_panel(results)])
+    (item, el("div", "checks-stage", [class_attr("single-stage")], Nil, "", [tests_panel(results)]), Nil)
   else
     overview_stage(item, results)
 
-pub fun render_layout(item : model, results : list<test_result>) : <div> vnode
-  el("section", "app", [class_attr("shell app-shell")], Nil, "", [
+pub fun render_layout(item : model, results : list<test_result>) : <div> (model, vnode, list<scheduled_effect>)
+  val (next_item, stage_node, pending_effects) = route_stage(item, results)
+  (next_item, el("section", "app", [class_attr("shell app-shell")], Nil, "", [
     intro_panel(item),
-    route_bar(item),
-    route_stage(item, results),
-  ])
+    route_bar(next_item),
+    stage_node,
+  ]), pending_effects)

@@ -16,11 +16,23 @@ pub fun task_editor_draft(item : task_editor_state) : string
 fun task_state_base(item : task) : string
   "todo/tasks/" ++ task_id(item).show
 
-fun task_editing_slot(item : task) : state_slot
+fun todo_effect_base() : string
+  "todo/effects"
+
+pub fun task_editing_slot(item : task) : state_slot
   named_slot(task_state_base(item), "editing")
 
-fun task_draft_slot(item : task) : state_slot
+pub fun task_draft_slot(item : task) : state_slot
   named_slot(task_state_base(item), "draft")
+
+pub fun task_focus_effect_slot(item : task) : state_slot
+  named_slot(task_state_base(item), "focus-effect")
+
+pub fun todo_draft_focus_slot() : state_slot
+  named_slot(todo_effect_base(), "draft-focus")
+
+pub fun todo_notice_pulse_slot() : state_slot
+  named_slot(todo_effect_base(), "notice-pulse")
 
 fun read_task_state(tree : list<state_entry>, item : task) : <div> task_editor_state
   Task_editor_state(
@@ -40,15 +52,12 @@ pub fun clear_task_editor(item : task) : <clear_local_state,div> ()
   clear_slot(task_editing_slot(item))
   clear_slot(task_draft_slot(item))
 
-pub fun commit_task_hooks(owner : model, action : () -> <use_state,set_state,clear_local_state,use_effect,div|e> model) : <div|e> (model, maybe<string>)
-  val (next_model, next_tree, pending_focus) = run_local_state(model_todo_local_tree(owner), action)
-  (set_todo_local_tree(next_model, next_tree), pending_focus)
+pub fun commit_task_hooks(owner : model, action : () -> <use_state,set_state,clear_local_state,use_effect,div|e> model) : <div|e> model
+  val (next_model, next_tree, _pending_effects) = run_local_state(model_todo_local_tree(owner), action)
+  set_todo_local_tree(next_model, next_tree)
 
 pub fun commit_task_tree(owner : model, action : () -> <use_state,set_state,clear_local_state,use_effect,div|e> model) : <div|e> model
-  val (next_model, pending_focus) = commit_task_hooks(owner, action)
-  match pending_focus
-    Just(_field_name) -> next_model
-    Nothing -> next_model
+  commit_task_hooks(owner, action)
 
 pub fun snapshot_task_editor(owner : model, item : task) : <div> task_editor_state
   read_task_state(model_todo_local_tree(owner), item)

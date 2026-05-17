@@ -16,7 +16,7 @@ pub fun state_tree_test() : <div> test_result
 pub fun generic_state_codec_test() : <div> test_result
   val draft_slot = named_slot("generic-test", "draft")
   val open_slot = named_slot("generic-test", "open")
-  val ((draft, open_before), next_tree, _focus_target) = run_local_state(Nil, fn() {
+  val ((draft, open_before), next_tree, _pending_effects) = run_local_state(Nil, fn() {
     val draft0 = use_state(draft_slot, text_state_codec, "hello")
     val open0 = use_state(open_slot, flag_state_codec, False)
     set_state(draft_slot, text_state_codec, draft0 ++ " world")

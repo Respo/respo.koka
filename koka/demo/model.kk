@@ -274,15 +274,14 @@ fun append_tasks(tasks : list<task>, item : task) : <div> list<task>
     Nil -> [item]
     Cons(head, rest) -> Cons(head, append_tasks(rest, item))
 
-// The UI forwards semantic actions here; effects stay explicit and easy to test.
-// add_task and start_task_edit return (model, maybe<string>) so focus intent flows as data.
-pub fun reduce_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,div> (model, maybe<string>)
-  if payload == "route-overview" then (set_route(item, "overview"), Nothing)
-  else if payload == "route-todo" then (set_route(item, "todo"), Nothing)
-  else if payload == "route-lab" then (set_route(item, "lab"), Nothing)
-  else if payload == "route-effects" then (set_route(item, "effects"), Nothing)
-  else if payload == "route-checks" then (set_route(item, "checks"), Nothing)
-  else (set_notice(item, "Unknown action: " ++ payload), Nothing)
+// Route changes remain data-only; render-time hooks now decide whether to execute browser effects.
+pub fun reduce_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,div> model
+  if payload == "route-overview" then set_route(item, "overview")
+  else if payload == "route-todo" then set_route(item, "todo")
+  else if payload == "route-lab" then set_route(item, "lab")
+  else if payload == "route-effects" then set_route(item, "effects")
+  else if payload == "route-checks" then set_route(item, "checks")
+  else set_notice(item, "Unknown action: " ++ payload)
 
 pub fun reduce_input(channel : string, value : string, item : model) : <div> model
   set_notice(item, "Unhandled input channel: " ++ channel ++ " = " ++ value)

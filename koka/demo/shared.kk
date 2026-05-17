@@ -5,7 +5,7 @@ import respo/core
 pub fun panel(title : string, note : string, key : string, class_name : string, children : list<vnode>) : vnode
   el("section", key, [class_attr("panel " ++ class_name)], Nil, "", [
     el("h2", key ++ "-title", [class_attr("section-title")], Nil, title, Nil),
-    el("p", key ++ "-note", [class_attr("section-note")], Nil, note, Nil),
+    el("p", key ++ "-note", [class_attr("section-note"), text_attr("data-k-effect", key ++ "-note")], Nil, note, Nil),
     el("div", key ++ "-body", [class_attr("stack")], Nil, "", children),
   ])
 
