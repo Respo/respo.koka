@@ -58,7 +58,7 @@ pub fun add_task_focus_test() : <div> test_result
   val next = match handle_todo_click("add-task", seeded)
     Just(result) -> result
     Nothing -> seeded
-  val (rendered, _panel_node, effects) = run_todo_panel(next)
+  val (rendered, _panel_node, effects, _handlers) = run_todo_panel(next)
   val focused_draft = has_effect(state_slot_path(todo_draft_focus_slot()), effects)
   val pulsed_notice = has_effect(state_slot_path(todo_notice_pulse_slot()), effects)
   bool_result(
@@ -72,7 +72,7 @@ pub fun start_edit_focus_test() : <div> test_result
   val next = match handle_todo_click("edit-2", initial_model())
     Just(result) -> result
     Nothing -> initial_model()
-  val (rendered, _panel_node, effects) = run_todo_panel(next)
+  val (rendered, _panel_node, effects, _handlers) = run_todo_panel(next)
   val expected = match find_task_by_id(2, model_tasks(rendered))
     Just(item) -> state_slot_path(task_focus_effect_slot(item))
     Nothing -> "missing"

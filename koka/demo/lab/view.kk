@@ -1,10 +1,28 @@
 module demo/lab/view
 
 import demo/model
+import demo/lab/events
 import demo/shared
 import demo/lab/state
 import respo/core
 import respo/state
+
+fun incident_toggle_listener_slot(incident_id : int) : state_slot
+  named_slot("lab/events/toggle", incident_id.show)
+
+fun incident_draft_listener_slot(incident_id : int) : state_slot
+  named_slot("lab/events/draft", incident_id.show)
+
+fun lab_click_slot(payload : string) : state_slot
+  named_slot("lab/events/click", payload)
+
+fun lab_enter_slot(payload : string) : state_slot
+  named_slot("lab/events/enter", payload)
+
+fun route_lab(payload : string, owner : model) : <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,wait_ms,div> model
+  match route_lab_click(payload, owner)
+    Just(result) -> result
+    Nothing -> owner
 
 fun severity_class(item : incident) : string
   if incident_severity(item) == "p1" then "incident-severity incident-severity-p1"
@@ -16,7 +34,7 @@ fun status_class(item : incident) : string
   else if incident_status(item) == "investigating" then "incident-status incident-status-investigating"
   else "incident-status incident-status-firing"
 
-fun incident_card(item : incident) : <use_state,div> vnode
+fun incident_card(item : incident) : <use_state,on_click<model,browser_event_effect>,on_input<model>,on_enter<model,browser_event_effect>,div> vnode
   val expanded = use_state(incident_expanded_slot(incident_id(item)), flag_state_codec, False)
   val draft = use_state(incident_draft_slot(incident_id(item)), text_state_codec, "")
   val toggle_label = if expanded then "Collapse" else "Expand"
@@ -42,19 +60,19 @@ fun incident_card(item : incident) : <use_state,div> vnode
       ]),
     ]),
     el("div", "incident-controls-" ++ incident_id(item).show, [class_attr("incident-controls")], Nil, "", [
-      el("button", incident_toggle_payload(item), [class_attr("button")], [click_listener(incident_toggle_payload(item))], toggle_label, Nil),
-      el("input", incident_draft_channel(item), [class_attr("input incident-input"), text_attr("type", "text"), text_attr("value", draft), text_attr("placeholder", "Local reply draft, per card...")], [input_listener(incident_draft_channel(item)), enter_listener(incident_send_payload(item))], "", Nil),
-      el("button", incident_send_payload(item), [class_attr("button button-primary")], [click_listener(incident_send_payload(item))], "Send reply", Nil),
+      el("button", incident_toggle_payload(item), [class_attr("button")], [on_click(incident_toggle_listener_slot(incident_id(item)), fn(owner) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, incident_id(item))))], toggle_label, Nil),
+      el("input", incident_draft_channel(item), [class_attr("input incident-input"), text_attr("type", "text"), text_attr("value", draft), text_attr("placeholder", "Local reply draft, per card...")], [on_input(incident_draft_listener_slot(incident_id(item)), fn(value, owner) commit_lab_tree(owner, fn() set_local_lab_draft(owner, incident_id(item), value))), on_enter(lab_enter_slot(incident_send_payload(item)), fn(owner) route_lab(incident_send_payload(item), owner))], "", Nil),
+      el("button", incident_send_payload(item), [class_attr("button button-primary")], [on_click(lab_click_slot(incident_send_payload(item)), fn(owner) route_lab(incident_send_payload(item), owner))], "Send reply", Nil),
     ]),
     detail_node,
   ])
 
-fun render_incident_cards(items : list<incident>) : <use_state,div> list<vnode>
+fun render_incident_cards(items : list<incident>) : <use_state,on_click<model,browser_event_effect>,on_input<model>,on_enter<model,browser_event_effect>,div> list<vnode>
   match items
     Nil -> Nil
     Cons(item, rest) -> Cons(incident_card(item), render_incident_cards(rest))
 
-fun incident_grid(lab : workflow_lab) : <use_state,div> vnode
+fun incident_grid(lab : workflow_lab) : <use_state,on_click<model,browser_event_effect>,on_input<model>,on_enter<model,browser_event_effect>,div> vnode
   el("div", "incident-grid", [class_attr("incident-grid")], Nil, "", render_incident_cards(lab_incidents(lab)))
 
 fun render_activity_items(lines : list<string>, index : int) : <div> list<vnode>
@@ -69,7 +87,7 @@ fun activity_panel(lab : workflow_lab) : <div> vnode
     el("ul", "lab-activity-list", [class_attr("activity-list")], Nil, "", render_activity_items(lab_activity_log(lab), 0)),
   ])
 
-pub fun render_lab_panel(item : model) : <use_state,div> vnode
+pub fun render_lab_panel(item : model) : <use_state,on_click<model,browser_event_effect>,on_input<model>,on_enter<model,browser_event_effect>,div> vnode
   val lab = model_lab(item)
   panel("Workflow lab", "This demo mixes component-local draft state, staged waits, a mocked server snapshot, and an ambient operator identity.", "lab", "lab-panel", [
     el("div", "lab-summary", [class_attr("summary-row")], Nil, "", [
@@ -80,8 +98,8 @@ pub fun render_lab_panel(item : model) : <use_state,div> vnode
       summary_chip("Last sync", lab_last_sync_label(lab)),
     ]),
     el("div", "lab-actions", [class_attr("button-row")], Nil, "", [
-      el("button", "lab-load", [class_attr("button")], [click_listener("lab-load")], "Load mock board", Nil),
-      el("button", "lab-sync", [class_attr("button button-primary")], [click_listener("lab-sync")], "Run staged sync", Nil),
+      el("button", "lab-load", [class_attr("button")], [on_click(lab_click_slot("lab-load"), fn(owner) route_lab("lab-load", owner))], "Load mock board", Nil),
+      el("button", "lab-sync", [class_attr("button button-primary")], [on_click(lab_click_slot("lab-sync"), fn(owner) route_lab("lab-sync", owner))], "Run staged sync", Nil),
       el("span", "lab-status", [class_attr("mono")], Nil, "status: " ++ lab_sync_status(lab), Nil),
     ]),
     el("div", "lab-body", [class_attr("lab-body-grid")], Nil, "", [

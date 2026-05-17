@@ -66,20 +66,29 @@ pub fun patch_html_value(item : patch) : string
     Patch(_, _, _, _, html) -> html
 
 // Construct a keyed VDOM node that can later be diffed and patched.
+// Keep `key` stable among siblings; feature code should usually build nodes through `el(...)` and higher-level state/event helpers.
 pub fun el(tag : string, key : string, attrs : list<attr>, listeners : list<listener>, text : string, children : list<vnode>) : vnode
   Vnode(tag, key, attrs, listeners, text, children)
 
+// Use this for CSS classes; prefer small helpers like this over spelling raw `Attr("class", ...)` at call-sites.
 pub fun class_attr(value : string) : attr
   Attr("class", value)
 
+// Generic attribute constructor for DOM-facing text attributes like `type`, `value`, or `placeholder`.
 pub fun text_attr(name : string, value : string) : attr
   Attr(name, value)
 
+// Low-level string listener constructor.
+// In feature code, prefer `on_click(...)` from `respo/state` so handlers stay typed and can participate in the registry.
 pub fun click_listener(payload : string) : listener
   Listener("click", payload)
 
+// Low-level input listener constructor.
+// Prefer `on_input(...)` in app code unless you intentionally want raw string routing.
 pub fun input_listener(payload : string) : listener
   Listener("input", payload)
 
+// Low-level enter-key listener constructor.
+// Prefer `on_enter(...)` in app code unless you intentionally want raw string routing.
 pub fun enter_listener(payload : string) : listener
   Listener("enter", payload)

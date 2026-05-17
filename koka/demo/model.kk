@@ -11,6 +11,8 @@ pub effect fun fetch_lab_snapshot() : lab_snapshot
 pub effect fun post_lab_reply(incident_id : int, message : string) : string
 pub effect fun now_label() : string
 
+pub alias browser_event_effect = <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,wait_ms>
+
 pub struct task(id : int, title : string, done : bool)
 pub struct incident(id : int, title : string, severity : string, status : string, summary : string, server_note : string, updated_by : string)
 pub struct lab_snapshot(incidents : list<incident>, summary : string)

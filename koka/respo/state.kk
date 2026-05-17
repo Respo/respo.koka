@@ -1,9 +1,14 @@
 module respo/state
 
+import respo/core
+
 pub effect fun use_state<a>(entry_slot : state_slot, codec : state_codec<a>, fallback : a) : a
 pub effect fun set_state<a>(entry_slot : state_slot, codec : state_codec<a>, value : a) : ()
 pub effect fun clear_local_state(path : string) : ()
 pub effect fun use_effect(effect_slot : state_slot, deps : list<string>, action : (string) -> io ()) : ()
+pub effect<s,e::E> fun on_click(entry_slot : state_slot, action : (s) -> <div|e> s) : listener
+pub effect<s> fun on_input(entry_slot : state_slot, action : (string, s) -> <div> s) : listener
+pub effect<s,e::E> fun on_enter(entry_slot : state_slot, action : (s) -> <div|e> s) : listener
 
 pub struct state_slot(path : string)
 
@@ -12,6 +17,9 @@ pub struct state_codec<a>(kind : string, read : (state_entry) -> a, write : (str
 pub struct state_entry(path : string, kind : string, text_value : string, flag_value : bool)
 
 pub struct scheduled_effect(path : string, run : (string) -> io ())
+pub struct registered_click<s,e::E>(id : string, run : (s) -> <div|e> s)
+pub struct registered_input<s>(id : string, run : (string, s) -> <div> s)
+pub struct event_registry<s,e::E>(clicks : list<registered_click<s,e>>, inputs : list<registered_input<s>>)
 
 pub fun state_slot_path(item : state_slot) : string
   match item
@@ -73,9 +81,94 @@ pub fun scheduled_effect_path(item : scheduled_effect) : string
   match item
     Scheduled_effect(path, _) -> path
 
+pub fun registered_click_id<s,e::E>(item : registered_click<s,e>) : string
+  match item
+    Registered_click(id, _) -> id
+
+pub fun registered_input_id<s>(item : registered_input<s>) : string
+  match item
+    Registered_input(id, _) -> id
+
+pub fun run_registered_click<s,e::E>(item : registered_click<s,e>, owner : s) : <div|e> s
+  match item
+    Registered_click(_, run) -> run(owner)
+
+pub fun run_registered_input<s>(item : registered_input<s>, value : string, owner : s) : <div> s
+  match item
+    Registered_input(_, run) -> run(value, owner)
+
+pub fun event_registry_clicks<s,e::E>(item : event_registry<s,e>) : list<registered_click<s,e>>
+  match item
+    Event_registry(clicks, _) -> clicks
+
+pub fun event_registry_inputs<s,e::E>(item : event_registry<s,e>) : list<registered_input<s>>
+  match item
+    Event_registry(_, inputs) -> inputs
+
+pub fun empty_event_registry<s,e::E>() : event_registry<s,e>
+  Event_registry(Nil, Nil)
+
 pub fun run_scheduled_effect(item : scheduled_effect, root_id : string) : io ()
   match item
     Scheduled_effect(_, run) -> run(root_id)
+
+fun append_registered_click<s,e::E>(items : list<registered_click<s,e>>, item : registered_click<s,e>) : <div> list<registered_click<s,e>>
+  match items
+    Nil -> [item]
+    Cons(head, rest) -> Cons(head, append_registered_click(rest, item))
+
+fun append_registered_input<s>(items : list<registered_input<s>>, item : registered_input<s>) : <div> list<registered_input<s>>
+  match items
+    Nil -> [item]
+    Cons(head, rest) -> Cons(head, append_registered_input(rest, item))
+
+pub fun append_event_registries<s,e::E>(left : event_registry<s,e>, right : event_registry<s,e>) : <div> event_registry<s,e>
+  match left
+    Event_registry(left_clicks, left_inputs) ->
+      match right
+        Event_registry(right_clicks, right_inputs) -> Event_registry(append_registered_clicks(left_clicks, right_clicks), append_registered_inputs(left_inputs, right_inputs))
+
+fun append_registered_clicks<s,e::E>(left : list<registered_click<s,e>>, right : list<registered_click<s,e>>) : <div> list<registered_click<s,e>>
+  match left
+    Nil -> right
+    Cons(head, rest) -> Cons(head, append_registered_clicks(rest, right))
+
+fun append_registered_inputs<s>(left : list<registered_input<s>>, right : list<registered_input<s>>) : <div> list<registered_input<s>>
+  match left
+    Nil -> right
+    Cons(head, rest) -> Cons(head, append_registered_inputs(rest, right))
+
+pub fun find_registered_click<s,e::E>(registry : event_registry<s,e>, target_id : string) : <div> maybe<registered_click<s,e>>
+  find_click_in_list(event_registry_clicks(registry), target_id)
+
+fun find_click_in_list<s,e::E>(items : list<registered_click<s,e>>, target_id : string) : <div> maybe<registered_click<s,e>>
+  match items
+    Nil -> Nothing
+    Cons(item, rest) -> if registered_click_id(item) == target_id then Just(item) else find_click_in_list(rest, target_id)
+
+pub fun find_registered_input<s,e::E>(registry : event_registry<s,e>, target_id : string) : <div> maybe<registered_input<s>>
+  find_input_in_list(event_registry_inputs(registry), target_id)
+
+fun find_input_in_list<s>(items : list<registered_input<s>>, target_id : string) : <div> maybe<registered_input<s>>
+  match items
+    Nil -> Nothing
+    Cons(item, rest) -> if registered_input_id(item) == target_id then Just(item) else find_input_in_list(rest, target_id)
+
+pub fun count_registered_clicks<s,e::E>(registry : event_registry<s,e>) : <div> int
+  count_click_items(event_registry_clicks(registry))
+
+fun count_click_items<s,e::E>(items : list<registered_click<s,e>>) : <div> int
+  match items
+    Nil -> 0
+    Cons(_, rest) -> 1 + count_click_items(rest)
+
+pub fun count_registered_inputs<s,e::E>(registry : event_registry<s,e>) : <div> int
+  count_input_items(event_registry_inputs(registry))
+
+fun count_input_items<s>(items : list<registered_input<s>>) : <div> int
+  match items
+    Nil -> 0
+    Cons(_, rest) -> 1 + count_input_items(rest)
 
 pub fun slot_text(tree : list<state_entry>, entry_slot : state_slot, fallback : string) : <div> string
   state_value(tree, entry_slot, text_state_codec, fallback)
@@ -105,6 +198,30 @@ pub fun use_slot_state(entry_slot : state_slot, codec : state_codec<a>, fallback
 
 pub fun set_slot_state(entry_slot : state_slot, codec : state_codec<a>, value : a) : <set_state,div> ()
   set_state(entry_slot, codec, value)
+
+pub fun use_state_pair(entry_slot : state_slot, codec : state_codec<a>, fallback : a) : <use_state,div> (a, (a) -> <set_state,div> ())
+  (use_state(entry_slot, codec, fallback), fn(value) set_state(entry_slot, codec, value))
+
+pub fun run_event_registry<s,e::E,a>(action : () -> <on_click<s,e>,on_input<s>,on_enter<s,e>,div> a) : <div> (a, event_registry<s,e>)
+  var registered_clicks := Nil
+  var registered_inputs := Nil
+  with return(result) (result, Event_registry(registered_clicks, registered_inputs))
+  with fun on_click(entry_slot, callback) {
+    val handler_id = state_slot_path(entry_slot)
+    registered_clicks := append_registered_click(registered_clicks, Registered_click(handler_id, callback))
+    Listener("click", handler_id)
+  }
+  with fun on_input(entry_slot, callback) {
+    val handler_id = state_slot_path(entry_slot)
+    registered_inputs := append_registered_input(registered_inputs, Registered_input(handler_id, callback))
+    Listener("input", handler_id)
+  }
+  with fun on_enter(entry_slot, callback) {
+    val handler_id = state_slot_path(entry_slot)
+    registered_clicks := append_registered_click(registered_clicks, Registered_click(handler_id, callback))
+    Listener("enter", handler_id)
+  }
+  action()
 
 pub fun read_local_state(tree : list<state_entry>, action : () -> <use_state,div|e> a) : <div|e> a
   with fun use_state(entry_slot, codec, fallback) state_value(tree, entry_slot, codec, fallback)

@@ -6,6 +6,7 @@ import demo/tests/support
 import demo/todopanel
 import respo/core
 import respo/renderer
+import respo/state
 
 fun timer_logic() : <wait_ms> string
   wait_ms(20)
@@ -39,6 +40,31 @@ pub fun ambient_filter_test() : <div> test_result
   val active_count = count_all(tasks_for("active", base))
   val done_count = count_all(tasks_for("done", base))
   bool_result("Ambient filter previews", "active=" ++ active_count.show ++ ", done=" ++ done_count.show, active_count == 2 && done_count == 1)
+
+pub fun registered_input_handler_test() : <div> test_result
+  val (next_item, _panel_node, _effects, handlers) = run_todo_panel(initial_model())
+  match find_registered_input(handlers, "todo/events/draft-input")
+    Just(found_input) -> {
+      val updated = run_registered_input(found_input, "closure draft", next_item)
+      bool_result("Registered input handler updates draft", "inputs=" ++ count_registered_inputs(handlers).show ++ ", draft=" ++ model_draft(updated), model_draft(updated) == "closure draft")
+    }
+    Nothing -> bool_result("Registered input handler updates draft", "todo/events/draft-input missing", False)
+
+pub fun registered_click_handler_test() : <div> test_result
+  with fun confirm_action(_message) False
+  with fun audit(_message) ()
+  with val current_operator = "test-operator"
+  with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
+  with fun now_label() "10:00:00"
+  with fun post_lab_reply(_incident_id, message) message
+  with fun wait_ms(_delay) ()
+  val (next_item, _panel_node, _effects, handlers) = run_todo_panel(set_draft(initial_model(), "closure task"))
+  match find_registered_click(handlers, "todo/events/click/add-task")
+    Just(found_click) -> {
+      val updated = run_registered_click(found_click, next_item)
+      bool_result("Registered click handler adds task", "clicks=" ++ count_registered_clicks(handlers).show ++ ", tasks=" ++ count_all(model_tasks(updated)).show, count_all(model_tasks(updated)) == 4 && model_draft(updated) == "")
+    }
+    Nothing -> bool_result("Registered click handler adds task", "todo/events/click/add-task missing", False)
 
 pub fun timer_simulation_test() : <div> test_result
   val (label, waits) = capture_waits(fn() timer_logic())

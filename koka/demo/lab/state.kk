@@ -26,14 +26,15 @@ pub fun commit_lab_tree(owner : model, action : () -> <use_state,set_state,clear
   val (next_model, next_tree, _pending_effect) = run_local_state(lab_local_tree(model_lab(owner)), action)
   set_lab_local_tree(next_model, next_tree)
 
-pub fun set_local_lab_draft(owner : model, incident_id : int, draft : string) : <set_state,clear_local_state,div> model
+pub fun set_local_lab_draft(owner : model, incident_id : int, draft : string) : <use_state,set_state,clear_local_state,div> model
+  val (_current_draft, set_draft) = use_state_pair(incident_draft_slot(incident_id), text_state_codec, "")
   if draft == "" then
     clear_slot(incident_draft_slot(incident_id))
   else
-    set_state(incident_draft_slot(incident_id), text_state_codec, draft)
+    set_draft(draft)
   owner
 
 pub fun toggle_local_lab_expanded(owner : model, incident_id : int) : <use_state,set_state,div> model
-  val expanded = use_state(incident_expanded_slot(incident_id), flag_state_codec, False)
-  set_state(incident_expanded_slot(incident_id), flag_state_codec, not(expanded))
+  val (expanded, set_expanded) = use_state_pair(incident_expanded_slot(incident_id), flag_state_codec, False)
+  set_expanded(not(expanded))
   owner
