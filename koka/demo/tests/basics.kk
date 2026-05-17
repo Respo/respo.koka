@@ -3,6 +3,7 @@ module demo/tests/basics
 import demo/model
 import demo/seed
 import demo/tests/support
+import demo/todo/state
 import demo/todopanel
 import respo/core
 import respo/renderer
@@ -42,13 +43,14 @@ pub fun ambient_filter_test() : <div> test_result
   bool_result("Ambient filter previews", "active=" ++ active_count.show ++ ", done=" ++ done_count.show, active_count == 2 && done_count == 1)
 
 pub fun registered_input_handler_test() : <div> test_result
+  val target_id = state_slot_path(named_listener_slot(todo_effect_scope(), "input", "draft-input"))
   val (next_item, _panel_node, _effects, handlers) = run_todo_panel(initial_model())
-  match find_registered_input(handlers, "todo/events/draft-input")
+  match find_registered_input(handlers, target_id)
     Just(found_input) -> {
       val updated = run_registered_input(found_input, "closure draft", next_item)
       bool_result("Registered input handler updates draft", "inputs=" ++ count_registered_inputs(handlers).show ++ ", draft=" ++ model_draft(updated), model_draft(updated) == "closure draft")
     }
-    Nothing -> bool_result("Registered input handler updates draft", "todo/events/draft-input missing", False)
+    Nothing -> bool_result("Registered input handler updates draft", target_id ++ " missing", False)
 
 pub fun registered_click_handler_test() : <div> test_result
   with fun confirm_action(_message) False
@@ -58,13 +60,32 @@ pub fun registered_click_handler_test() : <div> test_result
   with fun now_label() "10:00:00"
   with fun post_lab_reply(_incident_id, message) message
   with fun wait_ms(_delay) ()
-  val (next_item, _panel_node, _effects, handlers) = run_todo_panel(set_draft(initial_model(), "closure task"))
-  match find_registered_click(handlers, "todo/events/click/add-task")
-    Just(found_click) -> {
-      val updated = run_registered_click(found_click, next_item)
-      bool_result("Registered click handler adds task", "clicks=" ++ count_registered_clicks(handlers).show ++ ", tasks=" ++ count_all(model_tasks(updated)).show, count_all(model_tasks(updated)) == 4 && model_draft(updated) == "")
+  val started = match handle_todo_click("edit-2", initial_model())
+    Just(result) -> result
+    Nothing -> initial_model()
+  val (next_item, _panel_node, _effects, handlers) = run_todo_panel(started)
+  match find_task_by_id(2, model_tasks(started))
+    Nothing -> bool_result("Registered click handler stays local", "task #2 missing", False)
+    Just(item) -> {
+      val local_click_id = state_slot_path(named_listener_slot(task_hook_scope(item), "click", "cancel-edit"))
+      val global_add_handler = find_registered_click(handlers, "add-task")
+      match find_registered_click(handlers, local_click_id)
+        Nothing -> bool_result("Registered click handler stays local", local_click_id ++ " missing", False)
+        Just(found_click) -> {
+          val updated = run_registered_click(found_click, next_item)
+          val updated_task = match find_task_by_id(2, model_tasks(updated))
+            Just(found) -> found
+            Nothing -> item
+          val editor_state = task_editor_snapshot(updated, updated_task)
+          val has_global_add_handler = match global_add_handler
+            Just(_) -> True
+            Nothing -> False
+          bool_result(
+            "Registered click handler stays local",
+            "clicks=" ++ count_registered_clicks(handlers).show ++ ", notice=" ++ model_notice(updated),
+            not(has_global_add_handler) && not(task_editor_editing(editor_state)) && model_notice(updated) == "Cancelled local task edit.")
+        }
     }
-    Nothing -> bool_result("Registered click handler adds task", "todo/events/click/add-task missing", False)
 
 pub fun timer_simulation_test() : <div> test_result
   val (label, waits) = capture_waits(fn() timer_logic())
