@@ -83,7 +83,7 @@ pub fun registered_click_handler_test() : <div> test_result
           Test_result(
             "Registered click handler stays local",
             "clicks=" ++ count_registered_clicks(handlers).show ++ ", notice=" ++ model_notice(updated),
-            not(has_global_add_handler) && not(task_editor_editing(editor_state)) && model_notice(updated) == "Cancelled local task edit.")
+            not(has_global_add_handler) && not(task_editor_state/editing(editor_state)) && model_notice(updated) == "Cancelled local task edit.")
         }
     }
 

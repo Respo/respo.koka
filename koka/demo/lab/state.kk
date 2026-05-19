@@ -20,7 +20,7 @@ pub fun lab_incident_draft(item : workflow_lab, incident_id : int) : <div> strin
 
 pub fun set_lab_local_tree(owner : model, next_tree : list<state_entry>) : model
   val lab = model_lab(owner)
-  set_lab(owner, Workflow_lab(lab_incidents(lab), lab_activity_log(lab), next_tree, lab_sync_status(lab), lab_last_sync_label(lab)))
+  set_lab(owner, lab(local_tree = next_tree))
 
 pub fun commit_lab_tree(owner : model, action : () -> <use_named_state,set_named_state,clear_local_state,use_named_effect,push_hook_scope,pop_hook_scope,use_state,use_state_pair,use_effect,div|e> model) : <div|e> model
   val (next_model, next_tree, _pending_effect) = run_local_state(lab_local_tree(model_lab(owner)), action)

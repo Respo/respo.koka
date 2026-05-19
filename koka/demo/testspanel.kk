@@ -14,9 +14,7 @@ fun test_item(item : test_result) : vnode
   ])
 
 fun render_test_items(results : list<test_result>) : <div> list<vnode>
-  match results
-    Nil -> Nil
-    Cons(item, rest) -> Cons(test_item(item), render_test_items(rest))
+  map(results, test_item)
 
 pub fun tests_panel(results : list<test_result>) : <div> vnode
   val passed = length(filter(results, fn(item) test_result/passed(item)))

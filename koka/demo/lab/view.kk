@@ -59,23 +59,19 @@ fun incident_card(item : incident) : lab_view_effect vnode
   })
 
 fun render_incident_cards(items : list<incident>) : lab_view_effect list<vnode>
-  match items
-    Nil -> Nil
-    Cons(item, rest) -> Cons(incident_card(item), render_incident_cards(rest))
+  map(items, incident_card)
 
 fun incident_grid(lab : workflow_lab) : lab_view_effect vnode
   node_class("div", "incident-grid", "incident-grid", render_incident_cards(lab_incidents(lab)))
 
-fun render_activity_items(lines : list<string>, index : int) : <div> list<vnode>
-  match lines
-    Nil -> Nil
-    Cons(line, rest) -> Cons(text_class("li", "activity-" ++ index.show, "activity-item", line), render_activity_items(rest, index + 1))
+fun render_activity_items(lines : list<string>) : <div> list<vnode>
+  map-indexed(lines, fn(index, line) text_class("li", "activity-" ++ index.show, "activity-item", line))
 
 fun activity_panel(lab : workflow_lab) : <div> vnode
   node_class("aside", "lab-activity", "mini-panel activity-panel", [
     text_node("strong", "lab-activity-title", empty_props, "Workflow activity"),
     text_class("p", "lab-activity-note", "case-detail", "Each sync or reply appends a line that can be asserted in tests."),
-    node_class("ul", "lab-activity-list", "activity-list", render_activity_items(lab_activity_log(lab), 0)),
+    node_class("ul", "lab-activity-list", "activity-list", render_activity_items(lab_activity_log(lab))),
   ])
 
 pub fun render_lab_panel(item : model) : lab_view_effect vnode

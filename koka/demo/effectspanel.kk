@@ -6,14 +6,10 @@ import demo/shared
 import respo/core
 
 fun render_tiny_items(tasks : list<task>) : <div> list<vnode>
-  match tasks
-    Nil -> Nil
-    Cons(item, rest) -> Cons(text_node("li", "tiny-" ++ task_id(item).show, empty_props, task_title(item)), render_tiny_items(rest))
+  map(tasks, fn(item) text_node("li", "tiny-" ++ task_id(item).show, empty_props, task_title(item)))
 
 fun tiny_task_list(key : string, tasks : list<task>) : <div> vnode
-  match tasks
-    Nil -> text_class("p", key ++ "-empty", "empty", "None")
-    Cons(_, _) -> node_class("ul", key, "tiny-list", render_tiny_items(tasks))
+  if is-empty(tasks) then text_class("p", key ++ "-empty", "empty", "None") else node_class("ul", key, "tiny-list", render_tiny_items(tasks))
 
 fun effect_case(title : string, detail : string, body : vnode) : vnode
   node_class("article", title, "case-item", [

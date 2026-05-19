@@ -31,97 +31,60 @@ pub fun dispatch_todo_enter(action : todo_action) : listener
   enter_listener(todo_action_payload(action))
 
 fun append_tasks(tasks : list<task>, item : task) : <div> list<task>
-  match tasks
-    Nil -> [item]
-    Cons(head, rest) -> Cons(head, append_tasks(rest, item))
+  tasks ++ [item]
 
 fun rename_task(tasks : list<task>, target_id : int, title : string) : <div> list<task>
-  match tasks
-    Nil -> Nil
-    Cons(item, rest) ->
-      val next_rest = rename_task(rest, target_id, title)
-      if task_id(item) == target_id then
-        Cons(Task(task_id(item), title, task_done(item)), next_rest)
-      else
-        Cons(item, next_rest)
+  map(tasks, fn(item) if task_id(item) == target_id then item(title = title) else item)
 
 fun toggle_tasks(payload : string, tasks : list<task>) : <div> list<task>
-  match tasks
-    Nil -> Nil
-    Cons(item, rest) ->
-      val next_rest = toggle_tasks(payload, rest)
-      if payload == task_toggle_id(item) then Cons(Task(task_id(item), task_title(item), not(task_done(item))), next_rest) else Cons(item, next_rest)
+  map(tasks, fn(item) if payload == task_toggle_id(item) then item(done = not(task_done(item))) else item)
 
 fun find_by_remove(payload : string, tasks : list<task>) : <div> maybe<task>
-  match tasks
-    Nil -> Nothing
-    Cons(item, rest) -> if payload == task_remove_id(item) then Just(item) else find_by_remove(payload, rest)
+  find(tasks, fn(item) payload == task_remove_id(item))
 
 fun remove_tasks(payload : string, tasks : list<task>) : <div> list<task>
-  match tasks
-    Nil -> Nil
-    Cons(item, rest) -> if payload == task_remove_id(item) then rest else Cons(item, remove_tasks(payload, rest))
+  filter(tasks, fn(item) payload != task_remove_id(item))
 
 fun clear_completed_tasks(tasks : list<task>) : <div> list<task>
-  match tasks
-    Nil -> Nil
-    Cons(item, rest) -> if task_done(item) then clear_completed_tasks(rest) else Cons(item, clear_completed_tasks(rest))
+  filter(tasks, fn(item) not(task_done(item)))
 
 fun clear_done_local_state(tasks : list<task>) : <clear_local_state,div> ()
-  match tasks
-    Nil -> ()
-    Cons(item, rest) -> {
-      clear_done_local_state(rest)
-      if task_done(item) then {
-        clear_slot(task_editing_slot(item))
-        clear_slot(task_draft_slot(item))
-      } else ()
-    }
+  foreach(tasks, fn(item)
+    if task_done(item) then {
+      clear_slot(task_editing_slot(item))
+      clear_slot(task_draft_slot(item))
+    } else ()
+  )
 
 fun find_task_draft_channel(channel : string, tasks : list<task>) : <div> maybe<int>
-  match tasks
-    Nil -> Nothing
-    Cons(item, rest) -> if channel == task_draft_channel(item) then Just(task_id(item)) else find_task_draft_channel(channel, rest)
-
-fun has_edit(payload : string, tasks : list<task>) : <div> bool
-  match tasks
-    Nil -> False
-    Cons(item, rest) -> if payload == task_edit_id(item) then True else has_edit(payload, rest)
-
-fun has_save(payload : string, tasks : list<task>) : <div> bool
-  match tasks
-    Nil -> False
-    Cons(item, rest) -> if payload == task_save_id(item) then True else has_save(payload, rest)
-
-fun has_cancel(payload : string, tasks : list<task>) : <div> bool
-  match tasks
-    Nil -> False
-    Cons(item, rest) -> if payload == task_cancel_id(item) then True else has_cancel(payload, rest)
+  match find(tasks, fn(item) channel == task_draft_channel(item))
+    Just(item) -> Just(task_id(item))
+    Nothing -> Nothing
 
 fun task_id_from_edit(payload : string, tasks : list<task>) : <div> maybe<int>
-  match tasks
-    Nil -> Nothing
-    Cons(item, rest) -> if payload == task_edit_id(item) then Just(task_id(item)) else task_id_from_edit(payload, rest)
+  match find(tasks, fn(item) payload == task_edit_id(item))
+    Just(item) -> Just(task_id(item))
+    Nothing -> Nothing
 
 fun task_id_from_save(payload : string, tasks : list<task>) : <div> maybe<int>
-  match tasks
-    Nil -> Nothing
-    Cons(item, rest) -> if payload == task_save_id(item) then Just(task_id(item)) else task_id_from_save(payload, rest)
+  match find(tasks, fn(item) payload == task_save_id(item))
+    Just(item) -> Just(task_id(item))
+    Nothing -> Nothing
 
 fun task_id_from_cancel(payload : string, tasks : list<task>) : <div> maybe<int>
-  match tasks
-    Nil -> Nothing
-    Cons(item, rest) -> if payload == task_cancel_id(item) then Just(task_id(item)) else task_id_from_cancel(payload, rest)
+  match find(tasks, fn(item) payload == task_cancel_id(item))
+    Just(item) -> Just(task_id(item))
+    Nothing -> Nothing
 
 fun task_id_from_toggle(payload : string, tasks : list<task>) : <div> maybe<int>
-  match tasks
-    Nil -> Nothing
-    Cons(item, rest) -> if payload == task_toggle_id(item) then Just(task_id(item)) else task_id_from_toggle(payload, rest)
+  match find(tasks, fn(item) payload == task_toggle_id(item))
+    Just(item) -> Just(task_id(item))
+    Nothing -> Nothing
 
 fun task_id_from_remove(payload : string, tasks : list<task>) : <div> maybe<int>
-  match tasks
-    Nil -> Nothing
-    Cons(item, rest) -> if payload == task_remove_id(item) then Just(task_id(item)) else task_id_from_remove(payload, rest)
+  match find(tasks, fn(item) payload == task_remove_id(item))
+    Just(item) -> Just(task_id(item))
+    Nothing -> Nothing
 
 fun todo_add_task(owner : model) : <audit,div> model
   if model_draft(owner) == "" then
@@ -228,6 +191,7 @@ pub fun dispatch_todo_action(action : todo_action, owner : model) : <confirm_act
     Save_task_edit(task_id) -> commit_task_hooks(owner, fn() todo_save_task_edit(owner, task_id))
 
 fun decode_todo_action(payload : string, owner : model) : <div> maybe<todo_action>
+  val tasks = model_tasks(owner)
   if payload == "add-task" then
     Just(Add_task)
   else if payload == "set-filter-all" then
@@ -238,36 +202,22 @@ fun decode_todo_action(payload : string, owner : model) : <div> maybe<todo_actio
     Just(Set_filter("done"))
   else if payload == "clear-completed" then
     Just(Clear_completed)
-  else if has_toggle(payload, model_tasks(owner)) then
-    match task_id_from_toggle(payload, model_tasks(owner))
-      Just(task_id) -> Just(Toggle_task(task_id))
-      Nothing -> Nothing
-  else if has_remove(payload, model_tasks(owner)) then
-    match task_id_from_remove(payload, model_tasks(owner))
+  else match task_id_from_toggle(payload, tasks)
+    Just(task_id) -> Just(Toggle_task(task_id))
+    Nothing -> match task_id_from_remove(payload, tasks)
       Just(task_id) -> Just(Remove_task(task_id))
-      Nothing -> Nothing
-  else if has_edit(payload, model_tasks(owner)) then
-    match task_id_from_edit(payload, model_tasks(owner))
-      Just(task_id) -> Just(Start_task_edit(task_id))
-      Nothing -> Nothing
-  else if has_save(payload, model_tasks(owner)) then
-    match task_id_from_save(payload, model_tasks(owner))
-      Just(task_id) -> Just(Save_task_edit(task_id))
-      Nothing -> Nothing
-  else
-    Nothing
+      Nothing -> match task_id_from_edit(payload, tasks)
+        Just(task_id) -> Just(Start_task_edit(task_id))
+        Nothing -> match task_id_from_save(payload, tasks)
+          Just(task_id) -> Just(Save_task_edit(task_id))
+          Nothing -> Nothing
 
 pub fun route_todo_click(payload : string, owner : model) : <confirm_action,audit,div> maybe<model>
   match decode_todo_action(payload, owner)
     Just(action) -> Just(dispatch_todo_action(action, owner))
-    Nothing -> {
-      if has_cancel(payload, model_tasks(owner)) then
-        match task_id_from_cancel(payload, model_tasks(owner))
-          Just(target_id) -> Just(commit_task_tree(owner, fn() todo_cancel_task_edit(owner, target_id)))
-          Nothing -> Just(set_notice(owner, "Task cancel target was missing."))
-      else
-        Nothing
-    }
+    Nothing -> match task_id_from_cancel(payload, model_tasks(owner))
+      Just(target_id) -> Just(commit_task_tree(owner, fn() todo_cancel_task_edit(owner, target_id)))
+      Nothing -> Nothing
 
 pub fun route_todo_input(channel : string, value : string, owner : model) : <div> maybe<model>
   if channel == "draft" then

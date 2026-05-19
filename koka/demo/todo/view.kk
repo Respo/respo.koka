@@ -65,14 +65,10 @@ pub fun task_item_view(item : task) : todo_view_effect vnode
   })
 
 fun render_task_items_view(tasks : list<task>) : todo_view_effect list<vnode>
-  match tasks
-    Nil -> Nil
-    Cons(item, rest) -> Cons(task_item_view(item), render_task_items_view(rest))
+  map(tasks, task_item_view)
 
 fun task_list(key : string, tasks : list<task>) : todo_view_effect vnode
-  match tasks
-    Nil -> text_class("p", key ++ "-empty", "empty", "No tasks in this view.")
-    Cons(_, _) -> node_class("ul", key, "task-list", render_task_items_view(tasks))
+  if is-empty(tasks) then text_class("p", key ++ "-empty", "empty", "No tasks in this view.") else node_class("ul", key, "task-list", render_task_items_view(tasks))
 
 fun filter_button(label : string, value : string, active : bool) : <register_listener<model,browser_event_effect>,div> vnode
   val class_name = if active then "button button-active" else "button"

@@ -33,8 +33,8 @@ pub fun todo_edit_local_state_test() : <div> test_result
   val local_entries = count_entries(model_todo_local_tree(saved))
   Test_result(
     "Todo item local editing",
-    "title=" ++ title ++ ", local=" ++ local_entries.show ++ ", editing=" ++ task_editor_editing(started_task).show,
-    title == "Prototype local title edits before save" && local_entries == 0 && not(task_editor_editing(saved_task)))
+    "title=" ++ title ++ ", local=" ++ local_entries.show ++ ", editing=" ++ task_editor_state/editing(started_task).show,
+    title == "Prototype local title edits before save" && local_entries == 0 && not(task_editor_state/editing(saved_task)))
 
 pub fun todo_edit_diff_test() : <div> test_result
   with fun confirm_action(_message) False
@@ -87,4 +87,4 @@ pub fun start_edit_focus_test() : <div> test_result
     Nothing -> Task_editor_state(False, "")
   val focused_editor = any(effects, fn(item) scheduled_effect_path(item) == expected)
   val has_focus_marker = vnode_has_attr_value(panel_node, "data-k-effect", expected_marker)
-  Test_result("Start edit schedules focus", "expected=" ++ expected ++ ", effects=" ++ length(effects).show, task_editor_editing(local) && focused_editor && has_focus_marker)
+  Test_result("Start edit schedules focus", "expected=" ++ expected ++ ", effects=" ++ length(effects).show, task_editor_state/editing(local) && focused_editor && has_focus_marker)

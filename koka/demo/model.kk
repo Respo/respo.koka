@@ -182,39 +182,25 @@ fun incident_draft(item : workflow_lab, incident_id : int) : <div> string
   slot_text(lab_local_tree(item), incident_draft_slot(incident_id), "")
 
 pub fun has_done_tasks(tasks : list<task>) : <div> bool
-  match tasks
-    Nil -> False
-    Cons(item, rest) -> if task_done(item) then True else has_done_tasks(rest)
+  any(tasks, task_done)
 
 pub fun count_all(tasks : list<task>) : <div> int
-  match tasks
-    Nil -> 0
-    Cons(_, rest) -> 1 + count_all(rest)
+  length(tasks)
 
 pub fun count_done(tasks : list<task>) : <div> int
-  match tasks
-    Nil -> 0
-    Cons(item, rest) -> (if task_done(item) then 1 else 0) + count_done(rest)
+  length(filter(tasks, task_done))
 
 fun count_incidents(items : list<incident>) : <div> int
-  match items
-    Nil -> 0
-    Cons(_, rest) -> 1 + count_incidents(rest)
+  length(items)
 
 fun count_open_incidents(items : list<incident>) : <div> int
-  match items
-    Nil -> 0
-    Cons(item, rest) -> (if incident_status(item) == "acked" then 0 else 1) + count_open_incidents(rest)
+  length(filter(items, fn(item) incident_status(item) != "acked"))
 
 fun count_lines(lines : list<string>) : <div> int
-  match lines
-    Nil -> 0
-    Cons(_, rest) -> 1 + count_lines(rest)
+  length(lines)
 
 fun count_non_empty_drafts(item : workflow_lab, incidents : list<incident>) : <div> int
-  match incidents
-    Nil -> 0
-    Cons(incident, rest) -> (if incident_draft(item, incident_id(incident)) == "" then 0 else 1) + count_non_empty_drafts(item, rest)
+  length(filter(incidents, fn(incident) incident_draft(item, incident_id(incident)) != ""))
 
 pub fun lab_incident_count(item : workflow_lab) : <div> int
   count_incidents(lab_incidents(item))
@@ -237,25 +223,17 @@ fun task_visible(item : task) : current_filter bool
   else True
 
 pub fun visible_tasks(tasks : list<task>) : <current_filter,div> list<task>
-  match tasks
-    Nil -> Nil
-    Cons(item, rest) ->
-      val tail = visible_tasks(rest)
-      if task_visible(item) then Cons(item, tail) else tail
+  filter(tasks, task_visible)
 
 pub fun tasks_for(filter_name : string, tasks : list<task>) : <div> list<task>
   with val current_filter = filter_name
   visible_tasks(tasks)
 
 pub fun find_incident_by_id(target_id : int, items : list<incident>) : <div> maybe<incident>
-  match items
-    Nil -> Nothing
-    Cons(item, rest) -> if target_id == incident_id(item) then Just(item) else find_incident_by_id(target_id, rest)
+  find(items, fn(item) target_id == incident_id(item))
 
 pub fun find_task_by_id(target_id : int, tasks : list<task>) : <div> maybe<task>
-  match tasks
-    Nil -> Nothing
-    Cons(item, rest) -> if target_id == task_id(item) then Just(item) else find_task_by_id(target_id, rest)
+  find(tasks, fn(item) target_id == task_id(item))
 
 pub fun lab_incident_by_id(item : workflow_lab, target_id : int) : <div> maybe<incident>
   find_incident_by_id(target_id, lab_incidents(item))
@@ -275,11 +253,6 @@ pub fun set_lab(item : model, lab : workflow_lab) : model
 pub fun set_route(item : model, route_name : string) : model
   item(route_name = normalize_route(route_name))
 
-fun append_tasks(tasks : list<task>, item : task) : <div> list<task>
-  match tasks
-    Nil -> [item]
-    Cons(head, rest) -> Cons(head, append_tasks(rest, item))
-
 // Route changes remain data-only; render-time hooks now decide whether to execute browser effects.
 pub fun reduce_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,div> model
   if payload == "route-overview" then set_route(item, "overview")
@@ -291,13 +264,3 @@ pub fun reduce_click(payload : string, item : model) : <confirm_action,audit,cur
 
 pub fun reduce_input(channel : string, value : string, item : model) : <div> model
   set_notice(item, "Unhandled input channel: " ++ channel ++ " = " ++ value)
-
-pub fun has_toggle(payload : string, tasks : list<task>) : <div> bool
-  match tasks
-    Nil -> False
-    Cons(item, rest) -> if payload == task_toggle_id(item) then True else has_toggle(payload, rest)
-
-pub fun has_remove(payload : string, tasks : list<task>) : <div> bool
-  match tasks
-    Nil -> False
-    Cons(item, rest) -> if payload == task_remove_id(item) then True else has_remove(payload, rest)

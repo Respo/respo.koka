@@ -5,14 +5,6 @@ import respo/state
 
 pub struct task_editor_state(editing : bool, draft : string)
 
-pub fun task_editor_editing(item : task_editor_state) : bool
-  match item
-    Task_editor_state(editing, _) -> editing
-
-pub fun task_editor_draft(item : task_editor_state) : string
-  match item
-    Task_editor_state(_, draft) -> draft
-
 pub fun task_hook_scope(item : task) : string
   "todo/tasks/" ++ task_id(item).show
 
