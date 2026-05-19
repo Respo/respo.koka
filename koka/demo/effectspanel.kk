@@ -22,20 +22,10 @@ fun effect_case(title : string, detail : string, body : vnode) : vnode
     body,
   ])
 
-fun timer_case(results : list<test_result>) : <div> vnode
-  match find_result("Timer simulation", results)
-    Nothing -> text_class("p", "timer-empty", "empty", "Timer case unavailable.")
-    Just(item) -> text_class("p", "timer-detail", "mono", test_detail(item))
-
-fun workflow_case(results : list<test_result>) : <div> vnode
-  match find_result("Workflow sync captures waits", results)
-    Nothing -> text_class("p", "workflow-empty", "empty", "Workflow case unavailable.")
-    Just(item) -> text_class("p", "workflow-detail", "mono", test_detail(item))
-
-fun local_state_case(results : list<test_result>) : <div> vnode
-  match find_result("State tree local state", results)
-    Nothing -> text_class("p", "local-state-empty", "empty", "Local state case unavailable.")
-    Just(item) -> text_class("p", "local-state-detail", "mono", test_detail(item))
+fun case_detail(result_name : string, empty_key : string, detail_key : string, empty_text : string, results : list<test_result>) : <div> vnode
+  match find(results, fn(item) test_result/name(item) == result_name)
+    Nothing -> text_class("p", empty_key, "empty", empty_text)
+    Just(item) -> text_class("p", detail_key, "mono", test_result/detail(item))
 
 pub fun effects_panel(item : model, results : list<test_result>) : <div> vnode
   val active = tasks_for("active", model_tasks(item))
@@ -53,8 +43,8 @@ pub fun effects_panel(item : model, results : list<test_result>) : <div> vnode
           tiny_task_list("done-list", done),
         ]),
       ])),
-      effect_case("Workflow lab", "The richer demo composes `wait_ms`, mocked server fetch/send, and an ambient operator identity into one deterministic workflow.", workflow_case(results)),
-      effect_case("Local state tree", "Per-card drafts and expand/collapse flags live in a keyed state tree instead of leaking into the main domain snapshot.", local_state_case(results)),
-      effect_case("Timer", "`wait_ms` is handled without real time passing, so the case stays deterministic.", timer_case(results)),
+      effect_case("Workflow lab", "The richer demo composes `wait_ms`, mocked server fetch/send, and an ambient operator identity into one deterministic workflow.", case_detail("Workflow sync captures waits", "workflow-empty", "workflow-detail", "Workflow case unavailable.", results)),
+      effect_case("Local state tree", "Per-card drafts and expand/collapse flags live in a keyed state tree instead of leaking into the main domain snapshot.", case_detail("State tree local state", "local-state-empty", "local-state-detail", "Local state case unavailable.", results)),
+      effect_case("Timer", "`wait_ms` is handled without real time passing, so the case stays deterministic.", case_detail("Timer simulation", "timer-empty", "timer-detail", "Timer case unavailable.", results)),
     ]),
   ])

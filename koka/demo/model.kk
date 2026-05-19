@@ -13,120 +13,124 @@ pub effect fun now_label() : string
 
 pub alias browser_event_effect = <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,wait_ms>
 
-pub struct task(id : int, title : string, done : bool)
-pub struct incident(id : int, title : string, severity : string, status : string, summary : string, server_note : string, updated_by : string)
-pub struct lab_snapshot(incidents : list<incident>, summary : string)
-pub struct workflow_lab(incidents : list<incident>, activity_log : list<string>, local_tree : list<state_entry>, sync_status : string, last_sync_label : string)
-pub struct model(tasks : list<task>, draft : string, next_id : int, filter_name : string, notice : string, route_name : string, todo_local_tree : list<state_entry>, lab : workflow_lab)
+pub struct task
+  id : int
+  title : string
+  done : bool
+
+pub struct incident
+  id : int
+  title : string
+  severity : string
+  status : string
+  summary : string
+  server_note : string
+  updated_by : string
+
+pub struct lab_snapshot
+  incidents : list<incident>
+  summary : string
+
+pub struct workflow_lab
+  incidents : list<incident>
+  activity_log : list<string>
+  local_tree : list<state_entry>
+  sync_status : string
+  last_sync_label : string
+
+pub struct model
+  tasks : list<task>
+  draft : string
+  next_id : int
+  filter_name : string
+  notice : string
+  route_name : string
+  todo_local_tree : list<state_entry>
+  lab : workflow_lab
 
 pub fun task_id(item : task) : int
-  match item
-    Task(id, _, _) -> id
+  task/id(item)
 
 pub fun task_title(item : task) : string
-  match item
-    Task(_, title, _) -> title
+  task/title(item)
 
 pub fun task_done(item : task) : bool
-  match item
-    Task(_, _, done) -> done
+  task/done(item)
 
 pub fun model_tasks(item : model) : list<task>
-  match item
-    Model(tasks, _, _, _, _, _, _, _) -> tasks
+  model/tasks(item)
 
 pub fun model_draft(item : model) : string
-  match item
-    Model(_, draft, _, _, _, _, _, _) -> draft
+  model/draft(item)
 
 pub fun model_next_id(item : model) : int
-  match item
-    Model(_, _, next_id, _, _, _, _, _) -> next_id
+  model/next_id(item)
 
 pub fun set_next_id(item : model, next_id : int) : model
-  Model(model_tasks(item), model_draft(item), next_id, model_filter_name(item), model_notice(item), model_route_name(item), model_todo_local_tree(item), model_lab(item))
+  item(next_id = next_id)
 
 pub fun model_filter_name(item : model) : string
-  match item
-    Model(_, _, _, filter_name, _, _, _, _) -> filter_name
+  model/filter_name(item)
 
 pub fun model_notice(item : model) : string
-  match item
-    Model(_, _, _, _, notice, _, _, _) -> notice
+  model/notice(item)
 
 pub fun model_route_name(item : model) : string
-  match item
-    Model(_, _, _, _, _, route_name, _, _) -> route_name
+  model/route_name(item)
 
 pub fun model_todo_local_tree(item : model) : list<state_entry>
-  match item
-    Model(_, _, _, _, _, _, todo_local_tree, _) -> todo_local_tree
+  model/todo_local_tree(item)
 
 pub fun set_todo_local_tree(item : model, todo_local_tree : list<state_entry>) : model
-  Model(model_tasks(item), model_draft(item), model_next_id(item), model_filter_name(item), model_notice(item), model_route_name(item), todo_local_tree, model_lab(item))
+  item(todo_local_tree = todo_local_tree)
 
 pub fun model_lab(item : model) : workflow_lab
-  match item
-    Model(_, _, _, _, _, _, _, lab) -> lab
+  model/lab(item)
 
 pub fun set_tasks(item : model, tasks : list<task>) : model
-  Model(tasks, model_draft(item), model_next_id(item), model_filter_name(item), model_notice(item), model_route_name(item), model_todo_local_tree(item), model_lab(item))
+  item(tasks = tasks)
 
 pub fun incident_id(item : incident) : int
-  match item
-    Incident(id, _, _, _, _, _, _) -> id
+  incident/id(item)
 
 pub fun incident_title(item : incident) : string
-  match item
-    Incident(_, title, _, _, _, _, _) -> title
+  incident/title(item)
 
 pub fun incident_severity(item : incident) : string
-  match item
-    Incident(_, _, severity, _, _, _, _) -> severity
+  incident/severity(item)
 
 pub fun incident_status(item : incident) : string
-  match item
-    Incident(_, _, _, status, _, _, _) -> status
+  incident/status(item)
 
 pub fun incident_summary(item : incident) : string
-  match item
-    Incident(_, _, _, _, summary, _, _) -> summary
+  incident/summary(item)
 
 pub fun incident_server_note(item : incident) : string
-  match item
-    Incident(_, _, _, _, _, server_note, _) -> server_note
+  incident/server_note(item)
 
 pub fun incident_updated_by(item : incident) : string
-  match item
-    Incident(_, _, _, _, _, _, updated_by) -> updated_by
+  incident/updated_by(item)
 
 pub fun lab_snapshot_incidents(item : lab_snapshot) : list<incident>
-  match item
-    Lab_snapshot(incidents, _) -> incidents
+  lab_snapshot/incidents(item)
 
 pub fun lab_snapshot_summary(item : lab_snapshot) : string
-  match item
-    Lab_snapshot(_, summary) -> summary
+  lab_snapshot/summary(item)
 
 pub fun lab_incidents(item : workflow_lab) : list<incident>
-  match item
-    Workflow_lab(incidents, _, _, _, _) -> incidents
+  workflow_lab/incidents(item)
 
 pub fun lab_activity_log(item : workflow_lab) : list<string>
-  match item
-    Workflow_lab(_, activity_log, _, _, _) -> activity_log
+  workflow_lab/activity_log(item)
 
 pub fun lab_local_tree(item : workflow_lab) : list<state_entry>
-  match item
-    Workflow_lab(_, _, local_tree, _, _) -> local_tree
+  workflow_lab/local_tree(item)
 
 pub fun lab_sync_status(item : workflow_lab) : string
-  match item
-    Workflow_lab(_, _, _, sync_status, _) -> sync_status
+  workflow_lab/sync_status(item)
 
 pub fun lab_last_sync_label(item : workflow_lab) : string
-  match item
-    Workflow_lab(_, _, _, _, last_sync_label) -> last_sync_label
+  workflow_lab/last_sync_label(item)
 
 pub fun normalize_route(route_name : string) : string
   if route_name == "todo" then "todo"
@@ -136,10 +140,10 @@ pub fun normalize_route(route_name : string) : string
   else "overview"
 
 pub fun task_toggle_id(item : task) : string
-  "toggle-" ++ task_id(item).show
+  "toggle-" ++ task/id(item).show
 
 pub fun task_remove_id(item : task) : string
-  "remove-" ++ task_id(item).show
+  "remove-" ++ task/id(item).show
 
 pub fun task_edit_id(item : task) : string
   "edit-" ++ task_id(item).show
@@ -257,19 +261,19 @@ pub fun lab_incident_by_id(item : workflow_lab, target_id : int) : <div> maybe<i
   find_incident_by_id(target_id, lab_incidents(item))
 
 pub fun set_notice(item : model, notice : string) : model
-  Model(model_tasks(item), model_draft(item), model_next_id(item), model_filter_name(item), notice, model_route_name(item), model_todo_local_tree(item), model_lab(item))
+  item(notice = notice)
 
 pub fun set_filter(item : model, filter_name : string) : model
-  Model(model_tasks(item), model_draft(item), model_next_id(item), filter_name, "Primary list switched to `" ++ filter_name ++ "`.", model_route_name(item), model_todo_local_tree(item), model_lab(item))
+  item(filter_name = filter_name, notice = "Primary list switched to `" ++ filter_name ++ "`.")
 
 pub fun set_draft(item : model, draft : string) : model
-  Model(model_tasks(item), draft, model_next_id(item), model_filter_name(item), model_notice(item), model_route_name(item), model_todo_local_tree(item), model_lab(item))
+  item(draft = draft)
 
 pub fun set_lab(item : model, lab : workflow_lab) : model
-  Model(model_tasks(item), model_draft(item), model_next_id(item), model_filter_name(item), model_notice(item), model_route_name(item), model_todo_local_tree(item), lab)
+  item(lab = lab)
 
 pub fun set_route(item : model, route_name : string) : model
-  Model(model_tasks(item), model_draft(item), model_next_id(item), model_filter_name(item), model_notice(item), normalize_route(route_name), model_todo_local_tree(item), model_lab(item))
+  item(route_name = normalize_route(route_name))
 
 fun append_tasks(tasks : list<task>, item : task) : <div> list<task>
   match tasks

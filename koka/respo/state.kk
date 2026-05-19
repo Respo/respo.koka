@@ -31,20 +31,16 @@ pub struct event_registry<s,e::E>(clicks : list<registered_click<s,e>>, inputs :
 struct hook_frame(scope_name : string, next_state_index : int, next_effect_index : int)
 
 pub fun state_slot_path(item : state_slot) : string
-  match item
-    State_slot(path) -> path
+  state_slot/path(item)
 
 pub fun state_codec_kind(item : state_codec<a>) : string
-  match item
-    State_codec(kind, _, _) -> kind
+  state_codec/kind(item)
 
 fun state_codec_read(item : state_codec<a>, entry : state_entry) : a
-  match item
-    State_codec(_, read, _) -> read(entry)
+  state_codec/read(item)(entry)
 
 fun state_codec_write(item : state_codec<a>, path : string, value : a) : state_entry
-  match item
-    State_codec(_, _, write) -> write(path, value)
+  state_codec/write(item)(path, value)
 
 fun join_slot_path(base : string, name : string) : string
   if base == "" then name else base ++ "/" ++ name
@@ -80,40 +76,31 @@ pub val flag_state_codec : state_codec<bool> = State_codec(
   fn(path, value) State_entry(path, "flag", "", value))
 
 pub fun state_entry_path(item : state_entry) : string
-  match item
-    State_entry(path, _, _, _) -> path
+  state_entry/path(item)
 
 pub fun state_entry_kind(item : state_entry) : string
-  match item
-    State_entry(_, kind, _, _) -> kind
+  state_entry/kind(item)
 
 pub fun state_entry_text_value(item : state_entry) : string
-  match item
-    State_entry(_, _, text_value, _) -> text_value
+  state_entry/text_value(item)
 
 pub fun state_entry_flag_value(item : state_entry) : bool
-  match item
-    State_entry(_, _, _, flag_value) -> flag_value
+  state_entry/flag_value(item)
 
 pub fun scheduled_effect_path(item : scheduled_effect) : string
-  match item
-    Scheduled_effect(path, _) -> path
+  scheduled_effect/path(item)
 
 pub fun registered_click_id<s,e::E>(item : registered_click<s,e>) : string
-  match item
-    Registered_click(id, _, _) -> id
+  registered_click/id(item)
 
 pub fun registered_input_id<s>(item : registered_input<s>) : string
-  match item
-    Registered_input(id, _, _) -> id
+  registered_input/id(item)
 
 pub fun registered_click_semantic_name<s,e::E>(item : registered_click<s,e>) : string
-  match item
-    Registered_click(_, semantic_name, _) -> semantic_name
+  registered_click/semantic_name(item)
 
 pub fun registered_input_semantic_name<s>(item : registered_input<s>) : string
-  match item
-    Registered_input(_, semantic_name, _) -> semantic_name
+  registered_input/semantic_name(item)
 
 pub fun run_registered_click<s,e::E>(item : registered_click<s,e>, owner : s) : <div|e> s
   match item

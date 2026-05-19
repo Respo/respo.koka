@@ -12,16 +12,13 @@ pub struct vnode(tag : string, key : string, attrs : list<attr>, listeners : lis
 pub struct patch(path : string, kind : string, name : string, value : string, html : string)
 
 pub fun attr_name(item : attr) : string
-  match item
-    Attr(name, _) -> name
+  attr/name(item)
 
 pub fun attr_value(item : attr) : string
-  match item
-    Attr(_, value) -> value
+  attr/value(item)
 
 pub fun listener_kind(item : listener) : dom_event_kind
-  match item
-    Listener(kind, _) -> kind
+  listener/kind(item)
 
 pub fun dom_event_kind_name(kind : dom_event_kind) : string
   match kind
@@ -30,60 +27,46 @@ pub fun dom_event_kind_name(kind : dom_event_kind) : string
     Enter_event -> "enter"
 
 pub fun listener_payload(item : listener) : string
-  match item
-    Listener(_, payload) -> payload
+  listener/payload(item)
 
 pub fun node_props_attrs(item : node_props) : list<attr>
-  match item
-    Node_props(attrs, _) -> attrs
+  node_props/attrs(item)
 
 pub fun node_props_listeners(item : node_props) : list<listener>
-  match item
-    Node_props(_, listeners) -> listeners
+  node_props/listeners(item)
 
 pub fun vnode_tag(item : vnode) : string
-  match item
-    Vnode(tag, _, _, _, _, _) -> tag
+  vnode/tag(item)
 
 pub fun vnode_key(item : vnode) : string
-  match item
-    Vnode(_, key, _, _, _, _) -> key
+  vnode/key(item)
 
 pub fun vnode_attrs(item : vnode) : list<attr>
-  match item
-    Vnode(_, _, attrs, _, _, _) -> attrs
+  vnode/attrs(item)
 
 pub fun vnode_listeners(item : vnode) : list<listener>
-  match item
-    Vnode(_, _, _, listeners, _, _) -> listeners
+  vnode/listeners(item)
 
 pub fun vnode_text(item : vnode) : string
-  match item
-    Vnode(_, _, _, _, text, _) -> text
+  vnode/text(item)
 
 pub fun vnode_children(item : vnode) : list<vnode>
-  match item
-    Vnode(_, _, _, _, _, children) -> children
+  vnode/children(item)
 
 pub fun patch_path(item : patch) : string
-  match item
-    Patch(path, _, _, _, _) -> path
+  patch/path(item)
 
 pub fun patch_kind(item : patch) : string
-  match item
-    Patch(_, kind, _, _, _) -> kind
+  patch/kind(item)
 
 pub fun patch_name(item : patch) : string
-  match item
-    Patch(_, _, name, _, _) -> name
+  patch/name(item)
 
 pub fun patch_value(item : patch) : string
-  match item
-    Patch(_, _, _, value, _) -> value
+  patch/value(item)
 
 pub fun patch_html_value(item : patch) : string
-  match item
-    Patch(_, _, _, _, html) -> html
+  patch/html(item)
 
 pub fun props(attrs : list<attr>, listeners : list<listener>) : node_props
   Node_props(attrs, listeners)

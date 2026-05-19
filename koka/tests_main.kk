@@ -4,7 +4,7 @@ import demo/tests
 import demo/tests/support
 
 fun result_line(item : test_result) : string
-  (if test_passed(item) then "[pass] " else "[fail] ") ++ test_name(item) ++ " - " ++ test_detail(item)
+  (if test_result/passed(item) then "[pass] " else "[fail] ") ++ test_result/name(item) ++ " - " ++ test_result/detail(item)
 
 fun print_results(results : list<test_result>) : console ()
   match results
