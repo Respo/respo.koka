@@ -58,13 +58,14 @@ pub fun add_task_focus_test() : <div> test_result
   val next = match handle_todo_click("add-task", seeded)
     Just(result) -> result
     Nothing -> seeded
-  val (rendered, _panel_node, effects, _handlers) = run_todo_panel(next)
+  val (rendered, panel_node, effects, _handlers) = run_todo_panel(next)
   val focused_draft = has_effect(state_slot_path(todo_draft_focus_slot()), effects)
   val pulsed_notice = has_effect(state_slot_path(todo_notice_pulse_slot()), effects)
+  val has_focus_marker = vnode_has_attr_value(panel_node, "data-k-effect", "draft")
   bool_result(
     "Add task schedules focus",
     "draft=" ++ model_draft(rendered) ++ ", effects=" ++ count_effects(effects).show,
-    model_draft(rendered) == "" && focused_draft && pulsed_notice)
+    model_draft(rendered) == "" && focused_draft && pulsed_notice && has_focus_marker)
 
 pub fun start_edit_focus_test() : <div> test_result
   with fun confirm_action(_message) False
@@ -72,12 +73,16 @@ pub fun start_edit_focus_test() : <div> test_result
   val next = match handle_todo_click("edit-2", initial_model())
     Just(result) -> result
     Nothing -> initial_model()
-  val (rendered, _panel_node, effects, _handlers) = run_todo_panel(next)
+  val (rendered, panel_node, effects, _handlers) = run_todo_panel(next)
   val expected = match find_task_by_id(2, model_tasks(rendered))
     Just(item) -> state_slot_path(task_focus_effect_slot(item))
+    Nothing -> "missing"
+  val expected_marker = match find_task_by_id(2, model_tasks(rendered))
+    Just(item) -> task_draft_channel(item)
     Nothing -> "missing"
   val local = match find_task_by_id(2, model_tasks(rendered))
     Just(item) -> task_editor_snapshot(next, item)
     Nothing -> Task_editor_state(False, "")
   val focused_editor = has_effect(expected, effects)
-  bool_result("Start edit schedules focus", "expected=" ++ expected ++ ", effects=" ++ count_effects(effects).show, task_editor_editing(local) && focused_editor)
+  val has_focus_marker = vnode_has_attr_value(panel_node, "data-k-effect", expected_marker)
+  bool_result("Start edit schedules focus", "expected=" ++ expected ++ ", effects=" ++ count_effects(effects).show, task_editor_editing(local) && focused_editor && has_focus_marker)

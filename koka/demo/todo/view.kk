@@ -96,7 +96,7 @@ pub fun render_todo_panel(item : model) : todo_view_effect vnode
         summary_chip("Filter", model_filter_name(item)),
       ]),
       node_class("div", "composer", "composer-row", [
-        text_input("draft", "input", model_draft(item), "Add a task or effect experiment...", Nil, [
+        text_input("draft", "input", model_draft(item), "Add a task or effect experiment...", [text_attr("data-k-effect", "draft")], [
           on_named_input(panel_scope, "draft-input", fn(value, owner) set_draft(owner, value)),
           dispatch_todo_enter(Add_task),
         ]),

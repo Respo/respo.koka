@@ -180,7 +180,9 @@ function _browser_set_hash(routeName) {
 
 function _browser_focus(rootId, fieldName) {
   const root = _root_of(rootId);
-  const field = root.querySelector(`[data-k-input="${fieldName}"]`);
+  const field =
+    root.querySelector(`[data-k-effect="${fieldName}"]`) ||
+    root.querySelector(`[data-k-input="${fieldName}"]`);
 
   if (
     field instanceof HTMLInputElement ||

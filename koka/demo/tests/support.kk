@@ -94,3 +94,24 @@ pub fun find_result(name : string, results : list<test_result>) : <div> maybe<te
   match results
     Nil -> Nothing
     Cons(item, rest) -> if test_name(item) == name then Just(item) else find_result(name, rest)
+
+fun attrs_have_value(attrs : list<attr>, target_name : string, target_value : string) : <div> bool
+  match attrs
+    Nil -> False
+    Cons(item, rest) ->
+      if attr_name(item) == target_name && attr_value(item) == target_value then
+        True
+      else
+        attrs_have_value(rest, target_name, target_value)
+
+fun children_have_attr_value(nodes : list<vnode>, target_name : string, target_value : string) : <div> bool
+  match nodes
+    Nil -> False
+    Cons(node, rest) ->
+      if vnode_has_attr_value(node, target_name, target_value) then
+        True
+      else
+        children_have_attr_value(rest, target_name, target_value)
+
+pub fun vnode_has_attr_value(node : vnode, target_name : string, target_value : string) : <div> bool
+  attrs_have_value(vnode_attrs(node), target_name, target_value) || children_have_attr_value(vnode_children(node), target_name, target_value)
