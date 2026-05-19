@@ -226,6 +226,12 @@ function _browser_log(message) {
   console.log(message);
 }
 
+function _browser_schedule_click(payload, delay) {
+  window.setTimeout(() => {
+    globalThis.__kokaDispatchClick?.(String(payload));
+  }, Number(delay) || 0);
+}
+
 function _html_escape(text) {
   return String(text)
     .replaceAll("&", "&amp;")

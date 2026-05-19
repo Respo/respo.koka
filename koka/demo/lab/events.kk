@@ -1,5 +1,6 @@
 module demo/lab/events
 
+import demo/bridge
 import demo/model
 import demo/lab/state
 import demo/lab/workflow
@@ -8,12 +9,14 @@ import respo/core
 pub type lab_action
   Load_board
   Run_sync
+  Load_bridge_case(case_name : string)
   Send_reply(incident_id : int)
 
 pub fun lab_action_payload(action : lab_action) : string
   match action
     Load_board -> "lab-load"
     Run_sync -> "lab-sync"
+    Load_bridge_case(case_name) -> bridge_load_payload(case_name)
     Send_reply(incident_id) -> "lab-send-" ++ incident_id.show
 
 pub fun dispatch_lab_click(action : lab_action) : listener
@@ -37,10 +40,11 @@ fun incident_id_from_send(payload : string, items : list<incident>) : <div> mayb
     Just(item) -> Just(incident_id(item))
     Nothing -> Nothing
 
-pub fun dispatch_lab_action(action : lab_action, owner : model) : <audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,div> model
+pub fun dispatch_lab_action(action : lab_action, owner : model) : <audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> model
   match action
     Load_board -> load_snapshot(owner)
     Run_sync -> perform_sync(owner)
+    Load_bridge_case(case_name) -> start_bridge_case(owner, case_name)
     Send_reply(incident_id) -> send_reply(owner, incident_id)
 
 fun decode_lab_action(payload : string, owner : model) : <div> maybe<lab_action>
@@ -48,16 +52,20 @@ fun decode_lab_action(payload : string, owner : model) : <div> maybe<lab_action>
     Just(Load_board)
   else if payload == "lab-sync" then
     Just(Run_sync)
-  else match incident_id_from_send(payload, lab_incidents(model_lab(owner)))
-    Just(incident_id) -> Just(Send_reply(incident_id))
-    Nothing -> Nothing
+  else match decode_bridge_load_payload(payload)
+    Just(case_name) -> Just(Load_bridge_case(case_name))
+    Nothing -> match incident_id_from_send(payload, lab_incidents(model_lab(owner)))
+      Just(incident_id) -> Just(Send_reply(incident_id))
+      Nothing -> Nothing
 
-pub fun route_lab_click(payload : string, owner : model) : <audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,div> maybe<model>
+pub fun route_lab_click(payload : string, owner : model) : <audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> maybe<model>
   match decode_lab_action(payload, owner)
     Just(action) -> Just(dispatch_lab_action(action, owner))
-    Nothing -> match incident_id_from_toggle(payload, lab_incidents(model_lab(owner)))
-      Just(target_id) -> Just(commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, target_id)))
-      Nothing -> Nothing
+    Nothing -> match resolve_bridge_result(owner, payload)
+      Just(result) -> Just(result)
+      Nothing -> match incident_id_from_toggle(payload, lab_incidents(model_lab(owner)))
+        Just(target_id) -> Just(commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, target_id)))
+        Nothing -> Nothing
 
 pub fun route_lab_input(channel : string, value : string, owner : model) : <div> maybe<model>
   match find_lab_draft_channel(channel, lab_incidents(model_lab(owner)))

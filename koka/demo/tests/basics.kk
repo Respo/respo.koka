@@ -59,6 +59,7 @@ pub fun registered_click_handler_test() : <div> test_result
   with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
   with fun now_label() "10:00:00"
   with fun post_lab_reply(_incident_id, message) message
+  with fun request_bridge_resource(_payload, _delay) ()
   with fun wait_ms(_delay) ()
   val started = match handle_todo_click("edit-2", initial_model())
     Just(result) -> result

@@ -10,8 +10,9 @@ pub effect fun wait_ms(delay : int) : ()
 pub effect fun fetch_lab_snapshot() : lab_snapshot
 pub effect fun post_lab_reply(incident_id : int, message : string) : string
 pub effect fun now_label() : string
+pub effect fun request_bridge_resource(payload : string, delay : int) : ()
 
-pub alias browser_event_effect = <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,wait_ms>
+pub alias browser_event_effect = <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms>
 
 pub struct task
   id : int
@@ -31,12 +32,21 @@ pub struct lab_snapshot
   incidents : list<incident>
   summary : string
 
+pub struct suspense_bridge_demo
+  requested_case : string
+  visible_case : string
+  shell_status : string
+  detail_status : string
+  shell_request_id : int
+  detail_request_id : int
+
 pub struct workflow_lab
   incidents : list<incident>
   activity_log : list<string>
   local_tree : list<state_entry>
   sync_status : string
   last_sync_label : string
+  bridge_demo : suspense_bridge_demo
 
 pub struct model
   tasks : list<task>
@@ -117,6 +127,9 @@ pub fun lab_snapshot_incidents(item : lab_snapshot) : list<incident>
 pub fun lab_snapshot_summary(item : lab_snapshot) : string
   lab_snapshot/summary(item)
 
+pub fun initial_bridge_demo(requested_case : string) : suspense_bridge_demo
+  Suspense_bridge_demo(requested_case, "", "idle", "idle", 0, 0)
+
 pub fun lab_incidents(item : workflow_lab) : list<incident>
   workflow_lab/incidents(item)
 
@@ -131,6 +144,27 @@ pub fun lab_sync_status(item : workflow_lab) : string
 
 pub fun lab_last_sync_label(item : workflow_lab) : string
   workflow_lab/last_sync_label(item)
+
+pub fun lab_bridge_demo(item : workflow_lab) : suspense_bridge_demo
+  workflow_lab/bridge_demo(item)
+
+pub fun bridge_requested_case(item : suspense_bridge_demo) : string
+  suspense_bridge_demo/requested_case(item)
+
+pub fun bridge_visible_case(item : suspense_bridge_demo) : string
+  suspense_bridge_demo/visible_case(item)
+
+pub fun bridge_shell_status(item : suspense_bridge_demo) : string
+  suspense_bridge_demo/shell_status(item)
+
+pub fun bridge_detail_status(item : suspense_bridge_demo) : string
+  suspense_bridge_demo/detail_status(item)
+
+pub fun bridge_shell_request_id(item : suspense_bridge_demo) : int
+  suspense_bridge_demo/shell_request_id(item)
+
+pub fun bridge_detail_request_id(item : suspense_bridge_demo) : int
+  suspense_bridge_demo/detail_request_id(item)
 
 pub fun normalize_route(route_name : string) : string
   if route_name == "todo" then "todo"

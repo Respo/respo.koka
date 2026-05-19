@@ -26,4 +26,10 @@ pub fun demo_test_results() : <div> list<test_result>
     todo_edit_diff_test(),
     workflow_sync_test(),
     workflow_reply_test(),
+    bridge_pending_test(),
+    bridge_resolve_test(),
+    bridge_refresh_keeps_visible_test(),
+    bridge_stale_shell_ignored_test(),
+    bridge_stale_detail_ignored_test(),
+    bridge_interleaved_old_detail_ignored_test(),
   ]

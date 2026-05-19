@@ -42,5 +42,8 @@ pub extern browser_confirm(message : string) : bool
 pub extern browser_log(message : string) : ()
   js "_browser_log"
 
+pub extern browser_schedule_click(payload : string, delay : int) : ()
+  js "_browser_schedule_click"
+
 pub extern html_escape(text : string) : string
   js "_html_escape"

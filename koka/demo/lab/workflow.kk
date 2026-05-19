@@ -1,6 +1,8 @@
 module demo/lab/workflow
 
+import demo/bridge
 import demo/model
+import demo/seed
 import demo/lab/state
 import respo/state
 
@@ -8,6 +10,61 @@ fun append_lines(lines : list<string>, value : string) : <div> list<string>
   match lines
     Nil -> [value]
     Cons(head, rest) -> Cons(head, append_lines(rest, value))
+
+fun append_lab_activity(lab : workflow_lab, line : string) : <div> workflow_lab
+  lab(activity_log = append_lines(lab_activity_log(lab), line))
+
+fun start_bridge_shell(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
+  match bridge_case_by_name(case_name)
+    Nothing -> set_notice(owner, "Unknown bridge demo case: " ++ case_name)
+    Just(_case_item) -> {
+      val lab = model_lab(owner)
+      val demo = lab_bridge_demo(lab)
+      val next_shell_id = bridge_shell_request_id(demo) + 1
+      val has_visible_case = bridge_visible_case(demo) != ""
+      val next_demo = demo(
+        requested_case = case_name,
+        shell_status = if has_visible_case then "refreshing" else "pending",
+        detail_status = if has_visible_case then bridge_detail_status(demo) else "idle",
+        shell_request_id = next_shell_id)
+      request_bridge_result("shell", case_name, next_shell_id, bridge_shell_delay(case_name))
+      audit("Scheduled suspense-like shell bridge for `" ++ case_name ++ "`.")
+      val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] shell pending for " ++ case_name)
+      set_notice(set_lab(owner, next_lab), if has_visible_case then "Bridge demo is refreshing while keeping stale content visible." else "Bridge demo entered the outer fallback state.")
+    }
+
+fun start_bridge_detail(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
+  val lab = model_lab(owner)
+  val demo = lab_bridge_demo(lab)
+  val next_detail_id = bridge_detail_request_id(demo) + 1
+  request_bridge_result("detail", case_name, next_detail_id, bridge_detail_delay(case_name))
+  audit("Scheduled suspense-like detail bridge for `" ++ case_name ++ "`.")
+  val next_demo = demo(detail_status = "pending", detail_request_id = next_detail_id)
+  val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] nested detail pending for " ++ case_name)
+  set_notice(set_lab(owner, next_lab), "Outer shell resolved; nested diagnostics are still loading.")
+
+pub fun resolve_bridge_result(owner : model, payload : string) : <request_bridge_resource,audit,div> maybe<model>
+  match decode_bridge_result_payload(payload)
+    Just(Bridge_signal(resource_tag, case_name, request_id)) -> {
+      val lab = model_lab(owner)
+      val demo = lab_bridge_demo(lab)
+      if resource_tag == "bridge-shell" then
+        if request_id != bridge_shell_request_id(demo) || case_name != bridge_requested_case(demo) then
+          Just(owner)
+        else
+          Just(resolve_bridge_shell(owner, case_name))
+      else if resource_tag == "bridge-detail" then
+        if request_id != bridge_detail_request_id(demo) || case_name != bridge_requested_case(demo) then
+          Just(owner)
+        else {
+          audit("Nested suspense-like detail resolved for `" ++ case_name ++ "`.")
+          val next_demo = demo(detail_status = "ready")
+          val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] nested detail ready for " ++ case_name)
+          Just(set_notice(set_lab(owner, next_lab), "Nested diagnostics resolved after the shell became visible."))
+        }
+      else Nothing
+    }
+    Nothing -> Nothing
 
 fun update_incident_reply(items : list<incident>, target_id : int, message : string, updated_by : string) : <div> list<incident>
   match items
@@ -24,7 +81,11 @@ pub fun load_snapshot(item : model) : <fetch_lab_snapshot,now_label,audit,div> m
   val snapshot = fetch_lab_snapshot()
   val stamp = now_label()
   val lab = model_lab(item)
-  val next_lab = Workflow_lab(lab_snapshot_incidents(snapshot), append_lines(lab_activity_log(lab), "[" ++ stamp ++ "] " ++ lab_snapshot_summary(snapshot)), lab_local_tree(lab), "loaded", stamp)
+  val next_lab = lab(
+    incidents = lab_snapshot_incidents(snapshot),
+    activity_log = append_lines(lab_activity_log(lab), "[" ++ stamp ++ "] " ++ lab_snapshot_summary(snapshot)),
+    sync_status = "loaded",
+    last_sync_label = stamp)
   set_notice(set_lab(item, next_lab), "Workflow lab loaded mock server data.")
 
 pub fun perform_sync(item : model) : <wait_ms,fetch_lab_snapshot,now_label,audit,div> model
@@ -34,7 +95,11 @@ pub fun perform_sync(item : model) : <wait_ms,fetch_lab_snapshot,now_label,audit
   wait_ms(90)
   val stamp = now_label()
   val lab = model_lab(item)
-  val next_lab = Workflow_lab(lab_snapshot_incidents(snapshot), append_lines(lab_activity_log(lab), "[" ++ stamp ++ "] sync: " ++ lab_snapshot_summary(snapshot)), lab_local_tree(lab), "synced", stamp)
+  val next_lab = lab(
+    incidents = lab_snapshot_incidents(snapshot),
+    activity_log = append_lines(lab_activity_log(lab), "[" ++ stamp ++ "] sync: " ++ lab_snapshot_summary(snapshot)),
+    sync_status = "synced",
+    last_sync_label = stamp)
   set_notice(set_lab(item, next_lab), "Workflow lab sync finished through algebraic effects.")
 
 pub fun send_reply(item : model, incident_id : int) : <wait_ms,post_lab_reply,now_label,audit,current_operator,div> model
@@ -55,6 +120,16 @@ pub fun send_reply(item : model, incident_id : int) : <wait_ms,post_lab_reply,no
         val next_tree = clear_slot_state(assoc_slot_flag(lab_local_tree(lab), incident_expanded_slot(incident_id), True), incident_draft_slot(incident_id))
         val next_incidents = update_incident_reply(lab_incidents(lab), incident_id, draft, operator ++ " @ " ++ stamp)
         val next_logs = append_lines(lab_activity_log(lab), "[" ++ stamp ++ "] " ++ server_reply)
-        val next_lab = Workflow_lab(next_incidents, next_logs, next_tree, "reply-sent", stamp)
+        val next_lab = lab(incidents = next_incidents, activity_log = next_logs, local_tree = next_tree, sync_status = "reply-sent", last_sync_label = stamp)
         set_notice(set_lab(item, next_lab), "Workflow lab reply sent with mocked server effect.")
       }
+
+pub fun resolve_bridge_shell(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
+  val lab = model_lab(owner)
+  val demo = lab_bridge_demo(lab)
+  val next_demo = demo(visible_case = case_name, shell_status = "ready")
+  val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] shell ready for " ++ case_name)
+  start_bridge_detail(set_lab(owner, next_lab), case_name)
+
+pub fun start_bridge_case(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
+  start_bridge_shell(owner, case_name)

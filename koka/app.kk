@@ -16,13 +16,14 @@ noinline val model_ref : ref<global,model> = unsafe-total { ref(initial_model())
 noinline val tree_ref : ref<global,vnode> = unsafe-total { ref(el("div", "root", Nil, Nil, "", Nil)) }
 noinline val handlers_ref : ref<global,event_registry<model,browser_event_effect>> = unsafe-total { ref(empty_event_registry()) }
 
-fun with_browser(action : () -> <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,wait_ms,div|e> a) : <div|e> a
+fun with_browser(action : () -> <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms,div|e> a) : <div|e> a
   with fun audit(message) browser_log(message)
   with fun confirm_action(message) browser_confirm(message)
   with val current_operator = "browser-operator"
   with fun fetch_lab_snapshot() mock_lab_snapshot()
   with fun now_label() browser_now_label()
   with fun post_lab_reply(incident_id, message) mock_lab_reply(incident_id, message)
+  with fun request_bridge_resource(payload, delay) browser_schedule_click(payload, delay)
   with fun wait_ms(delay) browser_log("Simulated wait " ++ delay.show ++ "ms")
   action()
 
