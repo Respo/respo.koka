@@ -8,48 +8,48 @@ import respo/core
 fun render_tiny_items(tasks : list<task>) : <div> list<vnode>
   match tasks
     Nil -> Nil
-    Cons(item, rest) -> Cons(el("li", "tiny-" ++ task_id(item).show, Nil, Nil, task_title(item), Nil), render_tiny_items(rest))
+    Cons(item, rest) -> Cons(text_node("li", "tiny-" ++ task_id(item).show, empty_props, task_title(item)), render_tiny_items(rest))
 
 fun tiny_task_list(key : string, tasks : list<task>) : <div> vnode
   match tasks
-    Nil -> el("p", key ++ "-empty", [class_attr("empty")], Nil, "None", Nil)
-    Cons(_, _) -> el("ul", key, [class_attr("tiny-list")], Nil, "", render_tiny_items(tasks))
+    Nil -> text_class("p", key ++ "-empty", "empty", "None")
+    Cons(_, _) -> node_class("ul", key, "tiny-list", render_tiny_items(tasks))
 
 fun effect_case(title : string, detail : string, body : vnode) : vnode
-  el("article", title, [class_attr("case-item")], Nil, "", [
-    el("h3", title ++ "-title", [class_attr("case-title")], Nil, title, Nil),
-    el("p", title ++ "-detail", [class_attr("case-detail")], Nil, detail, Nil),
+  node_class("article", title, "case-item", [
+    text_class("h3", title ++ "-title", "case-title", title),
+    text_class("p", title ++ "-detail", "case-detail", detail),
     body,
   ])
 
 fun timer_case(results : list<test_result>) : <div> vnode
   match find_result("Timer simulation", results)
-    Nothing -> el("p", "timer-empty", [class_attr("empty")], Nil, "Timer case unavailable.", Nil)
-    Just(item) -> el("p", "timer-detail", [class_attr("mono")], Nil, test_detail(item), Nil)
+    Nothing -> text_class("p", "timer-empty", "empty", "Timer case unavailable.")
+    Just(item) -> text_class("p", "timer-detail", "mono", test_detail(item))
 
 fun workflow_case(results : list<test_result>) : <div> vnode
   match find_result("Workflow sync captures waits", results)
-    Nothing -> el("p", "workflow-empty", [class_attr("empty")], Nil, "Workflow case unavailable.", Nil)
-    Just(item) -> el("p", "workflow-detail", [class_attr("mono")], Nil, test_detail(item), Nil)
+    Nothing -> text_class("p", "workflow-empty", "empty", "Workflow case unavailable.")
+    Just(item) -> text_class("p", "workflow-detail", "mono", test_detail(item))
 
 fun local_state_case(results : list<test_result>) : <div> vnode
   match find_result("State tree local state", results)
-    Nothing -> el("p", "local-state-empty", [class_attr("empty")], Nil, "Local state case unavailable.", Nil)
-    Just(item) -> el("p", "local-state-detail", [class_attr("mono")], Nil, test_detail(item), Nil)
+    Nothing -> text_class("p", "local-state-empty", "empty", "Local state case unavailable.")
+    Just(item) -> text_class("p", "local-state-detail", "mono", test_detail(item))
 
 pub fun effects_panel(item : model, results : list<test_result>) : <div> vnode
   val active = tasks_for("active", model_tasks(item))
   val done = tasks_for("done", model_tasks(item))
   panel("Effects", "This route now shows where algebraic effects are actually pulling their weight: ambient values, timers, mocked server IO, and routeable workflow demos.", "effects", "effects-panel", [
-    el("div", "cases", [class_attr("case-grid")], Nil, "", [
-      effect_case("Confirm", "`confirm_action` is handled by the browser in app mode and by tests in-process.", el("p", "confirm-note", [class_attr("mono")], Nil, "Try Remove or Clear done in the todo panel.", Nil)),
-      effect_case("Ambient filter", "The reducer stays unchanged while handlers project active or done subsets.", el("div", "ambient-preview", [class_attr("preview-grid")], Nil, "", [
-        el("div", "active-preview", [class_attr("mini-panel")], Nil, "", [
-          el("strong", "active-title", Nil, Nil, "Active", Nil),
+    node_class("div", "cases", "case-grid", [
+      effect_case("Confirm", "`confirm_action` is handled by the browser in app mode and by tests in-process.", text_class("p", "confirm-note", "mono", "Try Remove or Clear done in the todo panel.")),
+      effect_case("Ambient filter", "The reducer stays unchanged while handlers project active or done subsets.", node_class("div", "ambient-preview", "preview-grid", [
+        node_class("div", "active-preview", "mini-panel", [
+          text_node("strong", "active-title", empty_props, "Active"),
           tiny_task_list("active-list", active),
         ]),
-        el("div", "done-preview", [class_attr("mini-panel")], Nil, "", [
-          el("strong", "done-title", Nil, Nil, "Done", Nil),
+        node_class("div", "done-preview", "mini-panel", [
+          text_node("strong", "done-title", empty_props, "Done"),
           tiny_task_list("done-list", done),
         ]),
       ])),

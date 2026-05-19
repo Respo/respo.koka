@@ -18,6 +18,7 @@ pub fun demo_test_results() : <div> list<test_result>
     state_tree_test(),
     generic_state_codec_test(),
     auto_hook_scope_test(),
+    listener_registry_guard_test(),
     lab_local_routing_test(),
     add_task_focus_test(),
     start_edit_focus_test(),

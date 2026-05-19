@@ -11,9 +11,12 @@ pub effect fun pop_hook_scope() : ()
 pub effect fun use_state<a>(codec : state_codec<a>, fallback : a) : a
 pub effect fun use_state_pair<a>(codec : state_codec<a>, fallback : a) : (a, (a) -> <set_named_state,div> ())
 pub effect fun use_effect(deps : list<string>, action : (string) -> io ()) : ()
-pub effect<s,e::E> fun on_click(entry_slot : state_slot, action : (s) -> <div|e> s) : listener
-pub effect<s> fun on_input(entry_slot : state_slot, action : (string, s) -> <div> s) : listener
-pub effect<s,e::E> fun on_enter(entry_slot : state_slot, action : (s) -> <div|e> s) : listener
+pub effect<s,e::E> fun register_listener(entry_slot : state_slot, registration : listener_registration<s,e>) : listener
+
+pub type listener_registration<s,e::E>
+  Click_registration(semantic_name : string, run : (s) -> <div|e> s)
+  Input_registration(semantic_name : string, run : (string, s) -> <div> s)
+  Enter_registration(semantic_name : string, run : (s) -> <div|e> s)
 
 pub struct state_slot(path : string)
 
@@ -22,9 +25,9 @@ pub struct state_codec<a>(kind : string, read : (state_entry) -> a, write : (str
 pub struct state_entry(path : string, kind : string, text_value : string, flag_value : bool)
 
 pub struct scheduled_effect(path : string, run : (string) -> io ())
-pub struct registered_click<s,e::E>(id : string, run : (s) -> <div|e> s)
-pub struct registered_input<s>(id : string, run : (string, s) -> <div> s)
-pub struct event_registry<s,e::E>(clicks : list<registered_click<s,e>>, inputs : list<registered_input<s>>)
+pub struct registered_click<s,e::E>(id : string, semantic_name : string, run : (s) -> <div|e> s)
+pub struct registered_input<s>(id : string, semantic_name : string, run : (string, s) -> <div> s)
+pub struct event_registry<s,e::E>(clicks : list<registered_click<s,e>>, inputs : list<registered_input<s>>, warnings : list<string>)
 struct hook_frame(scope_name : string, next_state_index : int, next_effect_index : int)
 
 pub fun state_slot_path(item : state_slot) : string
@@ -63,8 +66,8 @@ pub fun hook_state_slot(scope_base : string, index : int) : state_slot
 pub fun hook_effect_slot(scope_base : string, index : int) : state_slot
   State_slot(join_slot_path(join_slot_path(scope_base, "effect"), index.show))
 
-pub fun named_listener_slot(scope_base : string, kind : string, name : string) : state_slot
-  State_slot(join_slot_path(join_slot_path(join_slot_path(scope_base, "listeners"), kind), normalize_slot_name(name)))
+pub fun named_listener_slot(scope_base : string, kind : dom_event_kind, name : string) : state_slot
+  State_slot(join_slot_path(join_slot_path(join_slot_path(scope_base, "listeners"), dom_event_kind_name(kind)), normalize_slot_name(name)))
 
 pub val text_state_codec : state_codec<string> = State_codec(
   "text",
@@ -98,30 +101,42 @@ pub fun scheduled_effect_path(item : scheduled_effect) : string
 
 pub fun registered_click_id<s,e::E>(item : registered_click<s,e>) : string
   match item
-    Registered_click(id, _) -> id
+    Registered_click(id, _, _) -> id
 
 pub fun registered_input_id<s>(item : registered_input<s>) : string
   match item
-    Registered_input(id, _) -> id
+    Registered_input(id, _, _) -> id
+
+pub fun registered_click_semantic_name<s,e::E>(item : registered_click<s,e>) : string
+  match item
+    Registered_click(_, semantic_name, _) -> semantic_name
+
+pub fun registered_input_semantic_name<s>(item : registered_input<s>) : string
+  match item
+    Registered_input(_, semantic_name, _) -> semantic_name
 
 pub fun run_registered_click<s,e::E>(item : registered_click<s,e>, owner : s) : <div|e> s
   match item
-    Registered_click(_, run) -> run(owner)
+    Registered_click(_, _, run) -> run(owner)
 
 pub fun run_registered_input<s>(item : registered_input<s>, value : string, owner : s) : <div> s
   match item
-    Registered_input(_, run) -> run(value, owner)
+    Registered_input(_, _, run) -> run(value, owner)
 
 pub fun event_registry_clicks<s,e::E>(item : event_registry<s,e>) : list<registered_click<s,e>>
   match item
-    Event_registry(clicks, _) -> clicks
+    Event_registry(clicks, _, _) -> clicks
 
 pub fun event_registry_inputs<s,e::E>(item : event_registry<s,e>) : list<registered_input<s>>
   match item
-    Event_registry(_, inputs) -> inputs
+    Event_registry(_, inputs, _) -> inputs
+
+pub fun event_registry_warnings<s,e::E>(item : event_registry<s,e>) : list<string>
+  match item
+    Event_registry(_, _, warnings) -> warnings
 
 pub fun empty_event_registry<s,e::E>() : event_registry<s,e>
-  Event_registry(Nil, Nil)
+  Event_registry(Nil, Nil, Nil)
 
 pub fun run_scheduled_effect(item : scheduled_effect, root_id : string) : io ()
   match item
@@ -137,11 +152,36 @@ fun append_registered_input<s>(items : list<registered_input<s>>, item : registe
     Nil -> [item]
     Cons(head, rest) -> Cons(head, append_registered_input(rest, item))
 
+fun append_messages(left : list<string>, right : list<string>) : <div> list<string>
+  match left
+    Nil -> right
+    Cons(head, rest) -> Cons(head, append_messages(rest, right))
+
+fun merge_registered_clicks<s,e::E>(left : list<registered_click<s,e>>, right : list<registered_click<s,e>>, warnings : list<string>) : <div> (list<registered_click<s,e>>, list<string>)
+  match right
+    Nil -> (left, warnings)
+    Cons(item, rest) ->
+      match find_click_in_list(left, registered_click_id(item))
+        Just(found) -> merge_registered_clicks(replace_registered_click(left, item), rest, Cons(if registered_click_semantic_name(found) == registered_click_semantic_name(item) then duplicate_listener_warning(registered_click_id(item), registered_click_semantic_name(item)) else semantic_drift_warning(registered_click_id(item), registered_click_semantic_name(found), registered_click_semantic_name(item)), warnings))
+        Nothing -> merge_registered_clicks(append_registered_click(left, item), rest, warnings)
+
+fun merge_registered_inputs<s>(left : list<registered_input<s>>, right : list<registered_input<s>>, warnings : list<string>) : <div> (list<registered_input<s>>, list<string>)
+  match right
+    Nil -> (left, warnings)
+    Cons(item, rest) ->
+      match find_input_in_list(left, registered_input_id(item))
+        Just(found) -> merge_registered_inputs(replace_registered_input(left, item), rest, Cons(if registered_input_semantic_name(found) == registered_input_semantic_name(item) then duplicate_listener_warning(registered_input_id(item), registered_input_semantic_name(item)) else semantic_drift_warning(registered_input_id(item), registered_input_semantic_name(found), registered_input_semantic_name(item)), warnings))
+        Nothing -> merge_registered_inputs(append_registered_input(left, item), rest, warnings)
+
 pub fun append_event_registries<s,e::E>(left : event_registry<s,e>, right : event_registry<s,e>) : <div> event_registry<s,e>
   match left
-    Event_registry(left_clicks, left_inputs) ->
+    Event_registry(left_clicks, left_inputs, left_warnings) ->
       match right
-        Event_registry(right_clicks, right_inputs) -> Event_registry(append_registered_clicks(left_clicks, right_clicks), append_registered_inputs(left_inputs, right_inputs))
+        Event_registry(right_clicks, right_inputs, right_warnings) -> {
+          val (merged_clicks, click_warnings) = merge_registered_clicks(left_clicks, right_clicks, append_messages(left_warnings, right_warnings))
+          val (merged_inputs, merged_warnings) = merge_registered_inputs(left_inputs, right_inputs, click_warnings)
+          Event_registry(merged_clicks, merged_inputs, merged_warnings)
+        }
 
 fun append_registered_clicks<s,e::E>(left : list<registered_click<s,e>>, right : list<registered_click<s,e>>) : <div> list<registered_click<s,e>>
   match left
@@ -184,6 +224,27 @@ fun count_input_items<s>(items : list<registered_input<s>>) : <div> int
   match items
     Nil -> 0
     Cons(_, rest) -> 1 + count_input_items(rest)
+
+fun compare_click_semantics<s,e::E>(previous : list<registered_click<s,e>>, next : list<registered_click<s,e>>) : <div> list<string>
+  match next
+    Nil -> Nil
+    Cons(item, rest) ->
+      val tail = compare_click_semantics(previous, rest)
+      match find_click_in_list(previous, registered_click_id(item))
+        Just(found) -> if registered_click_semantic_name(found) == registered_click_semantic_name(item) then tail else Cons(semantic_drift_warning(registered_click_id(item), registered_click_semantic_name(found), registered_click_semantic_name(item)), tail)
+        Nothing -> tail
+
+fun compare_input_semantics<s>(previous : list<registered_input<s>>, next : list<registered_input<s>>) : <div> list<string>
+  match next
+    Nil -> Nil
+    Cons(item, rest) ->
+      val tail = compare_input_semantics(previous, rest)
+      match find_input_in_list(previous, registered_input_id(item))
+        Just(found) -> if registered_input_semantic_name(found) == registered_input_semantic_name(item) then tail else Cons(semantic_drift_warning(registered_input_id(item), registered_input_semantic_name(found), registered_input_semantic_name(item)), tail)
+        Nothing -> tail
+
+pub fun event_registry_semantic_warnings<s,e::E>(previous : event_registry<s,e>, next : event_registry<s,e>) : <div> list<string>
+  append_messages(compare_click_semantics(event_registry_clicks(previous), event_registry_clicks(next)), compare_input_semantics(event_registry_inputs(previous), event_registry_inputs(next)))
 
 pub fun slot_text(tree : list<state_entry>, entry_slot : state_slot, fallback : string) : <div> string
   state_value(tree, entry_slot, text_state_codec, fallback)
@@ -233,36 +294,87 @@ pub fun component(scope_name : string, render : () -> <push_hook_scope,pop_hook_
 pub fun use_named_state_pair_at(scope_base : string, index : int, codec : state_codec<a>, fallback : a) : <use_named_state,div> (a, (a) -> <set_named_state,div> ())
   use_named_state_pair(hook_state_slot(scope_base, index), codec, fallback)
 
+pub fun on_click<s,e::E>(entry_slot : state_slot, action : (s) -> <div|e> s) : <register_listener<s,e>,div> listener
+  register_listener(entry_slot, Click_registration(state_slot_path(entry_slot), action))
+
+pub fun on_input<s,e::E>(entry_slot : state_slot, action : (string, s) -> <div> s) : <register_listener<s,e>,div> listener
+  register_listener(entry_slot, Input_registration(state_slot_path(entry_slot), action))
+
+pub fun on_enter<s,e::E>(entry_slot : state_slot, action : (s) -> <div|e> s) : <register_listener<s,e>,div> listener
+  register_listener(entry_slot, Enter_registration(state_slot_path(entry_slot), action))
+
 // Listener identity should be stable under conditional rendering, so unlike state hooks it is derived from
 // a semantic name within the component scope instead of an index.
 
-pub fun on_named_click<s,e::E>(scope_base : string, name : string, action : (s) -> <div|e> s) : <on_click<s,e>,div> listener
-  on_click(named_listener_slot(scope_base, "click", name), action)
+pub fun on_named_click<s,e::E>(scope_base : string, name : string, action : (s) -> <div|e> s) : <register_listener<s,e>,div> listener
+  register_listener(named_listener_slot(scope_base, Click_event, name), Click_registration(name, action))
 
-pub fun on_named_input<s>(scope_base : string, name : string, action : (string, s) -> <div> s) : <on_input<s>,div> listener
-  on_input(named_listener_slot(scope_base, "input", name), action)
+pub fun on_named_input<s,e::E>(scope_base : string, name : string, action : (string, s) -> <div> s) : <register_listener<s,e>,div> listener
+  register_listener(named_listener_slot(scope_base, Input_event, name), Input_registration(name, action))
 
-pub fun on_named_enter<s,e::E>(scope_base : string, name : string, action : (s) -> <div|e> s) : <on_enter<s,e>,div> listener
-  on_enter(named_listener_slot(scope_base, "enter", name), action)
+pub fun on_named_enter<s,e::E>(scope_base : string, name : string, action : (s) -> <div|e> s) : <register_listener<s,e>,div> listener
+  register_listener(named_listener_slot(scope_base, Enter_event, name), Enter_registration(name, action))
 
-pub fun run_event_registry<s,e::E,a>(action : () -> <on_click<s,e>,on_input<s>,on_enter<s,e>,div> a) : <div> (a, event_registry<s,e>)
+fun replace_registered_click<s,e::E>(items : list<registered_click<s,e>>, next_item : registered_click<s,e>) : <div> list<registered_click<s,e>>
+  match items
+    Nil -> [next_item]
+    Cons(item, rest) -> if registered_click_id(item) == registered_click_id(next_item) then Cons(next_item, rest) else Cons(item, replace_registered_click(rest, next_item))
+
+fun replace_registered_input<s>(items : list<registered_input<s>>, next_item : registered_input<s>) : <div> list<registered_input<s>>
+  match items
+    Nil -> [next_item]
+    Cons(item, rest) -> if registered_input_id(item) == registered_input_id(next_item) then Cons(next_item, rest) else Cons(item, replace_registered_input(rest, next_item))
+
+fun duplicate_listener_warning(handler_id : string, semantic_name : string) : string
+  "Duplicate listener registration for `" ++ handler_id ++ "` (semantic `" ++ semantic_name ++ "`). The later registration replaced the earlier one."
+
+fun semantic_drift_warning(handler_id : string, previous_semantic : string, next_semantic : string) : string
+  "Listener semantic drift for `" ++ handler_id ++ "`: `" ++ previous_semantic ++ "` -> `" ++ next_semantic ++ "`. Consider using a new named listener or splitting the conditional branch."
+
+pub fun run_event_registry<s,e::E,a>(action : () -> <register_listener<s,e>,div> a) : <div> (a, event_registry<s,e>)
   var registered_clicks := Nil
   var registered_inputs := Nil
-  with return(result) (result, Event_registry(registered_clicks, registered_inputs))
-  with fun on_click(entry_slot, callback) {
+  var registry_warnings := Nil
+  with return(result) (result, Event_registry(registered_clicks, registered_inputs, registry_warnings))
+  with fun register_listener(entry_slot, registration) {
     val handler_id = state_slot_path(entry_slot)
-    registered_clicks := append_registered_click(registered_clicks, Registered_click(handler_id, callback))
-    Listener("click", handler_id)
-  }
-  with fun on_input(entry_slot, callback) {
-    val handler_id = state_slot_path(entry_slot)
-    registered_inputs := append_registered_input(registered_inputs, Registered_input(handler_id, callback))
-    Listener("input", handler_id)
-  }
-  with fun on_enter(entry_slot, callback) {
-    val handler_id = state_slot_path(entry_slot)
-    registered_clicks := append_registered_click(registered_clicks, Registered_click(handler_id, callback))
-    Listener("enter", handler_id)
+    match registration
+      Click_registration(semantic_name, callback) -> {
+        match find_click_in_list(registered_clicks, handler_id)
+          Just(found) -> {
+            registry_warnings := Cons(if registered_click_semantic_name(found) == semantic_name then duplicate_listener_warning(handler_id, semantic_name) else semantic_drift_warning(handler_id, registered_click_semantic_name(found), semantic_name), registry_warnings)
+            registered_clicks := replace_registered_click(registered_clicks, Registered_click(handler_id, semantic_name, callback))
+            Listener(Click_event, handler_id)
+          }
+          Nothing -> {
+            registered_clicks := append_registered_click(registered_clicks, Registered_click(handler_id, semantic_name, callback))
+            Listener(Click_event, handler_id)
+          }
+      }
+      Input_registration(semantic_name, callback) -> {
+        match find_input_in_list(registered_inputs, handler_id)
+          Just(found) -> {
+            registry_warnings := Cons(if registered_input_semantic_name(found) == semantic_name then duplicate_listener_warning(handler_id, semantic_name) else semantic_drift_warning(handler_id, registered_input_semantic_name(found), semantic_name), registry_warnings)
+            registered_inputs := replace_registered_input(registered_inputs, Registered_input(handler_id, semantic_name, callback))
+            Listener(Input_event, handler_id)
+          }
+          Nothing -> {
+            registered_inputs := append_registered_input(registered_inputs, Registered_input(handler_id, semantic_name, callback))
+            Listener(Input_event, handler_id)
+          }
+      }
+      Enter_registration(semantic_name, callback) -> {
+        match find_click_in_list(registered_clicks, handler_id)
+          Just(found) -> {
+            registry_warnings := Cons(if registered_click_semantic_name(found) == semantic_name then duplicate_listener_warning(handler_id, semantic_name) else semantic_drift_warning(handler_id, registered_click_semantic_name(found), semantic_name), registry_warnings)
+            registered_clicks := replace_registered_click(registered_clicks, Registered_click(handler_id, semantic_name, callback))
+            Listener(Enter_event, handler_id)
+          }
+          Nothing -> {
+            registered_clicks := append_registered_click(registered_clicks, Registered_click(handler_id, semantic_name, callback))
+            Listener(Enter_event, handler_id)
+          }
+      }
   }
   action()
 

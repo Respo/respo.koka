@@ -34,8 +34,17 @@ fun run_pending_effects(items : list<scheduled_effect>) : _e ()
       run_pending_effects(rest)
     }
 
+fun log_registry_warnings(messages : list<string>) : _e ()
+  match messages
+    Nil -> ()
+    Cons(message, rest) -> {
+      browser_log("[respo listener] " ++ message)
+      log_registry_warnings(rest)
+    }
+
 // Re-render through the respo core, diff against the previous VDOM tree, then patch the browser DOM.
 fun commit(item : model) : _e ()
+  val previous_handlers = !handlers_ref
   val (next_model, next_tree, pending_effects, next_handlers) = render_app(item, demo_test_results())
   val patches = diff_node("0", !tree_ref, next_tree)
   apply_patches(!root_id_ref, patches)
@@ -43,6 +52,8 @@ fun commit(item : model) : _e ()
   model_ref := next_model
   tree_ref := next_tree
   handlers_ref := next_handlers
+  log_registry_warnings(event_registry_warnings(next_handlers))
+  log_registry_warnings(event_registry_semantic_warnings(previous_handlers, next_handlers))
   run_pending_effects(pending_effects)
 
 fun next_click_model(payload : string, owner : model, handlers : event_registry<model,browser_event_effect>) : <div> model
@@ -87,4 +98,5 @@ pub fun boot(root_id : string) : _e ()
   handlers_ref := handlers
   mount_html(root_id, render_node("0", tree))
   browser_set_hash(model_route_name(next_model))
+  log_registry_warnings(event_registry_warnings(handlers))
   run_pending_effects(pending_effects)

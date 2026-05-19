@@ -16,7 +16,7 @@ fun timer_logic() : <wait_ms> string
   "timer-ready"
 
 pub fun component_render_test() : <div> test_result
-  val html = render_node("0", el("button", "sample", [class_attr("demo-button")], [click_listener("run-sample")], "Run", Nil))
+  val html = render_node("0", text_node("button", "sample", props([class_attr("demo-button")], [click_listener("run-sample")]), "Run"))
   val expected = "<button data-kpath=\"0\" class=\"demo-button\" data-k-click=\"run-sample\">Run</button>"
   bool_result("Component render snapshot", if html == expected then "Stable HTML output for a small component." else html, html == expected)
 
@@ -43,7 +43,7 @@ pub fun ambient_filter_test() : <div> test_result
   bool_result("Ambient filter previews", "active=" ++ active_count.show ++ ", done=" ++ done_count.show, active_count == 2 && done_count == 1)
 
 pub fun registered_input_handler_test() : <div> test_result
-  val target_id = state_slot_path(named_listener_slot(todo_effect_scope(), "input", "draft-input"))
+  val target_id = state_slot_path(named_listener_slot(todo_effect_scope(), Input_event, "draft-input"))
   val (next_item, _panel_node, _effects, handlers) = run_todo_panel(initial_model())
   match find_registered_input(handlers, target_id)
     Just(found_input) -> {
@@ -67,7 +67,7 @@ pub fun registered_click_handler_test() : <div> test_result
   match find_task_by_id(2, model_tasks(started))
     Nothing -> bool_result("Registered click handler stays local", "task #2 missing", False)
     Just(item) -> {
-      val local_click_id = state_slot_path(named_listener_slot(task_hook_scope(item), "click", "cancel-edit"))
+      val local_click_id = state_slot_path(named_listener_slot(task_hook_scope(item), Click_event, "cancel-edit"))
       val global_add_handler = find_registered_click(handlers, "add-task")
       match find_registered_click(handlers, local_click_id)
         Nothing -> bool_result("Registered click handler stays local", local_click_id ++ " missing", False)

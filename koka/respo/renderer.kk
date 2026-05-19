@@ -7,7 +7,7 @@ fun attr_eq(left : attr, right : attr) : bool
   attr_name(left) == attr_name(right) && attr_value(left) == attr_value(right)
 
 fun listener_eq(left : listener, right : listener) : bool
-  listener_kind(left) == listener_kind(right) && listener_payload(left) == listener_payload(right)
+  dom_event_kind_name(listener_kind(left)) == dom_event_kind_name(listener_kind(right)) && listener_payload(left) == listener_payload(right)
 
 fun find_attr(attrs : list<attr>, target_name : string) : <div> maybe<attr>
   match attrs
@@ -60,10 +60,9 @@ fun render_listeners(listeners : list<listener>) : <div> string
     Nil -> ""
     Cons(item, rest) ->
       match listener_kind(item)
-        "click" -> " data-k-click=\"" ++ html_escape(listener_payload(item)) ++ "\"" ++ render_listeners(rest)
-        "input" -> " data-k-input=\"" ++ html_escape(listener_payload(item)) ++ "\"" ++ render_listeners(rest)
-        "enter" -> " data-k-enter=\"" ++ html_escape(listener_payload(item)) ++ "\"" ++ render_listeners(rest)
-        _ -> render_listeners(rest)
+        Click_event -> " data-k-click=\"" ++ html_escape(listener_payload(item)) ++ "\"" ++ render_listeners(rest)
+        Input_event -> " data-k-input=\"" ++ html_escape(listener_payload(item)) ++ "\"" ++ render_listeners(rest)
+        Enter_event -> " data-k-enter=\"" ++ html_escape(listener_payload(item)) ++ "\"" ++ render_listeners(rest)
 
 fun render_children(path : string, index : int, children : list<vnode>) : <div> string
   match children
