@@ -49,6 +49,18 @@ pub struct dialog_demo
   result_note : string
   activity_log : list<string>
 
+pub struct search_demo
+  query_input : string
+  requested_query : string
+  visible_query : string
+  status : string
+  timeout_status : string
+  auto_status : string
+  request_id : int
+  auto_request_id : int
+  results : list<string>
+  stage_note : string
+
 pub struct workflow_lab
   incidents : list<incident>
   activity_log : list<string>
@@ -56,6 +68,7 @@ pub struct workflow_lab
   sync_status : string
   last_sync_label : string
   bridge_demo : suspense_bridge_demo
+  search_demo : search_demo
 
 pub struct model
   tasks : list<task>
@@ -146,6 +159,9 @@ pub fun initial_bridge_demo(requested_case : string) : suspense_bridge_demo
 pub fun initial_dialog_demo() : dialog_demo
   Dialog_demo("none", "", "", "", "", "No overlay interaction yet.", Nil)
 
+pub fun initial_search_demo(query_input : string) : search_demo
+  Search_demo(query_input, "", "", "idle", "idle", "idle", 0, 0, Nil, "Type a query, pause to auto-search the menu catalog, keep stale results visible during refresh, and let timeout race against the mocked server response.")
+
 pub fun lab_incidents(item : workflow_lab) : list<incident>
   workflow_lab/incidents(item)
 
@@ -164,8 +180,41 @@ pub fun lab_last_sync_label(item : workflow_lab) : string
 pub fun lab_bridge_demo(item : workflow_lab) : suspense_bridge_demo
   workflow_lab/bridge_demo(item)
 
+pub fun lab_search_demo(item : workflow_lab) : search_demo
+  workflow_lab/search_demo(item)
+
 pub fun dialog_kind(item : dialog_demo) : string
   dialog_demo/kind(item)
+
+pub fun search_query_input(item : search_demo) : string
+  search_demo/query_input(item)
+
+pub fun search_requested_query(item : search_demo) : string
+  search_demo/requested_query(item)
+
+pub fun search_visible_query(item : search_demo) : string
+  search_demo/visible_query(item)
+
+pub fun search_status(item : search_demo) : string
+  search_demo/status(item)
+
+pub fun search_timeout_status(item : search_demo) : string
+  search_demo/timeout_status(item)
+
+pub fun search_auto_status(item : search_demo) : string
+  search_demo/auto_status(item)
+
+pub fun search_request_id(item : search_demo) : int
+  search_demo/request_id(item)
+
+pub fun search_auto_request_id(item : search_demo) : int
+  search_demo/auto_request_id(item)
+
+pub fun search_results(item : search_demo) : list<string>
+  search_demo/results(item)
+
+pub fun search_stage_note(item : search_demo) : string
+  search_demo/stage_note(item)
 
 pub fun dialog_title(item : dialog_demo) : string
   dialog_demo/title(item)

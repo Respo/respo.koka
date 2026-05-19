@@ -16,7 +16,7 @@ pub fun dispatch_click(payload : string, item : model) : <confirm_action,audit,c
             Just(result) -> result
             Nothing -> reduce_click(payload, item)
 
-pub fun dispatch_input(channel : string, value : string, item : model) : <div> model
+pub fun dispatch_input(channel : string, value : string, item : model) : <request_bridge_resource,div> model
   match handle_todo_input(channel, value, item)
     Just(result) -> result
     Nothing ->

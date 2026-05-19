@@ -65,7 +65,7 @@ fun next_click_model(payload : string, owner : model, handlers : event_registry<
 fun next_input_model(channel : string, value : string, owner : model, handlers : event_registry<model,browser_event_effect>) : <div> model
   match find_registered_input(handlers, channel)
     Just(found_input) -> run_registered_input(found_input, value, owner)
-    Nothing -> controller/dispatch_input(channel, value, owner)
+    Nothing -> with_browser(fn() controller/dispatch_input(channel, value, owner))
 
 fun dispatch_click(payload : string) : _e ()
   val owner = !model_ref

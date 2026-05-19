@@ -2,6 +2,7 @@ module demo/tests/support
 
 import demo/bridge
 import demo/dialogs
+import demo/lab/search
 import demo/labpanel
 import demo/model
 import demo/seed
@@ -91,6 +92,35 @@ pub fun bridge_ready_model(case_name : string) : <div> model
   val (shell_ready, _shell_requests, _shell_audits) = capture_bridge_shell(started, case_name, 1)
   val (detail_ready, _detail_requests, _detail_audits) = capture_bridge_detail(shell_ready, case_name, 1)
   detail_ready
+
+pub fun search_base_model() : model
+  set_route(initial_model(), "lab")
+
+pub fun capture_search_input(owner : model, value : string) : <div> (model, list<string>, list<string>)
+  capture_bridge(fn() {
+    match handle_lab_input(search_query_channel(), value, owner)
+      Just(result) -> result
+      Nothing -> owner
+  })
+
+pub fun search_input(owner : model, value : string) : <div> model
+  val (next, _requests, _audits) = capture_search_input(owner, value)
+  next
+
+pub fun capture_search_submit(owner : model) : <div> (model, list<string>, list<string>)
+  capture_bridge_click(owner, search_submit_payload())
+
+pub fun capture_search_pick(owner : model, query : string) : <div> (model, list<string>, list<string>)
+  capture_bridge_click(owner, search_pick_payload(query))
+
+pub fun capture_search_result(owner : model, query : string, request_id : int) : <div> (model, list<string>, list<string>)
+  capture_bridge_click(owner, bridge_result_payload("search", query, request_id))
+
+pub fun capture_search_timeout(owner : model, query : string, request_id : int) : <div> (model, list<string>, list<string>)
+  capture_bridge_click(owner, bridge_result_payload("search-timeout", query, request_id))
+
+pub fun capture_search_auto(owner : model, query : string, auto_request_id : int) : <div> (model, list<string>, list<string>)
+  capture_bridge_click(owner, bridge_result_payload("search-auto", query, auto_request_id))
 
 pub fun dialog_base_model() : model
   set_route(initial_model(), "effects")

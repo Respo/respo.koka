@@ -19,5 +19,5 @@ pub fun run_lab_panel(item : model) : <div> (model, vnode, list<scheduled_effect
 pub fun handle_lab_click(payload : string, owner : model) : <audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> maybe<model>
   route_lab_click(payload, owner)
 
-pub fun handle_lab_input(channel : string, value : string, owner : model) : <div> maybe<model>
+pub fun handle_lab_input(channel : string, value : string, owner : model) : <request_bridge_resource,div> maybe<model>
   route_lab_input(channel, value, owner)

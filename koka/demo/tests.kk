@@ -3,6 +3,7 @@ module demo/tests
 import demo/tests/support
 import demo/tests/basics
 import demo/tests/dialogcases
+import demo/tests/searchcases
 import demo/tests/statecases
 import demo/tests/todocases
 import demo/tests/labcases
@@ -38,4 +39,13 @@ pub fun demo_test_results() : <div> list<test_result>
     dialog_prompt_submit_test(),
     dialog_prompt_focus_effect_test(),
     dialog_drawer_action_test(),
+    search_auto_timer_armed_test(),
+    search_auto_timer_starts_pending_test(),
+    search_stale_auto_ignored_test(),
+    search_pending_test(),
+    search_resolve_before_timeout_test(),
+    search_timeout_then_recover_test(),
+    search_refresh_keeps_visible_test(),
+    search_stale_timeout_ignored_test(),
+    search_stale_result_ignored_test(),
   ]

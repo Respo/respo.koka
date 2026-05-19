@@ -121,14 +121,18 @@ function _clone_dialog_for_exit(shell) {
   }
 
   cloned.classList.add("dialog-exit-ghost");
-  cloned.querySelectorAll("[data-k-click],[data-k-input],[data-k-enter],[data-k-dialog-dismiss]").forEach((node) => {
-    if (node instanceof Element) {
-      node.removeAttribute("data-k-click");
-      node.removeAttribute("data-k-input");
-      node.removeAttribute("data-k-enter");
-      node.removeAttribute("data-k-dialog-dismiss");
-    }
-  });
+  cloned
+    .querySelectorAll(
+      "[data-k-click],[data-k-input],[data-k-enter],[data-k-dialog-dismiss]",
+    )
+    .forEach((node) => {
+      if (node instanceof Element) {
+        node.removeAttribute("data-k-click");
+        node.removeAttribute("data-k-input");
+        node.removeAttribute("data-k-enter");
+        node.removeAttribute("data-k-dialog-dismiss");
+      }
+    });
 
   document.body.appendChild(cloned);
 
@@ -303,9 +307,12 @@ function _browser_log(message) {
 }
 
 function _browser_schedule_click(payload, delay) {
-  window.setTimeout(() => {
-    globalThis.__kokaDispatchClick?.(String(payload));
-  }, Number(delay) || 0);
+  window.setTimeout(
+    () => {
+      globalThis.__kokaDispatchClick?.(String(payload));
+    },
+    Number(delay) || 0,
+  );
 }
 
 function _html_escape(text) {
