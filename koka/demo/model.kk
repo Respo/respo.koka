@@ -40,6 +40,15 @@ pub struct suspense_bridge_demo
   shell_request_id : int
   detail_request_id : int
 
+pub struct dialog_demo
+  kind : string
+  title : string
+  message : string
+  prompt_value : string
+  prompt_error : string
+  result_note : string
+  activity_log : list<string>
+
 pub struct workflow_lab
   incidents : list<incident>
   activity_log : list<string>
@@ -57,6 +66,7 @@ pub struct model
   route_name : string
   todo_local_tree : list<state_entry>
   lab : workflow_lab
+  dialog : dialog_demo
 
 pub fun task_id(item : task) : int
   task/id(item)
@@ -97,6 +107,9 @@ pub fun set_todo_local_tree(item : model, todo_local_tree : list<state_entry>) :
 pub fun model_lab(item : model) : workflow_lab
   model/lab(item)
 
+pub fun model_dialog(item : model) : dialog_demo
+  model/dialog(item)
+
 pub fun set_tasks(item : model, tasks : list<task>) : model
   item(tasks = tasks)
 
@@ -130,6 +143,9 @@ pub fun lab_snapshot_summary(item : lab_snapshot) : string
 pub fun initial_bridge_demo(requested_case : string) : suspense_bridge_demo
   Suspense_bridge_demo(requested_case, "", "idle", "idle", 0, 0)
 
+pub fun initial_dialog_demo() : dialog_demo
+  Dialog_demo("none", "", "", "", "", "No overlay interaction yet.", Nil)
+
 pub fun lab_incidents(item : workflow_lab) : list<incident>
   workflow_lab/incidents(item)
 
@@ -147,6 +163,30 @@ pub fun lab_last_sync_label(item : workflow_lab) : string
 
 pub fun lab_bridge_demo(item : workflow_lab) : suspense_bridge_demo
   workflow_lab/bridge_demo(item)
+
+pub fun dialog_kind(item : dialog_demo) : string
+  dialog_demo/kind(item)
+
+pub fun dialog_title(item : dialog_demo) : string
+  dialog_demo/title(item)
+
+pub fun dialog_message(item : dialog_demo) : string
+  dialog_demo/message(item)
+
+pub fun dialog_prompt_value(item : dialog_demo) : string
+  dialog_demo/prompt_value(item)
+
+pub fun dialog_prompt_error(item : dialog_demo) : string
+  dialog_demo/prompt_error(item)
+
+pub fun dialog_result_note(item : dialog_demo) : string
+  dialog_demo/result_note(item)
+
+pub fun dialog_activity_log(item : dialog_demo) : list<string>
+  dialog_demo/activity_log(item)
+
+pub fun dialog_is_open(item : dialog_demo) : <div> bool
+  dialog_kind(item) != "none"
 
 pub fun bridge_requested_case(item : suspense_bridge_demo) : string
   suspense_bridge_demo/requested_case(item)
@@ -283,6 +323,9 @@ pub fun set_draft(item : model, draft : string) : model
 
 pub fun set_lab(item : model, lab : workflow_lab) : model
   item(lab = lab)
+
+pub fun set_dialog(item : model, dialog : dialog_demo) : model
+  item(dialog = dialog)
 
 pub fun set_route(item : model, route_name : string) : model
   item(route_name = normalize_route(route_name))

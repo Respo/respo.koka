@@ -1,5 +1,6 @@
 module demo/effectspanel
 
+import demo/dialogs
 import demo/model
 import demo/tests/support
 import demo/shared
@@ -39,6 +40,7 @@ pub fun effects_panel(item : model, results : list<test_result>) : <div> vnode
           tiny_task_list("done-list", done),
         ]),
       ])),
+      effect_case("Dialog overlays", "Inspired by the MoonBit and Rust Respo demos: trigger controlled alert, prompt, dialog, and drawer surfaces without leaving the app tree.", dialog_demo_case(item)),
       effect_case("Workflow lab", "The richer demo composes `wait_ms`, mocked server fetch/send, and an ambient operator identity into one deterministic workflow.", case_detail("Workflow sync captures waits", "workflow-empty", "workflow-detail", "Workflow case unavailable.", results)),
       effect_case("Local state tree", "Per-card drafts and expand/collapse flags live in a keyed state tree instead of leaking into the main domain snapshot.", case_detail("State tree local state", "local-state-empty", "local-state-detail", "Local state case unavailable.", results)),
       effect_case("Timer", "`wait_ms` is handled without real time passing, so the case stays deterministic.", case_detail("Timer simulation", "timer-empty", "timer-detail", "Timer case unavailable.", results)),

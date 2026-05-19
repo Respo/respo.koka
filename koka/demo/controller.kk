@@ -1,5 +1,6 @@
 module demo/controller
 
+import demo/dialogs
 import demo/labpanel
 import demo/model
 import demo/todopanel
@@ -10,7 +11,10 @@ pub fun dispatch_click(payload : string, item : model) : <confirm_action,audit,c
     Nothing ->
       match handle_lab_click(payload, item)
         Just(result) -> result
-        Nothing -> reduce_click(payload, item)
+        Nothing ->
+          match handle_dialog_click(payload, item)
+            Just(result) -> result
+            Nothing -> reduce_click(payload, item)
 
 pub fun dispatch_input(channel : string, value : string, item : model) : <div> model
   match handle_todo_input(channel, value, item)
@@ -18,4 +22,7 @@ pub fun dispatch_input(channel : string, value : string, item : model) : <div> m
     Nothing ->
       match handle_lab_input(channel, value, item)
         Just(result) -> result
-        Nothing -> reduce_input(channel, value, item)
+        Nothing ->
+          match handle_dialog_input(channel, value, item)
+            Just(result) -> result
+            Nothing -> reduce_input(channel, value, item)

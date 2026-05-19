@@ -112,4 +112,5 @@ pub fun initial_model() : model
     "Ready: Koka owns components, state, and diff/patch.",
     "overview",
     Nil,
-    initial_lab())
+    initial_lab(),
+    initial_dialog_demo())

@@ -31,7 +31,15 @@ function _attach_events(rootId) {
     const clickable = target.closest("[data-k-click]");
 
     if (clickable instanceof HTMLElement) {
-      globalThis.__kokaDispatchClick?.(String(clickable.dataset.kClick ?? ""));
+      const payload = String(clickable.dataset.kClick ?? "");
+
+      if (clickable.dataset.kDialogDismiss === "true") {
+        event.preventDefault();
+        _dispatch_dialog_dismiss(rootId, payload);
+        return;
+      }
+
+      globalThis.__kokaDispatchClick?.(payload);
     }
   });
 
@@ -74,9 +82,76 @@ function _attach_events(rootId) {
     }
   });
 
+  window.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    const dialogShell = _active_dialog_shell(root);
+
+    if (!(dialogShell instanceof HTMLElement)) {
+      return;
+    }
+
+    const payload = dialogShell.dataset.kDialogClose;
+
+    if (typeof payload !== "string" || payload === "") {
+      return;
+    }
+
+    event.preventDefault();
+    _dispatch_dialog_dismiss(rootId, payload);
+  });
+
   window.addEventListener("hashchange", () => {
     globalThis.__kokaDispatchRoute?.(_browser_hash());
   });
+}
+
+function _active_dialog_shell(root) {
+  const shell = root.querySelector("[data-k-dialog-shell='true']");
+  return shell instanceof HTMLElement ? shell : null;
+}
+
+function _clone_dialog_for_exit(shell) {
+  const cloned = shell.cloneNode(true);
+
+  if (!(cloned instanceof HTMLElement)) {
+    return;
+  }
+
+  cloned.classList.add("dialog-exit-ghost");
+  cloned.querySelectorAll("[data-k-click],[data-k-input],[data-k-enter],[data-k-dialog-dismiss]").forEach((node) => {
+    if (node instanceof Element) {
+      node.removeAttribute("data-k-click");
+      node.removeAttribute("data-k-input");
+      node.removeAttribute("data-k-enter");
+      node.removeAttribute("data-k-dialog-dismiss");
+    }
+  });
+
+  document.body.appendChild(cloned);
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      cloned.classList.add("dialog-exit-ghost-leaving");
+    });
+  });
+
+  window.setTimeout(() => {
+    cloned.remove();
+  }, 280);
+}
+
+function _dispatch_dialog_dismiss(rootId, payload) {
+  const root = _root_of(rootId);
+  const shell = _active_dialog_shell(root);
+
+  if (shell instanceof HTMLElement) {
+    _clone_dialog_for_exit(shell);
+  }
+
+  globalThis.__kokaDispatchClick?.(payload);
 }
 
 function _patch_html(rootId, path, html) {
@@ -184,11 +259,12 @@ function _browser_focus(rootId, fieldName) {
     root.querySelector(`[data-k-effect="${fieldName}"]`) ||
     root.querySelector(`[data-k-input="${fieldName}"]`);
 
-  if (
-    field instanceof HTMLInputElement ||
-    field instanceof HTMLTextAreaElement
-  ) {
-    field.focus({ preventScroll: true });
+  if (field instanceof HTMLElement && typeof field.focus === "function") {
+    try {
+      field.focus({ preventScroll: true });
+    } catch (_error) {
+      field.focus();
+    }
   }
 }
 

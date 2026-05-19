@@ -1,5 +1,6 @@
 module demo/layout
 
+import demo/dialogs
 import demo/model
 import demo/tests/support
 import demo/routebar
@@ -53,8 +54,18 @@ fun route_stage(item : model, results : list<test_result>) : <div> (model, vnode
 
 pub fun render_layout(item : model, results : list<test_result>) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
   val (next_item, stage_node, pending_effects, handlers) = route_stage(item, results)
-  (next_item, node_class("section", "app", "shell app-shell", [
-    intro_panel(item),
-    route_bar(next_item),
-    stage_node,
-  ]), pending_effects, handlers)
+  val dialog_effects = dialog_pending_effects(next_item)
+  val shell_children = if dialog_is_open(model_dialog(next_item)) then
+    [
+      intro_panel(next_item),
+      route_bar(next_item),
+      stage_node,
+      render_dialog_overlay(next_item),
+    ]
+  else
+    [
+      intro_panel(next_item),
+      route_bar(next_item),
+      stage_node,
+    ]
+  (next_item, node_class("section", "app", "shell app-shell", shell_children), append_scheduled_effects(pending_effects, dialog_effects), handlers)

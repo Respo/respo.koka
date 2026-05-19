@@ -2,6 +2,7 @@ module demo/tests
 
 import demo/tests/support
 import demo/tests/basics
+import demo/tests/dialogcases
 import demo/tests/statecases
 import demo/tests/todocases
 import demo/tests/labcases
@@ -32,4 +33,9 @@ pub fun demo_test_results() : <div> list<test_result>
     bridge_stale_shell_ignored_test(),
     bridge_stale_detail_ignored_test(),
     bridge_interleaved_old_detail_ignored_test(),
+    dialog_alert_open_test(),
+    dialog_prompt_validation_test(),
+    dialog_prompt_submit_test(),
+    dialog_prompt_focus_effect_test(),
+    dialog_drawer_action_test(),
   ]

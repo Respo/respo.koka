@@ -1,6 +1,7 @@
 module demo/tests/support
 
 import demo/bridge
+import demo/dialogs
 import demo/labpanel
 import demo/model
 import demo/seed
@@ -46,6 +47,12 @@ pub fun capture_workflow(action : () -> <wait_ms,fetch_lab_snapshot,post_lab_rep
   with fun audit(message) audits := Cons(message, audits)
   action()
 
+pub fun capture_audits(action : () -> <audit|e> model) : e (model, list<string>)
+  var audits := Nil
+  with return(result) (result, audits)
+  with fun audit(message) audits := Cons(message, audits)
+  action()
+
 pub fun capture_bridge(action : () -> <request_bridge_resource,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,audit,current_operator|e> model) : e (model, list<string>, list<string>)
   var requests := Nil
   var audits := Nil
@@ -84,6 +91,17 @@ pub fun bridge_ready_model(case_name : string) : <div> model
   val (shell_ready, _shell_requests, _shell_audits) = capture_bridge_shell(started, case_name, 1)
   val (detail_ready, _detail_requests, _detail_audits) = capture_bridge_detail(shell_ready, case_name, 1)
   detail_ready
+
+pub fun dialog_base_model() : model
+  set_route(initial_model(), "effects")
+
+pub fun dialog_click(owner : model, payload : string) : <audit,div> model
+  match handle_dialog_click(payload, owner)
+    Just(result) -> result
+    Nothing -> owner
+
+pub fun capture_dialog_click(owner : model, payload : string) : <div> (model, list<string>)
+  capture_audits(fn() dialog_click(owner, payload))
 
 pub fun bridge_expect(
   first_request : string,
