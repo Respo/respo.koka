@@ -49,12 +49,7 @@ fun clear_completed_tasks(tasks : list<task>) : <div> list<task>
   filter(tasks, fn(item) not(item.done))
 
 fun clear_done_local_state(tasks : list<task>) : <clear_local_state,div> ()
-  foreach(tasks, fn(item)
-    if item.done then {
-      clear_slot(task_editing_slot(item))
-      clear_slot(task_draft_slot(item))
-    } else ()
-  )
+  clear_done_task_editors(tasks)
 
 fun find_task_draft_channel(channel : string, tasks : list<task>) : <div> maybe<int>
   match find(tasks, fn(item) channel == "task-draft-" ++ task/id(item).show)
@@ -98,55 +93,41 @@ fun todo_add_task(owner : model) : <audit,div> model
     with_next_id(notice = "Added a new task from the Koka store.")
   }
 
-fun todo_start_task_edit(owner : model, target_id : int) : <audit,use_named_state,set_named_state,div> model
+fun todo_start_task_edit(owner : model, target_id : int) : <audit,todo_local_effect> model
   match find(owner.tasks, fn(item) target_id == task/id(item))
     Nothing -> owner(notice = "Task not found for local editing.")
     Just(found) -> {
-      val (_editing, set_editing) = use_named_state_pair(task_editing_slot(found), flag_state_codec, False)
-      val (_draft, set_draft) = use_named_state_pair(task_draft_slot(found), text_state_codec, found.title)
       audit("Opened local edit state for task #" ++ target_id.show)
-      set_editing(True)
-      set_draft(found.title)
+      start_task_editor(found)
       owner(notice = "Editing task locally before committing the title.")
     }
 
-fun todo_set_task_edit_draft(owner : model, target_id : int, draft : string) : <use_named_state,set_named_state,div> model
+fun todo_set_task_edit_draft(owner : model, target_id : int, draft : string) : <todo_local_effect> model
   match find(owner.tasks, fn(item) target_id == task/id(item))
     Nothing -> owner(notice = "Task edit draft target was missing.")
     Just(found) -> {
-      val (_editing, set_editing) = use_named_state_pair(task_editing_slot(found), flag_state_codec, False)
-      val (_current_draft, set_draft) = use_named_state_pair(task_draft_slot(found), text_state_codec, found.title)
-      set_editing(True)
-      set_draft(draft)
+      update_task_editor_draft(found, draft)
       owner
     }
 
-fun todo_cancel_task_edit(owner : model, target_id : int) : <use_named_state,set_named_state,clear_local_state,div> model
+fun todo_cancel_task_edit(owner : model, target_id : int) : <todo_local_effect> model
   match find(owner.tasks, fn(item) target_id == task/id(item))
     Nothing -> owner(notice = "Task cancel target was missing.")
     Just(found) -> {
-      val (_editing, set_editing) = use_named_state_pair(task_editing_slot(found), flag_state_codec, False)
-      val (_draft, set_draft) = use_named_state_pair(task_draft_slot(found), text_state_codec, found.title)
-      set_editing(False)
-      set_draft(found.title)
-      clear_slot(task_editing_slot(found))
-      clear_slot(task_draft_slot(found))
+      cancel_task_editor(found)
       owner(notice = "Cancelled local task edit.")
     }
 
-fun todo_save_task_edit(owner : model, target_id : int) : <use_named_state,set_named_state,clear_local_state,audit,div> model
+fun todo_save_task_edit(owner : model, target_id : int) : <audit,todo_local_effect> model
   match find(owner.tasks, fn(item) target_id == task/id(item))
     Nothing -> owner(notice = "Task not found while saving the local edit.")
     Just(found) -> {
-      val (_editing, set_editing) = use_named_state_pair(task_editing_slot(found), flag_state_codec, False)
-      val draft = use_named_state(task_draft_slot(found), text_state_codec, found.title)
+      val draft = task_editor_draft(found)
       if draft == "" then
         owner(notice = "Task title cannot be empty.")
       else {
         audit("Saved local task edit for #" ++ target_id.show)
-        set_editing(False)
-        clear_slot(task_editing_slot(found))
-        clear_slot(task_draft_slot(found))
+        cancel_task_editor(found)
         val renamed = owner(tasks = rename_task(owner.tasks, target_id, draft))
         renamed(notice = "Saved task title from local state.")
       }
@@ -162,8 +143,7 @@ fun todo_handle_remove(owner : model, payload : string) : <confirm_action,audit,
     Just(found) ->
       if confirm_action("Remove `" ++ found.title ++ "`?") then {
         audit("Removed task after confirmation: " ++ found.title)
-        clear_slot(task_editing_slot(found))
-        clear_slot(task_draft_slot(found))
+        clear_task_editor(found)
         val next = owner(tasks = remove_tasks(payload, owner.tasks))
         next(notice = "Task removed after confirm effect.")
       } else

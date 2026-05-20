@@ -8,11 +8,13 @@ pub fun state_tree_test() : <div> test_result
   val incident_base = "lab/incidents/101"
   val draft_slot = slot(incident_base, 0)
   val expanded_slot = named_slot(incident_base, "expanded")
+  val named_hook_state = state_slot/path(hook_named_state_slot("todo/tasks/2", "draft"))
+  val named_hook_effect = state_slot/path(hook_named_effect_slot("todo/effects", "notice-pulse"))
   val tree = assoc_slot_flag(assoc_slot_text(Nil, draft_slot, "Shift traffic to backup POP."), expanded_slot, True)
   val draft = slot_text(tree, draft_slot, "")
   val expanded = slot_flag(tree, expanded_slot, False)
   val normalized_name = state_slot/path(named_slot("todo/tasks/2", "7draft"))
-  Test_result("State tree local state", "draft=" ++ draft ++ ", expanded=" ++ expanded.show ++ ", named=" ++ normalized_name, draft == "Shift traffic to backup POP." && expanded && normalized_name == "todo/tasks/2/_7draft")
+  Test_result("State tree local state", "draft=" ++ draft ++ ", expanded=" ++ expanded.show ++ ", named=" ++ normalized_name ++ ", hook-state=" ++ named_hook_state ++ ", hook-effect=" ++ named_hook_effect, draft == "Shift traffic to backup POP." && expanded && normalized_name == "todo/tasks/2/_7draft" && named_hook_state == "todo/tasks/2/state/draft" && named_hook_effect == "todo/effects/effect/notice-pulse")
 
 pub fun generic_state_codec_test() : <div> test_result
   val draft_slot = named_slot("generic-test", "draft")

@@ -103,10 +103,10 @@ pub fun route_is_effects(route_name : string) : bool
   route_section(route_name) == "effects"
 
 fun incident_expanded_slot(incident_id : int) : state_slot
-  named_slot("lab/incidents/" ++ incident_id.show, "expanded")
+  hook_named_state_slot("lab/incidents/" ++ incident_id.show, "expanded")
 
 fun incident_draft_slot(incident_id : int) : state_slot
-  named_slot("lab/incidents/" ++ incident_id.show, "draft")
+  hook_named_state_slot("lab/incidents/" ++ incident_id.show, "draft")
 
 fun incident_expanded(item : workflow_lab, incident_id : int) : <div> bool
   slot_flag(item.local_tree, incident_expanded_slot(incident_id), False)

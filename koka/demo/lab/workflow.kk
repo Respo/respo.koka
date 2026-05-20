@@ -107,7 +107,7 @@ pub fun send_reply(item : model, incident_id : int) : <wait_ms,post_lab_reply,no
         wait_ms(20)
         val stamp = now_label()
         val operator = current_operator
-        val next_tree = clear_slot_state(assoc_slot_flag(lab.local_tree, incident_expanded_slot(incident_id), True), incident_draft_slot(incident_id))
+        val next_tree = finalize_incident_reply_tree(lab.local_tree, incident_id)
         val next_incidents = update_incident_reply(lab.incidents, incident_id, draft, operator ++ " @ " ++ stamp)
         val next_logs = append_lines(lab.activity_log, "[" ++ stamp ++ "] " ++ server_reply)
         val next_lab = lab(incidents = next_incidents, activity_log = next_logs, local_tree = next_tree, sync_status = "reply-sent", last_sync_label = stamp)

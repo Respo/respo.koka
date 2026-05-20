@@ -9,7 +9,7 @@ import runtime/dom
 import respo/core
 import respo/state
 
-alias todo_view_effect = <push_hook_scope,pop_hook_scope,use_state_pair,use_effect,register_listener<model,browser_event_effect>,div>
+alias todo_view_effect = <push_hook_scope,pop_hook_scope,todo_local_effect,register_listener<model,browser_event_effect>>
 
 fun status_text(done : bool) : string
   if done then "done" else "open"
@@ -18,9 +18,10 @@ pub fun task_item_view(item : task) : todo_view_effect vnode
   component(task_hook_scope(item), fn() {
     val item_scope = task_hook_scope(item)
     val tid = task/id(item)
-    val (editing, set_editing) = use_state_pair(flag_state_codec, False)
-    val (draft, set_draft) = use_state_pair(text_state_codec, item.title)
-    use_effect([tid.show, if editing then "editing" else "idle"], fn(root_id) {
+    val (editor, set_editing, set_draft) = use_task_editor(item)
+    val editing = task_editor_state/editing(editor)
+    val draft = task_editor_state/draft(editor)
+    use_task_focus(item, [tid.show, if editing then "editing" else "idle"], fn(root_id) {
       if editing then {
         browser_focus(root_id, "task-draft-" ++ tid.show)
         browser_flash_marker(root_id, "task-draft-" ++ tid.show, "effect-pulse")
@@ -46,8 +47,7 @@ pub fun task_item_view(item : task) : todo_view_effect vnode
         [
           button([class_attr("button button-primary")], [dispatch_todo_click(Save_task_edit(tid))], "Save"),
           button([class_attr("button")], [on_named_click(item_scope, "cancel-edit", fn(owner) commit_task_tree(owner, fn() {
-            clear_slot(task_editing_slot(item))
-            clear_slot(task_draft_slot(item))
+            cancel_task_editor(item)
             owner(notice = "Cancelled local task edit.")
           }))], "Cancel"),
         ]
@@ -78,12 +78,8 @@ pub fun render_todo_panel(owner : model, panel_state : todo_panel_state) : todo_
     val panel_scope = todo_effect_scope()
     val visible = visible_panel_tasks(panel_state)
     val total = total_task_count(panel_state)
-    use_effect([panel_state.notice, panel_state.draft, total.show], fn(root_id) {
-      if has_recent_add_notice(panel_state) then browser_focus(root_id, "draft") else ()
-    })
-    use_effect([panel_state.notice, total.show], fn(root_id) {
-      if has_recent_add_notice(panel_state) then browser_flash_marker(root_id, "todo-note", "effect-pulse") else ()
-    })
+    val should_focus_draft = has_recent_add_notice(panel_state)
+    use_todo_panel_feedback(should_focus_draft, should_focus_draft, panel_state.notice, panel_state.draft, total)
     panel("Todo", panel_state.notice, "todo", "todo-panel", [
       div([class_attr("summary-row")], [
         summary_chip("Tasks", total.show),

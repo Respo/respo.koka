@@ -56,6 +56,14 @@ pub fun hook_state_slot(scope_base : string, index : int) : state_slot
 pub fun hook_effect_slot(scope_base : string, index : int) : state_slot
   State_slot(join_slot_path(join_slot_path(scope_base, "effect"), index.show))
 
+// For code that needs to inspect or mutate hook-managed state outside the component body,
+// prefer semantic hook slot names over manual indices. Runtime hook ordering still stays internal.
+pub fun hook_named_state_slot(scope_base : string, name : string) : state_slot
+  named_slot(join_slot_path(scope_base, "state"), name)
+
+pub fun hook_named_effect_slot(scope_base : string, name : string) : state_slot
+  named_slot(join_slot_path(scope_base, "effect"), name)
+
 pub fun named_listener_slot(scope_base : string, kind : dom_event_kind, name : string) : state_slot
   State_slot(join_slot_path(join_slot_path(join_slot_path(scope_base, "listeners"), dom_event_kind_name(kind)), normalize_slot_name(name)))
 
