@@ -26,7 +26,7 @@ pub fun confirm_decline_test() : <div> test_result
   val next = match handle_todo_click("remove-1", initial_model())
     Just(result) -> result
     Nothing -> initial_model()
-  Test_result("Confirm decline keeps state", model_notice(next), count_all(model_tasks(next)) == 3)
+  Test_result("Confirm decline keeps state", next.notice, count_all(next.tasks) == 3)
 
 pub fun confirm_accept_test() : <div> test_result
   with fun confirm_action(_message) True
@@ -34,10 +34,10 @@ pub fun confirm_accept_test() : <div> test_result
   val next = match handle_todo_click("remove-1", initial_model())
     Just(result) -> result
     Nothing -> initial_model()
-  Test_result("Confirm accept removes task", "Remaining tasks: " ++ count_all(model_tasks(next)).show, count_all(model_tasks(next)) == 2)
+  Test_result("Confirm accept removes task", "Remaining tasks: " ++ count_all(next.tasks).show, count_all(next.tasks) == 2)
 
 pub fun ambient_filter_test() : <div> test_result
-  val base = model_tasks(initial_model())
+  val base = initial_model().tasks
   val active_count = count_all(tasks_for("active", base))
   val done_count = count_all(tasks_for("done", base))
   Test_result("Ambient filter previews", "active=" ++ active_count.show ++ ", done=" ++ done_count.show, active_count == 2 && done_count == 1)
@@ -48,7 +48,7 @@ pub fun registered_input_handler_test() : <div> test_result
   match find_registered_input(handlers, target_id)
     Just(found_input) -> {
       val updated = run_registered_input(found_input, "closure draft", next_item)
-      Test_result("Registered input handler updates draft", "inputs=" ++ count_registered_inputs(handlers).show ++ ", draft=" ++ model_draft(updated), model_draft(updated) == "closure draft")
+      Test_result("Registered input handler updates draft", "inputs=" ++ count_registered_inputs(handlers).show ++ ", draft=" ++ updated.draft, updated.draft == "closure draft")
     }
     Nothing -> Test_result("Registered input handler updates draft", target_id ++ " missing", False)
 
@@ -65,7 +65,7 @@ pub fun registered_click_handler_test() : <div> test_result
     Just(result) -> result
     Nothing -> initial_model()
   val (next_item, _panel_node, _effects, handlers) = run_todo_panel(started)
-  match find_task_by_id(2, model_tasks(started))
+  match find_task_by_id(2, started.tasks)
     Nothing -> Test_result("Registered click handler stays local", "task #2 missing", False)
     Just(item) -> {
       val local_click_id = state_slot_path(named_listener_slot(task_hook_scope(item), Click_event, "cancel-edit"))
@@ -74,7 +74,7 @@ pub fun registered_click_handler_test() : <div> test_result
         Nothing -> Test_result("Registered click handler stays local", local_click_id ++ " missing", False)
         Just(found_click) -> {
           val updated = run_registered_click(found_click, next_item)
-          val updated_task = match find_task_by_id(2, model_tasks(updated))
+          val updated_task = match find_task_by_id(2, updated.tasks)
             Just(found) -> found
             Nothing -> item
           val editor_state = task_editor_snapshot(updated, updated_task)
@@ -83,8 +83,8 @@ pub fun registered_click_handler_test() : <div> test_result
             Nothing -> False
           Test_result(
             "Registered click handler stays local",
-            "clicks=" ++ count_registered_clicks(handlers).show ++ ", notice=" ++ model_notice(updated),
-            not(has_global_add_handler) && not(task_editor_state/editing(editor_state)) && model_notice(updated) == "Cancelled local task edit.")
+            "clicks=" ++ count_registered_clicks(handlers).show ++ ", notice=" ++ updated.notice,
+            not(has_global_add_handler) && not(task_editor_state/editing(editor_state)) && updated.notice == "Cancelled local task edit.")
         }
     }
 
@@ -103,8 +103,8 @@ pub fun route_subroute_normalization_test() : <div> test_result
   with fun post_lab_reply(_incident_id, message) message
   with fun request_bridge_resource(_payload, _delay) ()
   with fun wait_ms(_delay) ()
-  val lab_route = model_route_name(reduce_click("route-lab-search", initial_model()))
-  val effects_route = model_route_name(reduce_click("route-effects-dialogs", initial_model()))
+  val lab_route = reduce_click("route-lab-search", initial_model()).route_name
+  val effects_route = reduce_click("route-effects-dialogs", initial_model()).route_name
   val legacy_lab = normalize_route("lab")
   val legacy_effects = normalize_route("effects")
   Test_result(

@@ -11,7 +11,7 @@ pub fun task_editor_snapshot(owner : model, item : task) : <div> task_editor_sta
   snapshot_task_editor(owner, item)
 
 pub fun run_todo_panel(item : model) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
-  val ((panel_node, next_tree, pending_effects), handlers) = run_event_registry(fn() run_local_state(model_todo_local_tree(item), fn() render_todo_panel(item)))
+  val ((panel_node, next_tree, pending_effects), handlers) = run_event_registry(fn() run_local_state(item.todo_local_tree, fn() render_todo_panel(item)))
   (set_todo_local_tree(item, next_tree), panel_node, pending_effects, handlers)
 
 pub fun todo_panel(item : model) : <div> vnode

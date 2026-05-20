@@ -12,49 +12,52 @@ import respo/state
 alias lab_view_effect = <push_hook_scope,pop_hook_scope,use_state,register_listener<model,browser_event_effect>,div>
 
 fun severity_class(item : incident) : string
-  if incident_severity(item) == "p1" then "incident-severity incident-severity-p1"
-  else if incident_severity(item) == "p2" then "incident-severity incident-severity-p2"
-  else "incident-severity incident-severity-p3"
+  match item.severity
+    Severity_p1 -> "incident-severity incident-severity-p1"
+    Severity_p2 -> "incident-severity incident-severity-p2"
+    Severity_p3 -> "incident-severity incident-severity-p3"
 
 fun status_class(item : incident) : string
-  if incident_status(item) == "acked" then "incident-status incident-status-acked"
-  else if incident_status(item) == "investigating" then "incident-status incident-status-investigating"
-  else "incident-status incident-status-firing"
+  match item.status
+    Status_acked -> "incident-status incident-status-acked"
+    Status_investigating -> "incident-status incident-status-investigating"
+    Status_firing -> "incident-status incident-status-firing"
 
 fun incident_card(item : incident) : lab_view_effect vnode
-  component(incident_hook_scope(incident_id(item)), fn() {
-    val item_scope = incident_hook_scope(incident_id(item))
+  val iid = incident/id(item)
+  component(incident_hook_scope(iid), fn() {
+    val item_scope = incident_hook_scope(iid)
     val expanded = use_state(flag_state_codec, False)
     val draft = use_state(text_state_codec, "")
     val toggle_label = if expanded then "Collapse" else "Expand"
     val preview_text = if draft == "" then "local draft: <empty>" else "local draft: " ++ draft
     val collapsed_text = if draft == "" then "Draft is local and still empty." else "Draft saved locally for this card."
     val detail_node = if expanded then
-      node_class("div", "incident-detail-" ++ incident_id(item).show, "incident-detail-grid", [
-        text_class("p", "incident-remote-" ++ incident_id(item).show, "mono", "server: " ++ incident_server_note(item)),
-        text_class("p", "incident-owner-" ++ incident_id(item).show, "mono", "updated by: " ++ incident_updated_by(item)),
-        text_class("p", "incident-draft-preview-" ++ incident_id(item).show, "mono", preview_text),
+      node_class("div", "incident-detail-" ++ iid.show, "incident-detail-grid", [
+        text_class("p", "incident-remote-" ++ iid.show, "mono", "server: " ++ item.server_note),
+        text_class("p", "incident-owner-" ++ iid.show, "mono", "updated by: " ++ item.updated_by),
+        text_class("p", "incident-draft-preview-" ++ iid.show, "mono", preview_text),
       ])
     else
-      text_class("p", "incident-collapsed-" ++ incident_id(item).show, "mono", collapsed_text)
-    node_class("article", "incident-" ++ incident_id(item).show, "incident-card", [
-      node_class("div", "incident-head-" ++ incident_id(item).show, "incident-head", [
-        node_class("div", "incident-title-wrap-" ++ incident_id(item).show, "incident-title-wrap", [
-          text_class("strong", "incident-title-" ++ incident_id(item).show, "incident-title", incident_title(item)),
-          text_class("span", "incident-summary-" ++ incident_id(item).show, "case-detail", incident_summary(item)),
+      text_class("p", "incident-collapsed-" ++ iid.show, "mono", collapsed_text)
+    node_class("article", "incident-" ++ iid.show, "incident-card", [
+      node_class("div", "incident-head-" ++ iid.show, "incident-head", [
+        node_class("div", "incident-title-wrap-" ++ iid.show, "incident-title-wrap", [
+          text_class("strong", "incident-title-" ++ iid.show, "incident-title", item.title),
+          text_class("span", "incident-summary-" ++ iid.show, "case-detail", item.summary),
         ]),
-        node_class("div", "incident-badges-" ++ incident_id(item).show, "incident-badges", [
-          text_class("span", "incident-severity-" ++ incident_id(item).show, severity_class(item), incident_severity(item)),
-          text_class("span", "incident-status-" ++ incident_id(item).show, status_class(item), incident_status(item)),
+        node_class("div", "incident-badges-" ++ iid.show, "incident-badges", [
+          text_class("span", "incident-severity-" ++ iid.show, severity_class(item), item.severity.show_severity),
+          text_class("span", "incident-status-" ++ iid.show, status_class(item), item.status.show_status),
         ]),
       ]),
-      node_class("div", "incident-controls-" ++ incident_id(item).show, "incident-controls", [
-        button_class(incident_toggle_payload(item), "button", [on_named_click(item_scope, "toggle-expanded", fn(owner) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, incident_id(item))))], toggle_label),
+      node_class("div", "incident-controls-" ++ iid.show, "incident-controls", [
+        button_class(incident_toggle_payload(item), "button", [on_named_click(item_scope, "toggle-expanded", fn(owner) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, iid)))], toggle_label),
         text_input(incident_draft_channel(item), "input incident-input", draft, "Local reply draft, per card...", Nil, [
-          on_named_input(item_scope, "draft-input", fn(value, owner) commit_lab_tree(owner, fn() set_local_lab_draft(owner, incident_id(item), value))),
-          dispatch_lab_enter(Send_reply(incident_id(item))),
+          on_named_input(item_scope, "draft-input", fn(value, owner) commit_lab_tree(owner, fn() set_local_lab_draft(owner, iid, value))),
+          dispatch_lab_enter(Send_reply(iid)),
         ]),
-        button_class(incident_send_payload(item), "button button-primary", [dispatch_lab_click(Send_reply(incident_id(item)))], "Send reply"),
+        button_class(incident_send_payload(item), "button button-primary", [dispatch_lab_click(Send_reply(iid))], "Send reply"),
       ]),
       detail_node,
     ])
@@ -64,7 +67,7 @@ fun render_incident_cards(items : list<incident>) : lab_view_effect list<vnode>
   map(items, incident_card)
 
 fun incident_grid(lab : workflow_lab) : lab_view_effect vnode
-  node_class("div", "incident-grid", "incident-grid", render_incident_cards(lab_incidents(lab)))
+  node_class("div", "incident-grid", "incident-grid", render_incident_cards(lab.incidents))
 
 fun render_activity_items(lines : list<string>) : <div> list<vnode>
   map-indexed(lines, fn(index, line) text_class("li", "activity-" ++ index.show, "activity-item", line))
@@ -73,7 +76,7 @@ fun activity_panel(lab : workflow_lab) : <div> vnode
   node_class("aside", "lab-activity", "mini-panel activity-panel", [
     text_node("strong", "lab-activity-title", empty_props, "Workflow activity"),
     text_class("p", "lab-activity-note", "case-detail", "Each sync or reply appends a line that can be asserted in tests."),
-    node_class("ul", "lab-activity-list", "activity-list", render_activity_items(lab_activity_log(lab))),
+    node_class("ul", "lab-activity-list", "activity-list", render_activity_items(lab.activity_log)),
   ])
 
 fun bridge_case_button(item : bridge_case, requested_case : string, visible_case : string) : <div> vnode
@@ -107,16 +110,16 @@ fun bridge_transition_banner(demo : suspense_bridge_demo) : <div> vnode
       text_class("strong", "bridge-transition-title", "bridge-fallback-title", "Transition keeps stale content visible"),
       text_class("span", "bridge-transition-status", "incident-status incident-status-investigating", "refreshing"),
     ]),
-    text_class("p", "bridge-transition-note", "case-detail", "Currently showing `" ++ bridge_visible_case(demo) ++ "` while the browser bridge resolves `" ++ bridge_requested_case(demo) ++ "` in the background."),
+    text_class("p", "bridge-transition-note", "case-detail", "Currently showing `" ++ demo.visible_case ++ "` while the browser bridge resolves `" ++ demo.requested_case ++ "` in the background."),
     node_class("div", "bridge-transition-rail", "bridge-transition-rail", [
-      text_class("span", "bridge-visible-token", "bridge-token bridge-token-current", "visible: " ++ bridge_visible_case(demo)),
+      text_class("span", "bridge-visible-token", "bridge-token bridge-token-current", "visible: " ++ demo.visible_case),
       text_class("span", "bridge-arrow-token", "bridge-arrow-token", "->"),
-      text_class("span", "bridge-requested-token", "bridge-token bridge-token-next", "next: " ++ bridge_requested_case(demo)),
+      text_class("span", "bridge-requested-token", "bridge-token bridge-token-next", "next: " ++ demo.requested_case),
     ]),
   ])
 
 fun bridge_detail_node(case_item : bridge_case, demo : suspense_bridge_demo) : <div> vnode
-  if bridge_detail_status(demo) == "ready" then
+  if demo.detail_status == "ready" then
     node_class("div", "bridge-detail", "bridge-detail-card", [
       text_class("strong", "bridge-detail-title", "section-title", bridge_case/detail_title(case_item)),
       text_class("p", "bridge-detail-note", "case-detail", "Nested boundary resolved after the outer shell became visible."),
@@ -126,9 +129,9 @@ fun bridge_detail_node(case_item : bridge_case, demo : suspense_bridge_demo) : <
     bridge_fallback("bridge-detail-fallback", "Nested fallback", "Shell is visible, but the diagnostic trace is still suspended through the browser callback bridge.", "bridge-detail-fallback")
 
 fun bridge_shell_node(case_item : bridge_case, demo : suspense_bridge_demo) : <div> vnode
-  val is_refreshing = bridge_shell_status(demo) == "refreshing"
+  val is_refreshing = demo.shell_status == "refreshing"
   val shell_class = if is_refreshing then "bridge-shell-card bridge-shell-refreshing" else "bridge-shell-card"
-  val status_text = if is_refreshing then "showing stale shell while requesting `" ++ bridge_requested_case(demo) ++ "`" else "outer boundary resolved"
+  val status_text = if is_refreshing then "showing stale shell while requesting `" ++ demo.requested_case ++ "`" else "outer boundary resolved"
   val body_children = if is_refreshing then
     [
       node_class("div", "bridge-shell-head", "bridge-shell-head", [
@@ -161,15 +164,15 @@ fun bridge_shell_node(case_item : bridge_case, demo : suspense_bridge_demo) : <d
   node_class("article", "bridge-shell", shell_class, body_children)
 
 fun suspense_bridge_panel(lab : workflow_lab) : <div> vnode
-  val demo = lab_bridge_demo(lab)
-  val requested_case = bridge_requested_case(demo)
-  val visible_case = bridge_visible_case(demo)
+  val demo = lab.bridge_demo
+  val requested_case = demo.requested_case
+  val visible_case = demo.visible_case
   val selected_case = if visible_case == "" then requested_case else visible_case
   val requested_note = match bridge_case_by_name(requested_case)
     Just(case_item) -> bridge_case/stage_note(case_item)
     Nothing -> "Select a bridge case to start the suspense-like demo."
   val stage_node = match bridge_case_by_name(selected_case)
-    Just(case_item) -> if visible_case == "" && bridge_shell_status(demo) != "ready" then
+    Just(case_item) -> if visible_case == "" && demo.shell_status != "ready" then
       bridge_fallback("bridge-shell-fallback", "Outer fallback", requested_note, "bridge-shell-fallback")
     else
       bridge_shell_node(case_item, demo)
@@ -186,8 +189,8 @@ fun suspense_bridge_panel(lab : workflow_lab) : <div> vnode
       node_class("div", "bridge-meta", "summary-row bridge-meta", [
         summary_chip("Requested", requested_case),
         summary_chip("Visible", if visible_case == "" then "<fallback>" else visible_case),
-        summary_chip("Shell", bridge_shell_status(demo)),
-        summary_chip("Detail", bridge_detail_status(demo)),
+        summary_chip("Shell", demo.shell_status),
+        summary_chip("Detail", demo.detail_status),
       ]),
     ]),
     node_class("div", "bridge-case-row", "button-row bridge-case-row", render_bridge_case_buttons(bridge_demo_cases(), requested_case, visible_case)),
@@ -253,34 +256,34 @@ fun search_transition_banner(demo : search_demo) : <div> vnode
       text_class("strong", "search-transition-title", "bridge-fallback-title", "Refreshing search keeps stale hits visible"),
       text_class("span", "search-transition-status", "incident-status incident-status-investigating", "refreshing"),
     ]),
-    text_class("p", "search-transition-note", "case-detail", "Showing results for `" ++ search_visible_query(demo) ++ "` while querying `" ++ search_requested_query(demo) ++ "` in the background."),
+    text_class("p", "search-transition-note", "case-detail", "Showing results for `" ++ demo.visible_query ++ "` while querying `" ++ demo.requested_query ++ "` in the background."),
   ])
 
 fun search_result_stage(demo : search_demo) : <div> vnode
-  if search_visible_query(demo) == "" && search_status(demo) == "timed_out" then
-    bridge_fallback("search-timeout-fallback", "Search timeout", search_stage_note(demo), "search-timeout-fallback")
-  else if search_visible_query(demo) == "" && search_status(demo) != "ready" then
-    bridge_fallback("search-pending-fallback", "Search fallback", search_stage_note(demo), "search-pending-fallback")
+  if demo.visible_query == "" && demo.status == "timed_out" then
+    bridge_fallback("search-timeout-fallback", "Search timeout", demo.stage_note, "search-timeout-fallback")
+  else if demo.visible_query == "" && demo.status != "ready" then
+    bridge_fallback("search-pending-fallback", "Search fallback", demo.stage_note, "search-pending-fallback")
   else
-    node_class("article", "search-result-stage", if search_status(demo) == "refreshing" then "bridge-shell-card search-stage search-stage-refreshing" else "bridge-shell-card search-stage", [
+    node_class("article", "search-result-stage", if demo.status == "refreshing" then "bridge-shell-card search-stage search-stage-refreshing" else "bridge-shell-card search-stage", [
       node_class("div", "search-stage-head", "bridge-shell-head", [
         node_class("div", "search-stage-copy", "stack", [
-          text_class("strong", "search-stage-title", "section-title", "Results for `" ++ search_visible_query(demo) ++ "`"),
-          text_class("p", "search-stage-note", "case-detail", search_stage_note(demo)),
+          text_class("strong", "search-stage-title", "section-title", "Results for `" ++ demo.visible_query ++ "`"),
+          text_class("p", "search-stage-note", "case-detail", demo.stage_note),
         ]),
         node_class("div", "search-stage-badges", "bridge-shell-badges", [
-          text_class("span", "search-stage-status", "incident-status incident-status-investigating", search_status(demo)),
+          text_class("span", "search-stage-status", "incident-status incident-status-investigating", demo.status),
         ]),
       ]),
-      if search_status(demo) == "refreshing" then search_transition_banner(demo) else node_class("div", "search-transition-placeholder", "stack", Nil),
-      if search_auto_status(demo) == "armed" then search_auto_banner(demo) else node_class("div", "search-auto-placeholder", "stack", Nil),
-      if search_timeout_status(demo) == "timed_out" then search_timeout_banner(demo) else node_class("div", "search-timeout-placeholder", "stack", Nil),
-      node_class("ul", "search-results", "activity-list", render_search_result_lines(search_results(demo))),
+      if demo.status == "refreshing" then search_transition_banner(demo) else node_class("div", "search-transition-placeholder", "stack", Nil),
+      if demo.auto_status == "armed" then search_auto_banner(demo) else node_class("div", "search-auto-placeholder", "stack", Nil),
+      if demo.timeout_status == "timed_out" then search_timeout_banner(demo) else node_class("div", "search-timeout-placeholder", "stack", Nil),
+      node_class("ul", "search-results", "activity-list", render_search_result_lines(demo.results)),
     ])
 
 fun suspense_search_panel(lab : workflow_lab) : <div> vnode
-  val demo = lab_search_demo(lab)
-  val current_query = if trim(search_query_input(demo)) == "" then search_visible_query(demo) else trim(search_query_input(demo))
+  val demo = lab.search_demo
+  val current_query = if trim(demo.query_input) == "" then demo.visible_query else trim(demo.query_input)
   node_class("section", "lab-search", "bridge-panel search-panel", [
     node_class("div", "search-panel-head", "bridge-panel-head", [
       node_class("div", "search-panel-copy", "stack", [
@@ -288,19 +291,19 @@ fun suspense_search_panel(lab : workflow_lab) : <div> vnode
         text_class("p", "search-panel-note", "case-detail", "User input stays interactive while a debounced auto-search, mocked server results, and timeout callbacks race through the bridge layer against a menu catalog."),
       ]),
       node_class("div", "search-meta", "summary-row bridge-meta", [
-        summary_chip("Requested", if search_requested_query(demo) == "" then "<none>" else search_requested_query(demo)),
-        summary_chip("Visible", if search_visible_query(demo) == "" then "<fallback>" else search_visible_query(demo)),
-        summary_chip("Status", search_status(demo)),
-        summary_chip("Timeout", search_timeout_status(demo)),
-        summary_chip("Auto", search_auto_status(demo)),
+        summary_chip("Requested", if demo.requested_query == "" then "<none>" else demo.requested_query),
+        summary_chip("Visible", if demo.visible_query == "" then "<fallback>" else demo.visible_query),
+        summary_chip("Status", demo.status),
+        summary_chip("Timeout", demo.timeout_status),
+        summary_chip("Auto", demo.auto_status),
       ]),
     ]),
     node_class("div", "search-controls", "composer-row", [
-      text_input(search_query_channel(), "input", search_query_input(demo), "Pause on `edge`, `queue`, `image`, `dialog` ...", Nil, [input_listener(search_query_channel()), dispatch_lab_enter(Submit_search)]),
+      text_input(search_query_channel(), "input", demo.query_input, "Pause on `edge`, `queue`, `image`, `dialog` ...", Nil, [input_listener(search_query_channel()), dispatch_lab_enter(Submit_search)]),
       button_class(search_submit_payload(), "button button-primary", [dispatch_lab_click(Submit_search)], "Run search"),
-      text_class("span", "search-summary", "mono", "request #" ++ search_request_id(demo).show ++ " / auto #" ++ search_auto_request_id(demo).show),
+      text_class("span", "search-summary", "mono", "request #" ++ demo.request_id.show ++ " / auto #" ++ demo.auto_request_id.show),
     ]),
-    node_class("div", "search-case-row", "button-row bridge-case-row", render_search_case_buttons(search_demo_cases(), search_requested_query(demo), search_visible_query(demo))),
+    node_class("div", "search-case-row", "button-row bridge-case-row", render_search_case_buttons(search_demo_cases(), demo.requested_query, demo.visible_query)),
     node_class("div", "search-menu-grid", "search-menu-grid", render_search_menu(search_menu_items(), current_query)),
     search_result_stage(demo),
   ])
@@ -320,7 +323,7 @@ fun lab_panel_sections(route_name : string, lab : workflow_lab) : lab_view_effec
       node_class("div", "lab-actions", "button-row", [
         button_class("lab-load", "button", [dispatch_lab_click(Load_board)], "Load mock board"),
         button_class("lab-sync", "button button-primary", [dispatch_lab_click(Run_sync)], "Run staged sync"),
-        text_class("span", "lab-status", "mono", "status: " ++ lab_sync_status(lab)),
+        text_class("span", "lab-status", "mono", "status: " ++ lab.sync_status),
       ]),
       node_class("div", "lab-body", "lab-body-grid", [
         incident_grid(lab),
@@ -329,14 +332,14 @@ fun lab_panel_sections(route_name : string, lab : workflow_lab) : lab_view_effec
     ]
 
 pub fun render_lab_panel(item : model) : lab_view_effect vnode
-  val lab = model_lab(item)
+  val lab = item.lab
   val children = [
     node_class("div", "lab-summary", "summary-row", [
       summary_chip("Incidents", lab_incident_count(lab).show),
       summary_chip("Open", lab_open_count(lab).show),
       summary_chip("Drafts", lab_draft_count(lab).show),
       summary_chip("Local cells", lab_local_count(lab).show),
-      summary_chip("Last sync", lab_last_sync_label(lab)),
+      summary_chip("Last sync", lab.last_sync_label),
     ]),
-  ] ++ lab_panel_sections(model_route_name(item), lab)
-  panel("Workflow lab", lab_panel_note(model_route_name(item)), "lab", "lab-panel", children)
+  ] ++ lab_panel_sections(item.route_name, lab)
+  panel("Workflow lab", lab_panel_note(item.route_name), "lab", "lab-panel", children)

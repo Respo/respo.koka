@@ -49,7 +49,7 @@ fun commit(item : model) : _e ()
   val (next_model, next_tree, pending_effects, next_handlers) = render_app(item, demo_test_results())
   val patches = diff_node("0", !tree_ref, next_tree)
   apply_patches(!root_id_ref, patches)
-  browser_set_hash(model_route_name(next_model))
+  browser_set_hash(next_model.route_name)
   model_ref := next_model
   tree_ref := next_tree
   handlers_ref := next_handlers
@@ -98,6 +98,6 @@ pub fun boot(root_id : string) : _e ()
   tree_ref := tree
   handlers_ref := handlers
   mount_html(root_id, render_node("0", tree))
-  browser_set_hash(model_route_name(next_model))
+  browser_set_hash(next_model.route_name)
   log_registry_warnings(event_registry_warnings(handlers))
   run_pending_effects(pending_effects)

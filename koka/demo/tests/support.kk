@@ -145,7 +145,7 @@ pub fun bridge_expect(
   Bridge_expectation(first_request, request_count, audit_count, visible_case, requested_case, shell_status, detail_status)
 
 pub fun bridge_expectation_result(owner : model, requests : list<string>, audits : list<string>, expected : bridge_expectation) : <div> (string, bool)
-  val demo = lab_bridge_demo(model_lab(owner))
+  val demo = owner.lab.bridge_demo
   val request_label = first_text(requests)
   val request_count = length(requests)
   val audit_count = length(audits)
@@ -153,18 +153,18 @@ pub fun bridge_expectation_result(owner : model, requests : list<string>, audits
     "request=" ++ request_label ++
     ", requests=" ++ request_count.show ++
     ", audits=" ++ audit_count.show ++
-    ", visible=" ++ bridge_visible_case(demo) ++
-    ", requested=" ++ bridge_requested_case(demo) ++
-    ", shell=" ++ bridge_shell_status(demo) ++
-    ", detail=" ++ bridge_detail_status(demo)
+    ", visible=" ++ demo.visible_case ++
+    ", requested=" ++ demo.requested_case ++
+    ", shell=" ++ demo.shell_status ++
+    ", detail=" ++ demo.detail_status
   val passed =
     request_label == bridge_expectation/first_request(expected) &&
     request_count == bridge_expectation/request_count(expected) &&
     audit_count == bridge_expectation/audit_count(expected) &&
-    bridge_visible_case(demo) == bridge_expectation/visible_case(expected) &&
-    bridge_requested_case(demo) == bridge_expectation/requested_case(expected) &&
-    bridge_shell_status(demo) == bridge_expectation/shell_status(expected) &&
-    bridge_detail_status(demo) == bridge_expectation/detail_status(expected)
+    demo.visible_case == bridge_expectation/visible_case(expected) &&
+    demo.requested_case == bridge_expectation/requested_case(expected) &&
+    demo.shell_status == bridge_expectation/shell_status(expected) &&
+    demo.detail_status == bridge_expectation/detail_status(expected)
   (detail, passed)
 
 fun attrs_have_value(attrs : list<attr>, target_name : string, target_value : string) : <div> bool

@@ -32,17 +32,17 @@ pub fun dispatch_lab_enter(action : lab_action) : listener
 
 fun find_lab_draft_channel(channel : string, items : list<incident>) : <div> maybe<int>
   match find(items, fn(item) channel == incident_draft_channel(item))
-    Just(item) -> Just(incident_id(item))
+    Just(item) -> Just(item.id)
     Nothing -> Nothing
 
 fun incident_id_from_toggle(payload : string, items : list<incident>) : <div> maybe<int>
   match find(items, fn(item) payload == incident_toggle_payload(item))
-    Just(item) -> Just(incident_id(item))
+    Just(item) -> Just(item.id)
     Nothing -> Nothing
 
 fun incident_id_from_send(payload : string, items : list<incident>) : <div> maybe<int>
   match find(items, fn(item) payload == incident_send_payload(item))
-    Just(item) -> Just(incident_id(item))
+    Just(item) -> Just(item.id)
     Nothing -> Nothing
 
 pub fun dispatch_lab_action(action : lab_action, owner : model) : <audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> model
@@ -65,7 +65,7 @@ fun decode_lab_action(payload : string, owner : model) : <div> maybe<lab_action>
     Just(case_name) -> Just(Load_bridge_case(case_name))
     Nothing -> match decode_search_pick_payload(payload)
       Just(query) -> Just(Search_for(query))
-      Nothing -> match incident_id_from_send(payload, lab_incidents(model_lab(owner)))
+      Nothing -> match incident_id_from_send(payload, owner.lab.incidents)
         Just(incident_id) -> Just(Send_reply(incident_id))
         Nothing -> Nothing
 
@@ -76,7 +76,7 @@ pub fun route_lab_click(payload : string, owner : model) : <audit,current_operat
       Just(result) -> Just(result)
       Nothing -> match resolve_bridge_result(owner, payload)
         Just(result) -> Just(result)
-        Nothing -> match incident_id_from_toggle(payload, lab_incidents(model_lab(owner)))
+        Nothing -> match incident_id_from_toggle(payload, owner.lab.incidents)
           Just(target_id) -> Just(commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, target_id)))
           Nothing -> Nothing
 
@@ -84,6 +84,6 @@ pub fun route_lab_input(channel : string, value : string, owner : model) : <requ
   if channel == search_query_channel() then
     Just(set_search_query(owner, value))
   else
-    match find_lab_draft_channel(channel, lab_incidents(model_lab(owner)))
+    match find_lab_draft_channel(channel, owner.lab.incidents)
       Just(target_id) -> Just(commit_lab_tree(owner, fn() set_local_lab_draft(owner, target_id, value)))
       Nothing -> Nothing

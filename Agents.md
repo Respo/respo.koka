@@ -126,6 +126,16 @@ chrome-devtools take_screenshot --fullPage --filePath .tmp-devtools-full.png
 5. 在 `koka/demo/layout.kk` 里把新 route 接进页面分发。
 6. 如果 demo 有纯逻辑，就把测试加到 `koka/demo/tests.kk` 或独立测试模块。
 
+## 代码风格约定
+
+- **不要写单行 accessor 包装函数**，例如：
+  ```koka
+  pub fun task_title(item : task) : string
+    task/title(item)
+  ```
+  这类函数只是给 struct 字段起别名，拆得越多越难找逻辑。调用方直接内联 `task/title(item)` 或 `item.title`，保持代码密度。
+- 只在以下情况才抽函数：有额外逻辑（条件、组合、副作用），或者跨模块需要稳定的公开接口名称。
+
 ## Koka 常见易错点
 
 - 跨模块使用的 `struct`、`effect`、公开函数要显式 `pub`，否则拆文件后很容易编到一半才报不可见。

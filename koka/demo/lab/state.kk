@@ -13,17 +13,17 @@ pub fun incident_draft_slot(incident_id : int) : state_slot
   hook_state_slot(incident_hook_scope(incident_id), 1)
 
 pub fun lab_incident_expanded(item : workflow_lab, incident_id : int) : <div> bool
-  slot_flag(lab_local_tree(item), incident_expanded_slot(incident_id), False)
+  slot_flag(item.local_tree, incident_expanded_slot(incident_id), False)
 
 pub fun lab_incident_draft(item : workflow_lab, incident_id : int) : <div> string
-  slot_text(lab_local_tree(item), incident_draft_slot(incident_id), "")
+  slot_text(item.local_tree, incident_draft_slot(incident_id), "")
 
 pub fun set_lab_local_tree(owner : model, next_tree : list<state_entry>) : model
-  val lab = model_lab(owner)
+  val lab = owner.lab
   set_lab(owner, lab(local_tree = next_tree))
 
 pub fun commit_lab_tree(owner : model, action : () -> <use_named_state,set_named_state,clear_local_state,use_named_effect,push_hook_scope,pop_hook_scope,use_state,use_state_pair,use_effect,div|e> model) : <div|e> model
-  val (next_model, next_tree, _pending_effect) = run_local_state(lab_local_tree(model_lab(owner)), action)
+  val (next_model, next_tree, _pending_effect) = run_local_state(owner.lab.local_tree, action)
   set_lab_local_tree(next_model, next_tree)
 
 pub fun set_local_lab_draft(owner : model, incident_id : int, draft : string) : <use_named_state,set_named_state,clear_local_state,div> model

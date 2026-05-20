@@ -24,7 +24,7 @@ fun effects_subroutes(active_route : string) : vnode
   ])
 
 pub fun route_bar(item : model) : vnode
-  val active_route = model_route_name(item)
+  val active_route = item.route_name
   val active_section = route_section(active_route)
   val secondary_bar =
     if active_section == "lab" then lab_subroutes(active_route)

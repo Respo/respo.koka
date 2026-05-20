@@ -7,7 +7,7 @@ import demo/shared
 import respo/core
 
 fun render_tiny_items(tasks : list<task>) : <div> list<vnode>
-  map(tasks, fn(item) text_node("li", "tiny-" ++ task_id(item).show, empty_props, task_title(item)))
+  map(tasks, fn(item) text_node("li", "tiny-" ++ task/id(item).show, empty_props, item.title))
 
 fun tiny_task_list(key : string, tasks : list<task>) : <div> vnode
   if is-empty(tasks) then text_class("p", key ++ "-empty", "empty", "None") else node_class("ul", key, "tiny-list", render_tiny_items(tasks))
@@ -25,8 +25,8 @@ fun case_detail(result_name : string, empty_key : string, detail_key : string, e
     Just(item) -> text_class("p", detail_key, "mono", test_result/detail(item))
 
 fun core_effect_cases(item : model) : <div> list<vnode>
-  val active = tasks_for("active", model_tasks(item))
-  val done = tasks_for("done", model_tasks(item))
+  val active = tasks_for("active", item.tasks)
+  val done = tasks_for("done", item.tasks)
   [
     effect_case("Confirm", "`confirm_action` is handled by the browser in app mode and by tests in-process.", text_class("p", "confirm-note", "mono", "Try Remove or Clear done in the todo panel.")),
     effect_case("Ambient filter", "The reducer stays unchanged while handlers project active or done subsets.", node_class("div", "ambient-preview", "preview-grid", [
@@ -42,13 +42,13 @@ fun core_effect_cases(item : model) : <div> list<vnode>
   ]
 
 fun route_effect_cases(item : model, results : list<test_result>) : <div> list<vnode>
-  if model_route_name(item) == "effects-dialogs" then
+  if item.route_name == "effects-dialogs" then
     [effect_case("Dialog overlays", "Inspired by the MoonBit and Rust Respo demos: trigger controlled alert, prompt, dialog, and drawer surfaces without leaving the app tree.", dialog_demo_case(item))]
-  else if model_route_name(item) == "effects-workflow" then
+  else if item.route_name == "effects-workflow" then
     [effect_case("Workflow lab", "The richer demo composes `wait_ms`, mocked server fetch/send, and an ambient operator identity into one deterministic workflow.", case_detail("Workflow sync captures waits", "workflow-empty", "workflow-detail", "Workflow case unavailable.", results))]
-  else if model_route_name(item) == "effects-state" then
+  else if item.route_name == "effects-state" then
     [effect_case("Local state tree", "Per-card drafts and expand/collapse flags live in a keyed state tree instead of leaking into the main domain snapshot.", case_detail("State tree local state", "local-state-empty", "local-state-detail", "Local state case unavailable.", results))]
-  else if model_route_name(item) == "effects-timer" then
+  else if item.route_name == "effects-timer" then
     [effect_case("Timer", "`wait_ms` is handled without real time passing, so the case stays deterministic.", case_detail("Timer simulation", "timer-empty", "timer-detail", "Timer case unavailable.", results))]
   else
     core_effect_cases(item)
@@ -62,6 +62,6 @@ fun effects_panel_note(route_name : string) : string
 
 pub fun effects_panel(item : model, results : list<test_result>) : <div> vnode
   val cases = route_effect_cases(item, results)
-  panel("Effects", effects_panel_note(model_route_name(item)), "effects", "effects-panel", [
+  panel("Effects", effects_panel_note(item.route_name), "effects", "effects-panel", [
     node_class("div", "cases", "case-grid", cases),
   ])

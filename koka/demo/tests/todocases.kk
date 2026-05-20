@@ -21,16 +21,16 @@ pub fun todo_edit_local_state_test() : <div> test_result
   val saved = match handle_todo_click("save-2", drafted)
     Just(result) -> result
     Nothing -> drafted
-  val title = match find_task_by_id(2, model_tasks(saved))
-    Just(item) -> task_title(item)
+  val title = match find_task_by_id(2, saved.tasks)
+    Just(item) -> item.title
     Nothing -> "missing"
-  val started_task = match find_task_by_id(2, model_tasks(started))
+  val started_task = match find_task_by_id(2, started.tasks)
     Just(item) -> task_editor_snapshot(started, item)
     Nothing -> Task_editor_state(False, "")
-  val saved_task = match find_task_by_id(2, model_tasks(saved))
+  val saved_task = match find_task_by_id(2, saved.tasks)
     Just(item) -> task_editor_snapshot(saved, item)
     Nothing -> Task_editor_state(False, "")
-  val local_entries = count_entries(model_todo_local_tree(saved))
+  val local_entries = count_entries(saved.todo_local_tree)
   Test_result(
     "Todo item local editing",
     "title=" ++ title ++ ", local=" ++ local_entries.show ++ ", editing=" ++ task_editor_state/editing(started_task).show,
@@ -66,8 +66,8 @@ pub fun add_task_focus_test() : <div> test_result
   val has_focus_marker = vnode_has_attr_value(panel_node, "data-k-effect", "draft")
   Test_result(
     "Add task schedules focus",
-    "draft=" ++ model_draft(rendered) ++ ", effects=" ++ length(effects).show,
-    model_draft(rendered) == "" && focused_draft && pulsed_notice && has_focus_marker)
+    "draft=" ++ rendered.draft ++ ", effects=" ++ length(effects).show,
+    rendered.draft == "" && focused_draft && pulsed_notice && has_focus_marker)
 
 pub fun start_edit_focus_test() : <div> test_result
   with fun confirm_action(_message) False
@@ -76,13 +76,13 @@ pub fun start_edit_focus_test() : <div> test_result
     Just(result) -> result
     Nothing -> initial_model()
   val (rendered, panel_node, effects, _handlers) = run_todo_panel(next)
-  val expected = match find_task_by_id(2, model_tasks(rendered))
+  val expected = match find_task_by_id(2, rendered.tasks)
     Just(item) -> state_slot_path(task_focus_effect_slot(item))
     Nothing -> "missing"
-  val expected_marker = match find_task_by_id(2, model_tasks(rendered))
+  val expected_marker = match find_task_by_id(2, rendered.tasks)
     Just(item) -> task_draft_channel(item)
     Nothing -> "missing"
-  val local = match find_task_by_id(2, model_tasks(rendered))
+  val local = match find_task_by_id(2, rendered.tasks)
     Just(item) -> task_editor_snapshot(next, item)
     Nothing -> Task_editor_state(False, "")
   val focused_editor = any(effects, fn(item) scheduled_effect_path(item) == expected)

@@ -8,11 +8,11 @@ import respo/state
 
 pub fun dialog_alert_open_test() : <div> test_result
   val (opened, audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("alert"))
-  val current = model_dialog(opened)
+  val current = opened.dialog
   Test_result(
     "Dialog alert opens overlay",
-    "kind=" ++ dialog_kind(current) ++ ", title=" ++ dialog_title(current) ++ ", audits=" ++ length(audits).show,
-    dialog_kind(current) == "alert" && dialog_title(current) == "Alert demo" && length(audits) == 0)
+    "kind=" ++ current.kind.show_kind ++ ", title=" ++ current.title ++ ", audits=" ++ length(audits).show,
+    (match current.kind { Dialog_alert -> True; _ -> False }) && current.title == "Alert demo" && length(audits) == 0)
 
 pub fun dialog_prompt_validation_test() : <div> test_result
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("prompt"))
@@ -20,11 +20,11 @@ pub fun dialog_prompt_validation_test() : <div> test_result
     Just(result) -> result
     Nothing -> opened
   val (submitted, audits) = capture_dialog_click(typed, dialog_submit_payload())
-  val current = model_dialog(submitted)
+  val current = submitted.dialog
   Test_result(
     "Dialog prompt validates input",
-    "error=" ++ dialog_prompt_error(current) ++ ", result=" ++ dialog_result_note(current) ++ ", audits=" ++ length(audits).show,
-    dialog_kind(current) == "prompt" && dialog_prompt_error(current) == "Use 3-8 characters." && length(audits) == 0)
+    "error=" ++ current.prompt_error ++ ", result=" ++ current.result_note ++ ", audits=" ++ length(audits).show,
+    (match current.kind { Dialog_prompt -> True; _ -> False }) && current.prompt_error == "Use 3-8 characters." && length(audits) == 0)
 
 pub fun dialog_prompt_submit_test() : <div> test_result
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("prompt"))
@@ -32,11 +32,11 @@ pub fun dialog_prompt_submit_test() : <div> test_result
     Just(result) -> result
     Nothing -> opened
   val (submitted, audits) = capture_dialog_click(typed, dialog_submit_payload())
-  val current = model_dialog(submitted)
+  val current = submitted.dialog
   Test_result(
     "Dialog prompt submits and closes",
-    "kind=" ++ dialog_kind(current) ++ ", result=" ++ dialog_result_note(current) ++ ", audits=" ++ length(audits).show,
-    not(dialog_is_open(current)) && dialog_result_note(current) == "Prompt submitted: bridge" && length(audits) == 1)
+    "kind=" ++ current.kind.show_kind ++ ", result=" ++ current.result_note ++ ", audits=" ++ length(audits).show,
+    not(dialog_is_open(current)) && current.result_note == "Prompt submitted: bridge" && length(audits) == 1)
 
 pub fun dialog_prompt_focus_effect_test() : <div> test_result
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("prompt"))
@@ -49,9 +49,9 @@ pub fun dialog_prompt_focus_effect_test() : <div> test_result
 pub fun dialog_drawer_action_test() : <div> test_result
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("drawer"))
   val (closed, audits) = capture_dialog_click(opened, dialog_primary_payload())
-  val opened_kind = dialog_kind(model_dialog(opened))
-  val current = model_dialog(closed)
+  val opened_kind = opened.dialog.kind
+  val current = closed.dialog
   Test_result(
     "Dialog drawer action closes overlay",
-    "opened=" ++ opened_kind ++ ", kind=" ++ dialog_kind(current) ++ ", result=" ++ dialog_result_note(current) ++ ", audit=" ++ first_text(audits),
-    opened_kind == "drawer" && not(dialog_is_open(current)) && dialog_result_note(current) == "Drawer action completed." && first_text(audits) == "Drawer action completed.")
+    "opened=" ++ opened_kind.show_kind ++ ", kind=" ++ current.kind.show_kind ++ ", result=" ++ current.result_note ++ ", audit=" ++ first_text(audits),
+    (match opened_kind { Dialog_drawer -> True; _ -> False }) && not(dialog_is_open(current)) && current.result_note == "Drawer action completed." && first_text(audits) == "Drawer action completed.")

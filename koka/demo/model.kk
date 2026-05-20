@@ -2,6 +2,43 @@ module demo/model
 
 import respo/state
 
+pub type incident_severity
+  Severity_p1
+  Severity_p2
+  Severity_p3
+
+pub fun show_severity(s : incident_severity) : string
+  match s
+    Severity_p1 -> "p1"
+    Severity_p2 -> "p2"
+    Severity_p3 -> "p3"
+
+pub type incident_status
+  Status_firing
+  Status_investigating
+  Status_acked
+
+pub fun show_status(s : incident_status) : string
+  match s
+    Status_firing -> "firing"
+    Status_investigating -> "investigating"
+    Status_acked -> "acked"
+
+pub type dialog_kind
+  Dialog_none
+  Dialog_alert
+  Dialog_prompt
+  Dialog_dialog
+  Dialog_drawer
+
+pub fun show_kind(k : dialog_kind) : string
+  match k
+    Dialog_none -> "none"
+    Dialog_alert -> "alert"
+    Dialog_prompt -> "prompt"
+    Dialog_dialog -> "dialog"
+    Dialog_drawer -> "drawer"
+
 pub effect fun confirm_action(message : string) : bool
 pub effect fun audit(message : string) : ()
 pub effect val current_filter : string
@@ -22,8 +59,8 @@ pub struct task
 pub struct incident
   id : int
   title : string
-  severity : string
-  status : string
+  severity : incident_severity
+  status : incident_status
   summary : string
   server_note : string
   updated_by : string
@@ -41,7 +78,7 @@ pub struct suspense_bridge_demo
   detail_request_id : int
 
 pub struct dialog_demo
-  kind : string
+  kind : dialog_kind
   title : string
   message : string
   prompt_value : string
@@ -81,179 +118,28 @@ pub struct model
   lab : workflow_lab
   dialog : dialog_demo
 
-pub fun task_id(item : task) : int
-  task/id(item)
-
-pub fun task_title(item : task) : string
-  task/title(item)
-
-pub fun task_done(item : task) : bool
-  task/done(item)
-
-pub fun model_tasks(item : model) : list<task>
-  model/tasks(item)
-
-pub fun model_draft(item : model) : string
-  model/draft(item)
-
-pub fun model_next_id(item : model) : int
-  model/next_id(item)
-
 pub fun set_next_id(item : model, next_id : int) : model
   item(next_id = next_id)
-
-pub fun model_filter_name(item : model) : string
-  model/filter_name(item)
-
-pub fun model_notice(item : model) : string
-  model/notice(item)
-
-pub fun model_route_name(item : model) : string
-  model/route_name(item)
-
-pub fun model_todo_local_tree(item : model) : list<state_entry>
-  model/todo_local_tree(item)
 
 pub fun set_todo_local_tree(item : model, todo_local_tree : list<state_entry>) : model
   item(todo_local_tree = todo_local_tree)
 
-pub fun model_lab(item : model) : workflow_lab
-  model/lab(item)
-
-pub fun model_dialog(item : model) : dialog_demo
-  model/dialog(item)
-
 pub fun set_tasks(item : model, tasks : list<task>) : model
   item(tasks = tasks)
-
-pub fun incident_id(item : incident) : int
-  incident/id(item)
-
-pub fun incident_title(item : incident) : string
-  incident/title(item)
-
-pub fun incident_severity(item : incident) : string
-  incident/severity(item)
-
-pub fun incident_status(item : incident) : string
-  incident/status(item)
-
-pub fun incident_summary(item : incident) : string
-  incident/summary(item)
-
-pub fun incident_server_note(item : incident) : string
-  incident/server_note(item)
-
-pub fun incident_updated_by(item : incident) : string
-  incident/updated_by(item)
-
-pub fun lab_snapshot_incidents(item : lab_snapshot) : list<incident>
-  lab_snapshot/incidents(item)
-
-pub fun lab_snapshot_summary(item : lab_snapshot) : string
-  lab_snapshot/summary(item)
 
 pub fun initial_bridge_demo(requested_case : string) : suspense_bridge_demo
   Suspense_bridge_demo(requested_case, "", "idle", "idle", 0, 0)
 
 pub fun initial_dialog_demo() : dialog_demo
-  Dialog_demo("none", "", "", "", "", "No overlay interaction yet.", Nil)
+  Dialog_demo(Dialog_none, "", "", "", "", "No overlay interaction yet.", Nil)
 
 pub fun initial_search_demo(query_input : string) : search_demo
   Search_demo(query_input, "", "", "idle", "idle", "idle", 0, 0, Nil, "Type a query, pause to auto-search the menu catalog, keep stale results visible during refresh, and let timeout race against the mocked server response.")
 
-pub fun lab_incidents(item : workflow_lab) : list<incident>
-  workflow_lab/incidents(item)
-
-pub fun lab_activity_log(item : workflow_lab) : list<string>
-  workflow_lab/activity_log(item)
-
-pub fun lab_local_tree(item : workflow_lab) : list<state_entry>
-  workflow_lab/local_tree(item)
-
-pub fun lab_sync_status(item : workflow_lab) : string
-  workflow_lab/sync_status(item)
-
-pub fun lab_last_sync_label(item : workflow_lab) : string
-  workflow_lab/last_sync_label(item)
-
-pub fun lab_bridge_demo(item : workflow_lab) : suspense_bridge_demo
-  workflow_lab/bridge_demo(item)
-
-pub fun lab_search_demo(item : workflow_lab) : search_demo
-  workflow_lab/search_demo(item)
-
-pub fun dialog_kind(item : dialog_demo) : string
-  dialog_demo/kind(item)
-
-pub fun search_query_input(item : search_demo) : string
-  search_demo/query_input(item)
-
-pub fun search_requested_query(item : search_demo) : string
-  search_demo/requested_query(item)
-
-pub fun search_visible_query(item : search_demo) : string
-  search_demo/visible_query(item)
-
-pub fun search_status(item : search_demo) : string
-  search_demo/status(item)
-
-pub fun search_timeout_status(item : search_demo) : string
-  search_demo/timeout_status(item)
-
-pub fun search_auto_status(item : search_demo) : string
-  search_demo/auto_status(item)
-
-pub fun search_request_id(item : search_demo) : int
-  search_demo/request_id(item)
-
-pub fun search_auto_request_id(item : search_demo) : int
-  search_demo/auto_request_id(item)
-
-pub fun search_results(item : search_demo) : list<string>
-  search_demo/results(item)
-
-pub fun search_stage_note(item : search_demo) : string
-  search_demo/stage_note(item)
-
-pub fun dialog_title(item : dialog_demo) : string
-  dialog_demo/title(item)
-
-pub fun dialog_message(item : dialog_demo) : string
-  dialog_demo/message(item)
-
-pub fun dialog_prompt_value(item : dialog_demo) : string
-  dialog_demo/prompt_value(item)
-
-pub fun dialog_prompt_error(item : dialog_demo) : string
-  dialog_demo/prompt_error(item)
-
-pub fun dialog_result_note(item : dialog_demo) : string
-  dialog_demo/result_note(item)
-
-pub fun dialog_activity_log(item : dialog_demo) : list<string>
-  dialog_demo/activity_log(item)
-
 pub fun dialog_is_open(item : dialog_demo) : <div> bool
-  dialog_kind(item) != "none"
-
-pub fun bridge_requested_case(item : suspense_bridge_demo) : string
-  suspense_bridge_demo/requested_case(item)
-
-pub fun bridge_visible_case(item : suspense_bridge_demo) : string
-  suspense_bridge_demo/visible_case(item)
-
-pub fun bridge_shell_status(item : suspense_bridge_demo) : string
-  suspense_bridge_demo/shell_status(item)
-
-pub fun bridge_detail_status(item : suspense_bridge_demo) : string
-  suspense_bridge_demo/detail_status(item)
-
-pub fun bridge_shell_request_id(item : suspense_bridge_demo) : int
-  suspense_bridge_demo/shell_request_id(item)
-
-pub fun bridge_detail_request_id(item : suspense_bridge_demo) : int
-  suspense_bridge_demo/detail_request_id(item)
+  match item.kind
+    Dialog_none -> False
+    _ -> True
 
 pub fun normalize_route(route_name : string) : string
   if route_name == "todo" then "todo"
@@ -288,25 +174,25 @@ pub fun task_remove_id(item : task) : string
   "remove-" ++ task/id(item).show
 
 pub fun task_edit_id(item : task) : string
-  "edit-" ++ task_id(item).show
+  "edit-" ++ task/id(item).show
 
 pub fun task_save_id(item : task) : string
-  "save-" ++ task_id(item).show
+  "save-" ++ task/id(item).show
 
 pub fun task_cancel_id(item : task) : string
-  "cancel-" ++ task_id(item).show
+  "cancel-" ++ task/id(item).show
 
 pub fun task_draft_channel(item : task) : string
-  "task-draft-" ++ task_id(item).show
+  "task-draft-" ++ task/id(item).show
 
 pub fun incident_toggle_payload(item : incident) : string
-  "lab-toggle-" ++ incident_id(item).show
+  "lab-toggle-" ++ incident/id(item).show
 
 pub fun incident_draft_channel(item : incident) : string
-  "lab-draft-" ++ incident_id(item).show
+  "lab-draft-" ++ incident/id(item).show
 
 pub fun incident_send_payload(item : incident) : string
-  "lab-send-" ++ incident_id(item).show
+  "lab-send-" ++ incident/id(item).show
 
 fun incident_state_base(incident_id : int) : string
   "lab/incidents/" ++ incident_id.show
@@ -318,50 +204,50 @@ fun incident_draft_slot(incident_id : int) : state_slot
   named_slot(incident_state_base(incident_id), "draft")
 
 fun incident_expanded(item : workflow_lab, incident_id : int) : <div> bool
-  slot_flag(lab_local_tree(item), incident_expanded_slot(incident_id), False)
+  slot_flag(item.local_tree, incident_expanded_slot(incident_id), False)
 
 fun incident_draft(item : workflow_lab, incident_id : int) : <div> string
-  slot_text(lab_local_tree(item), incident_draft_slot(incident_id), "")
+  slot_text(item.local_tree, incident_draft_slot(incident_id), "")
 
 pub fun has_done_tasks(tasks : list<task>) : <div> bool
-  any(tasks, task_done)
+  any(tasks, fn(i) i.done)
 
 pub fun count_all(tasks : list<task>) : <div> int
   length(tasks)
 
 pub fun count_done(tasks : list<task>) : <div> int
-  length(filter(tasks, task_done))
+  length(filter(tasks, fn(i) i.done))
 
 fun count_incidents(items : list<incident>) : <div> int
   length(items)
 
 fun count_open_incidents(items : list<incident>) : <div> int
-  length(filter(items, fn(item) incident_status(item) != "acked"))
+  length(filter(items, fn(item) match item.status { Status_acked -> False; _ -> True }))
 
 fun count_lines(lines : list<string>) : <div> int
   length(lines)
 
 fun count_non_empty_drafts(item : workflow_lab, incidents : list<incident>) : <div> int
-  length(filter(incidents, fn(incident) incident_draft(item, incident_id(incident)) != ""))
+  length(filter(incidents, fn(incident) incident_draft(item, incident/id(incident)) != ""))
 
 pub fun lab_incident_count(item : workflow_lab) : <div> int
-  count_incidents(lab_incidents(item))
+  count_incidents(item.incidents)
 
 pub fun lab_open_count(item : workflow_lab) : <div> int
-  count_open_incidents(lab_incidents(item))
+  count_open_incidents(item.incidents)
 
 pub fun lab_draft_count(item : workflow_lab) : <div> int
-  count_non_empty_drafts(item, lab_incidents(item))
+  count_non_empty_drafts(item, item.incidents)
 
 pub fun lab_activity_count(item : workflow_lab) : <div> int
-  count_lines(lab_activity_log(item))
+  count_lines(item.activity_log)
 
 pub fun lab_local_count(item : workflow_lab) : <div> int
-  count_entries(lab_local_tree(item))
+  count_entries(item.local_tree)
 
 fun task_visible(item : task) : current_filter bool
-  if current_filter == "active" then not(task_done(item))
-  else if current_filter == "done" then task_done(item)
+  if current_filter == "active" then not(item.done)
+  else if current_filter == "done" then item.done
   else True
 
 pub fun visible_tasks(tasks : list<task>) : <current_filter,div> list<task>
@@ -372,13 +258,13 @@ pub fun tasks_for(filter_name : string, tasks : list<task>) : <div> list<task>
   visible_tasks(tasks)
 
 pub fun find_incident_by_id(target_id : int, items : list<incident>) : <div> maybe<incident>
-  find(items, fn(item) target_id == incident_id(item))
+  find(items, fn(item) target_id == incident/id(item))
 
 pub fun find_task_by_id(target_id : int, tasks : list<task>) : <div> maybe<task>
-  find(tasks, fn(item) target_id == task_id(item))
+  find(tasks, fn(item) target_id == task/id(item))
 
 pub fun lab_incident_by_id(item : workflow_lab, target_id : int) : <div> maybe<incident>
-  find_incident_by_id(target_id, lab_incidents(item))
+  find_incident_by_id(target_id, item.incidents)
 
 pub fun set_notice(item : model, notice : string) : model
   item(notice = notice)
