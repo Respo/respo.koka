@@ -1,5 +1,6 @@
 module demo/tests/basics
 
+import library/bridge
 import demo/model
 import demo/seed
 import demo/tests/support
@@ -16,7 +17,7 @@ fun timer_logic() : <wait_ms> string
   "timer-ready"
 
 pub fun component_render_test() : <div> test_result
-  val html = render_node("0", text_node("button", "sample", props([class_attr("demo-button")], [click_listener("run-sample")]), "Run"))
+  val html = render_node("0", button([class_attr("demo-button")], [click_listener("run-sample")], "Run"))
   val expected = "<button data-kpath=\"0\" class=\"demo-button\" data-k-click=\"run-sample\">Run</button>"
   Test_result("Component render snapshot", if html == expected then "Stable HTML output for a small component." else html, html == expected)
 
@@ -132,10 +133,7 @@ pub fun vnode_click_payload_matches_registry_test() : <div> test_result
     Just(r) -> r
     Nothing -> initial_model()
   val (_, tree, _, registry) = run_todo_panel(editing)
-  val cancel_key = match find(editing.tasks, fn(item) 2 == task/id(item))
-    Just(item) -> "cancel-" ++ task/id(item).show
-    Nothing -> "missing"
-  val cancel_node_payload = match vnode_find_key(tree, cancel_key)
+  val cancel_node_payload = match vnode_find_text(tree, "Cancel")
     Just(node) -> vnode_click_payload(node)
     Nothing -> ""
   val in_registry = match find_registered_click(registry, cancel_node_payload)
@@ -143,7 +141,7 @@ pub fun vnode_click_payload_matches_registry_test() : <div> test_result
     Nothing -> False
   Test_result(
     "Vnode click payload matches registry",
-    "key=" ++ cancel_key ++ ", payload=" ++ cancel_node_payload ++ ", in_registry=" ++ in_registry.show,
+    "payload=" ++ cancel_node_payload ++ ", in_registry=" ++ in_registry.show,
     cancel_node_payload != "" && in_registry)
 
 // Verify that firing the "cancel-edit" handler via harness produces the same
@@ -175,7 +173,7 @@ pub fun harness_cancel_edit_test() : <div> test_result
 pub fun harness_draft_input_test() : <div> test_result
   val h0 = todo_harness(initial_model())
   val h1 = harness_fire_named_input(h0, "draft-input", "typed via harness", todo_harness)
-  val input_value = match vnode_find_key(h1.tree, "draft")
+  val input_value = match vnode_find_attr_value(h1.tree, "data-k-effect", "draft")
     Just(node) -> vnode_get_attr(node, "value")
     Nothing -> "node-missing"
   Test_result(

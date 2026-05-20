@@ -1,5 +1,6 @@
 module demo/tests/labcases
 
+import library/bridge
 import demo/model
 import demo/seed
 import demo/lab/state

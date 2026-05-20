@@ -156,10 +156,10 @@ fun dismiss_button(key : string, class_name : string, marker : maybe<string>, pa
   text_node("button", key, props(attrs, [click_listener(payload)]), label)
 
 fun dialog_header(current : dialog_demo) : <div> vnode
-  node_class("div", "dialog-header", "dialog-header", [
-    node_class("div", "dialog-header-copy", "stack", [
-      text_class("strong", "dialog-title", "section-title", current.title),
-      text_class("p", "dialog-message", "case-detail", current.message),
+  div([class_attr("dialog-header")], [
+    div([class_attr("stack")], [
+      strong([class_attr("section-title")], current.title),
+      p([class_attr("case-detail")], current.message),
     ]),
     dismiss_button("dialog-close-top", "button", Nothing, dialog_close_payload(), "Close"),
   ])
@@ -167,16 +167,16 @@ fun dialog_header(current : dialog_demo) : <div> vnode
 fun dialog_actions(footer : dialog_footer) : <div> vnode
   match footer
     Footer_submit(submit_label) ->
-      node_class("div", "dialog-actions", "button-row dialog-actions", [
+      div([class_attr("button-row dialog-actions")], [
         dismiss_button("dialog-cancel", "button", Nothing, dialog_close_payload(), "Cancel"),
-        button_class("dialog-submit", "button button-primary", [click_listener(dialog_submit_payload())], submit_label),
+        button([class_attr("button button-primary")], [click_listener(dialog_submit_payload())], submit_label),
       ])
     Footer_primary_only(primary_label) ->
-      node_class("div", "dialog-actions", "button-row dialog-actions", [
+      div([class_attr("button-row dialog-actions")], [
         dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), dialog_primary_payload(), primary_label),
       ])
     Footer_primary_with_cancel(primary_label) ->
-      node_class("div", "dialog-actions", "button-row dialog-actions", [
+      div([class_attr("button-row dialog-actions")], [
         dismiss_button("dialog-cancel", "button", Nothing, dialog_close_payload(), "Cancel"),
         dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), dialog_primary_payload(), primary_label),
       ])
@@ -185,14 +185,14 @@ fun dismiss_backdrop() : <div> vnode
   node("div", "dialog-backdrop", props(append_dialog_attrs([class_attr("dialog-backdrop")], [dialog_dismiss_attr()]), [click_listener(dialog_close_payload())]), Nil)
 
 fun overlay_card(current : dialog_demo, spec : dialog_overlay_spec) : <div> vnode
-  node_class("article", spec.card_key, spec.card_class, [
+  article_key(spec.card_key, [class_attr(spec.card_class)], [
     dialog_header(current),
-    node_class("div", spec.card_key ++ "-body", "dialog-panel-body", spec.body_children),
+    div([class_attr("dialog-panel-body")], spec.body_children),
     dialog_actions(spec.footer),
   ])
 
 pub fun render_dialog_overlay(current : dialog_demo, spec : dialog_overlay_spec) : <div> vnode
-  node("section", spec.card_key ++ "-shell", props(append_dialog_attrs([class_attr(spec.shell_class)], dialog_shell_attrs(current)), Nil), [
+  section_key(spec.card_key ++ "-shell", append_dialog_attrs([class_attr(spec.shell_class)], dialog_shell_attrs(current)), [
     dismiss_backdrop(),
     overlay_card(current, spec),
   ])

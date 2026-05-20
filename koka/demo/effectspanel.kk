@@ -7,35 +7,35 @@ import demo/shared
 import respo/core
 
 fun render_tiny_items(tasks : list<task>) : <div> list<vnode>
-  map(tasks, fn(item) text_node("li", "tiny-" ++ task/id(item).show, empty_props, item.title))
+  map(tasks, fn(item) li_text_key("tiny-" ++ task/id(item).show, Nil, item.title))
 
 fun tiny_task_list(key : string, tasks : list<task>) : <div> vnode
-  if is-empty(tasks) then text_class("p", key ++ "-empty", "empty", "None") else node_class("ul", key, "tiny-list", render_tiny_items(tasks))
+  if is-empty(tasks) then p([class_attr("empty")], "None") else ul_key(key, [class_attr("tiny-list")], render_tiny_items(tasks))
 
 fun effect_case(title : string, detail : string, body : vnode) : vnode
-  node_class("article", title, "case-item", [
-    text_class("h3", title ++ "-title", "case-title", title),
-    text_class("p", title ++ "-detail", "case-detail", detail),
+  article_key(title, [class_attr("case-item")], [
+    h3([class_attr("case-title")], title),
+    p([class_attr("case-detail")], detail),
     body,
   ])
 
 fun case_detail(result_name : string, empty_key : string, detail_key : string, empty_text : string, results : list<test_result>) : <div> vnode
   match find(results, fn(item) test_result/name(item) == result_name)
-    Nothing -> text_class("p", empty_key, "empty", empty_text)
-    Just(item) -> text_class("p", detail_key, "mono", test_result/detail(item))
+    Nothing -> p_key(empty_key, [class_attr("empty")], empty_text)
+    Just(item) -> p_key(detail_key, [class_attr("mono")], test_result/detail(item))
 
 fun core_effect_cases(item : model) : <div> list<vnode>
   val active = tasks_for("active", item.tasks)
   val done = tasks_for("done", item.tasks)
   [
-    effect_case("Confirm", "`confirm_action` is handled by the browser in app mode and by tests in-process.", text_class("p", "confirm-note", "mono", "Try Remove or Clear done in the todo panel.")),
-    effect_case("Ambient filter", "The reducer stays unchanged while handlers project active or done subsets.", node_class("div", "ambient-preview", "preview-grid", [
-      node_class("div", "active-preview", "mini-panel", [
-        text_node("strong", "active-title", empty_props, "Active"),
+    effect_case("Confirm", "`confirm_action` is handled by the browser in app mode and by tests in-process.", p([class_attr("mono")], "Try Remove or Clear done in the todo panel.")),
+    effect_case("Ambient filter", "The reducer stays unchanged while handlers project active or done subsets.", div([class_attr("preview-grid")], [
+      div([class_attr("mini-panel")], [
+        strong(Nil, "Active"),
         tiny_task_list("active-list", active),
       ]),
-      node_class("div", "done-preview", "mini-panel", [
-        text_node("strong", "done-title", empty_props, "Done"),
+      div([class_attr("mini-panel")], [
+        strong(Nil, "Done"),
         tiny_task_list("done-list", done),
       ]),
     ])),
@@ -63,5 +63,5 @@ fun effects_panel_note(route_name : string) : string
 pub fun effects_panel(item : model, results : list<test_result>) : <div> vnode
   val cases = route_effect_cases(item, results)
   panel("Effects", effects_panel_note(item.route_name), "effects", "effects-panel", [
-    node_class("div", "cases", "case-grid", cases),
+    div([class_attr("case-grid")], cases),
   ])

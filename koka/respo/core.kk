@@ -20,10 +20,10 @@ pub fun dom_event_kind_name(kind : dom_event_kind) : string
 pub fun props(attrs : list<attr>, listeners : list<listener>) : node_props
   Node_props(attrs, listeners)
 
-pub fun class_props(class_name : string) : node_props
-  props([class_attr(class_name)], Nil)
-
 pub val empty_props : node_props = Node_props(Nil, Nil)
+
+fun auto_key() : string
+  ""
 
 // Construct a keyed VDOM node that can later be diffed and patched.
 // Keep `key` stable among siblings; feature code should usually build nodes through `el(...)` and higher-level state/event helpers.
@@ -40,27 +40,112 @@ pub fun text_node(tag : string, key : string, options : node_props, text : strin
 pub fun leaf_node(tag : string, key : string, options : node_props) : vnode
   el(tag, key, node_props/attrs(options), node_props/listeners(options), "", Nil)
 
-pub fun node_class(tag : string, key : string, class_name : string, children : list<vnode>) : vnode
-  node(tag, key, class_props(class_name), children)
+// React-like tag helpers default to an automatic empty key; keep explicit keyed variants for lists and targeted tests.
+pub fun div(attrs : list<attr>, children : list<vnode>) : vnode
+  el("div", auto_key(), attrs, Nil, "", children)
 
-pub fun text_class(tag : string, key : string, class_name : string, text : string) : vnode
-  text_node(tag, key, class_props(class_name), text)
+pub fun div_key(key : string, attrs : list<attr>, children : list<vnode>) : vnode
+  el("div", key, attrs, Nil, "", children)
 
-pub fun button_class(key : string, class_name : string, listeners : list<listener>, label : string) : vnode
-  text_node("button", key, props([class_attr(class_name)], listeners), label)
+pub fun section(attrs : list<attr>, children : list<vnode>) : vnode
+  el("section", auto_key(), attrs, Nil, "", children)
+
+pub fun section_key(key : string, attrs : list<attr>, children : list<vnode>) : vnode
+  el("section", key, attrs, Nil, "", children)
+
+pub fun article(attrs : list<attr>, children : list<vnode>) : vnode
+  el("article", auto_key(), attrs, Nil, "", children)
+
+pub fun article_key(key : string, attrs : list<attr>, children : list<vnode>) : vnode
+  el("article", key, attrs, Nil, "", children)
+
+pub fun aside(attrs : list<attr>, children : list<vnode>) : vnode
+  el("aside", auto_key(), attrs, Nil, "", children)
+
+pub fun header(attrs : list<attr>, children : list<vnode>) : vnode
+  el("header", auto_key(), attrs, Nil, "", children)
+
+pub fun nav(attrs : list<attr>, children : list<vnode>) : vnode
+  el("nav", auto_key(), attrs, Nil, "", children)
+
+pub fun nav_key(key : string, attrs : list<attr>, children : list<vnode>) : vnode
+  el("nav", key, attrs, Nil, "", children)
+
+pub fun ul(attrs : list<attr>, children : list<vnode>) : vnode
+  el("ul", auto_key(), attrs, Nil, "", children)
+
+pub fun ul_key(key : string, attrs : list<attr>, children : list<vnode>) : vnode
+  el("ul", key, attrs, Nil, "", children)
+
+pub fun li(attrs : list<attr>, children : list<vnode>) : vnode
+  el("li", auto_key(), attrs, Nil, "", children)
+
+pub fun li_key(key : string, attrs : list<attr>, children : list<vnode>) : vnode
+  el("li", key, attrs, Nil, "", children)
+
+pub fun li_text(attrs : list<attr>, text : string) : vnode
+  el("li", auto_key(), attrs, Nil, text, Nil)
+
+pub fun li_text_key(key : string, attrs : list<attr>, text : string) : vnode
+  el("li", key, attrs, Nil, text, Nil)
+
+pub fun span(attrs : list<attr>, text : string) : vnode
+  el("span", auto_key(), attrs, Nil, text, Nil)
+
+pub fun span_key(key : string, attrs : list<attr>, text : string) : vnode
+  el("span", key, attrs, Nil, text, Nil)
+
+pub fun strong(attrs : list<attr>, text : string) : vnode
+  el("strong", auto_key(), attrs, Nil, text, Nil)
+
+pub fun strong_key(key : string, attrs : list<attr>, text : string) : vnode
+  el("strong", key, attrs, Nil, text, Nil)
+
+pub fun p(attrs : list<attr>, text : string) : vnode
+  el("p", auto_key(), attrs, Nil, text, Nil)
+
+pub fun p_key(key : string, attrs : list<attr>, text : string) : vnode
+  el("p", key, attrs, Nil, text, Nil)
+
+pub fun h1(attrs : list<attr>, text : string) : vnode
+  el("h1", auto_key(), attrs, Nil, text, Nil)
+
+pub fun h2(attrs : list<attr>, text : string) : vnode
+  el("h2", auto_key(), attrs, Nil, text, Nil)
+
+pub fun h3(attrs : list<attr>, text : string) : vnode
+  el("h3", auto_key(), attrs, Nil, text, Nil)
+
+pub fun button(attrs : list<attr>, listeners : list<listener>, label : string) : vnode
+  el("button", auto_key(), attrs, listeners, label, Nil)
+
+pub fun button_key(key : string, attrs : list<attr>, listeners : list<listener>, label : string) : vnode
+  el("button", key, attrs, listeners, label, Nil)
+
+pub fun input(attrs : list<attr>, listeners : list<listener>) : vnode
+  el("input", auto_key(), attrs, listeners, "", Nil)
+
+pub fun input_key(key : string, attrs : list<attr>, listeners : list<listener>) : vnode
+  el("input", key, attrs, listeners, "", Nil)
 
 fun append_attrs(left : list<attr>, right : list<attr>) : <div> list<attr>
   match left
     Nil -> right
     Cons(head, rest) -> Cons(head, append_attrs(rest, right))
 
-pub fun text_input(key : string, class_name : string, value : string, placeholder : string, extra_attrs : list<attr>, listeners : list<listener>) : <div> vnode
-  leaf_node("input", key, props(append_attrs([
-    class_attr(class_name),
+pub fun input_text(attrs : list<attr>, listeners : list<listener>, value : string, placeholder : string) : <div> vnode
+  input(append_attrs([
     text_attr("type", "text"),
     text_attr("value", value),
     text_attr("placeholder", placeholder),
-  ], extra_attrs), listeners))
+  ], attrs), listeners)
+
+pub fun input_text_key(key : string, attrs : list<attr>, listeners : list<listener>, value : string, placeholder : string) : <div> vnode
+  input_key(key, append_attrs([
+    text_attr("type", "text"),
+    text_attr("value", value),
+    text_attr("placeholder", placeholder),
+  ], attrs), listeners)
 
 // Use this for CSS classes; prefer small helpers like this over spelling raw `Attr("class", ...)` at call-sites.
 pub fun class_attr(value : string) : attr
@@ -99,6 +184,30 @@ fun vnode_find_key_in_children(children : list<vnode>, target : string) : <div> 
       match vnode_find_key(child, target)
         Just(found) -> Just(found)
         Nothing -> vnode_find_key_in_children(rest, target)
+
+pub fun vnode_find_attr_value(node : vnode, name : string, value : string) : <div> maybe<vnode>
+  if vnode_get_attr(node, name) == value then Just(node)
+  else vnode_find_attr_value_in_children(vnode/children(node), name, value)
+
+fun vnode_find_attr_value_in_children(children : list<vnode>, name : string, value : string) : <div> maybe<vnode>
+  match children
+    Nil -> Nothing
+    Cons(child, rest) ->
+      match vnode_find_attr_value(child, name, value)
+        Just(found) -> Just(found)
+        Nothing -> vnode_find_attr_value_in_children(rest, name, value)
+
+pub fun vnode_find_text(node : vnode, target_text : string) : <div> maybe<vnode>
+  if vnode/text(node) == target_text then Just(node)
+  else vnode_find_text_in_children(vnode/children(node), target_text)
+
+fun vnode_find_text_in_children(children : list<vnode>, target_text : string) : <div> maybe<vnode>
+  match children
+    Nil -> Nothing
+    Cons(child, rest) ->
+      match vnode_find_text(child, target_text)
+        Just(found) -> Just(found)
+        Nothing -> vnode_find_text_in_children(rest, target_text)
 
 // Return the value of an attribute by name; "" if not present.
 pub fun vnode_get_attr(node : vnode, name : string) : string

@@ -1,10 +1,10 @@
 module demo/lab/events
 
-import demo/bridge
 import demo/lab/search
 import demo/model
 import demo/lab/state
 import demo/lab/workflow
+import library/bridge
 import library/search
 import respo/core
 

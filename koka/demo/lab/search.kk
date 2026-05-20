@@ -1,8 +1,8 @@
 module demo/lab/search
 
-import demo/bridge
 import demo/model
 import demo/seed
+import library/bridge
 import library/search
 
 fun search_idle_note() : string

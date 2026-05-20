@@ -1,6 +1,5 @@
 module demo/lab/workflow
 
-import demo/bridge
 import demo/model
 import demo/lab/state
 import library/bridge
@@ -19,15 +18,8 @@ fun start_bridge_shell(owner : model, case_name : string) : <request_bridge_reso
     Nothing -> owner(notice = "Unknown bridge demo case: " ++ case_name)
     Just(_case_item) -> {
       val lab = owner.lab
-      val demo = lab.bridge_demo
-      val next_shell_id = demo.shell_request_id + 1
-      val has_visible_case = demo.visible_case != ""
-      val next_demo = demo(
-        requested_case = case_name,
-        shell_status = if has_visible_case then "refreshing" else "pending",
-        detail_status = if has_visible_case then demo.detail_status else "idle",
-        shell_request_id = next_shell_id)
-      request_bridge_result("shell", case_name, next_shell_id, bridge_shell_delay(case_name))
+      val (next_demo, has_visible_case) = start_bridge_shell_demo(lab.bridge_demo, case_name)
+      request_bridge_result("shell", case_name, next_demo.shell_request_id, bridge_shell_delay(case_name))
       audit("Scheduled suspense-like shell bridge for `" ++ case_name ++ "`.")
       val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] shell pending for " ++ case_name)
       owner(lab = next_lab, notice = if has_visible_case then "Bridge demo is refreshing while keeping stale content visible." else "Bridge demo entered the outer fallback state.")
@@ -35,11 +27,9 @@ fun start_bridge_shell(owner : model, case_name : string) : <request_bridge_reso
 
 fun start_bridge_detail(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
   val lab = owner.lab
-  val demo = lab.bridge_demo
-  val next_detail_id = demo.detail_request_id + 1
-  request_bridge_result("detail", case_name, next_detail_id, bridge_detail_delay(case_name))
+  val next_demo = start_bridge_detail_demo(lab.bridge_demo)
+  request_bridge_result("detail", case_name, next_demo.detail_request_id, bridge_detail_delay(case_name))
   audit("Scheduled suspense-like detail bridge for `" ++ case_name ++ "`.")
-  val next_demo = demo(detail_status = "pending", detail_request_id = next_detail_id)
   val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] nested detail pending for " ++ case_name)
   owner(lab = next_lab, notice = "Outer shell resolved; nested diagnostics are still loading.")
 
@@ -49,16 +39,16 @@ pub fun resolve_bridge_result(owner : model, payload : string) : <request_bridge
       val lab = owner.lab
       val demo = lab.bridge_demo
       if resource_tag == "bridge-shell" then
-        if request_id != demo.shell_request_id || case_name != demo.requested_case then
+        if not(bridge_shell_matches(demo, case_name, request_id)) then
           Just(owner)
         else
           Just(resolve_bridge_shell(owner, case_name))
       else if resource_tag == "bridge-detail" then
-        if request_id != demo.detail_request_id || case_name != demo.requested_case then
+        if not(bridge_detail_matches(demo, case_name, request_id)) then
           Just(owner)
         else {
           audit("Nested suspense-like detail resolved for `" ++ case_name ++ "`.")
-          val next_demo = demo(detail_status = "ready")
+          val next_demo = resolve_bridge_detail_demo(demo)
           val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] nested detail ready for " ++ case_name)
           Just(owner(lab = next_lab, notice = "Nested diagnostics resolved after the shell became visible."))
         }
@@ -126,8 +116,7 @@ pub fun send_reply(item : model, incident_id : int) : <wait_ms,post_lab_reply,no
 
 pub fun resolve_bridge_shell(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
   val lab = owner.lab
-  val demo = lab.bridge_demo
-  val next_demo = demo(visible_case = case_name, shell_status = "ready")
+  val next_demo = resolve_bridge_shell_demo(lab.bridge_demo, case_name)
   val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] shell ready for " ++ case_name)
   start_bridge_detail(owner(lab = next_lab), case_name)
 

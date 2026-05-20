@@ -4,6 +4,7 @@ import demo/dialogs
 import demo/labpanel
 import demo/model
 import demo/todopanel
+import library/bridge
 
 pub fun dispatch_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> model
   match handle_todo_click(payload, item)

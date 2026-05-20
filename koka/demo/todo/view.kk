@@ -27,25 +27,25 @@ pub fun task_item_view(item : task) : todo_view_effect vnode
       } else ()
     })
     val detail = if editing then
-        node_class("div", "editor-" ++ tid.show, "task-main", [
-          text_input("task-draft-" ++ tid.show, "input", draft, "Edit title locally before saving...", [text_attr("data-k-effect", "task-draft-" ++ tid.show)], [
+        div([class_attr("task-main")], [
+          input_text_key("task-draft-" ++ tid.show, [class_attr("input"), text_attr("data-k-effect", "task-draft-" ++ tid.show)], [
             on_named_input(item_scope, "draft-input", fn(value, owner) commit_task_tree(owner, fn() {
               set_editing(True)
               set_draft(value)
               owner
             })),
             dispatch_todo_enter(Save_task_edit(tid)),
-          ]),
+          ], draft, "Edit title locally before saving..."),
         ])
       else
-        node_class("div", "meta-" ++ tid.show, "task-main", [
-          text_class("strong", "title-" ++ tid.show, "task-title", item.title),
-          text_class("span", "status-" ++ tid.show, "task-status", status_text(item.done)),
+        div([class_attr("task-main")], [
+          strong([class_attr("task-title")], item.title),
+          span([class_attr("task-status")], status_text(item.done)),
         ])
     val actions = if editing then
         [
-          button_class("save-" ++ tid.show, "button button-primary", [dispatch_todo_click(Save_task_edit(tid))], "Save"),
-          button_class("cancel-" ++ tid.show, "button", [on_named_click(item_scope, "cancel-edit", fn(owner) commit_task_tree(owner, fn() {
+          button([class_attr("button button-primary")], [dispatch_todo_click(Save_task_edit(tid))], "Save"),
+          button([class_attr("button")], [on_named_click(item_scope, "cancel-edit", fn(owner) commit_task_tree(owner, fn() {
             clear_slot(task_editing_slot(item))
             clear_slot(task_draft_slot(item))
             owner(notice = "Cancelled local task edit.")
@@ -53,13 +53,13 @@ pub fun task_item_view(item : task) : todo_view_effect vnode
         ]
       else
         [
-          button_class("edit-" ++ tid.show, "button", [dispatch_todo_click(Start_task_edit(tid))], "Edit"),
-          button_class("toggle-" ++ tid.show, "button", [dispatch_todo_click(Toggle_task(tid))], if item.done then "Undo" else "Done"),
-          button_class("remove-" ++ tid.show, "button button-danger", [dispatch_todo_click(Remove_task(tid))], "Remove"),
+          button([class_attr("button")], [dispatch_todo_click(Start_task_edit(tid))], "Edit"),
+          button([class_attr("button")], [dispatch_todo_click(Toggle_task(tid))], if item.done then "Undo" else "Done"),
+          button([class_attr("button button-danger")], [dispatch_todo_click(Remove_task(tid))], "Remove"),
         ]
-    node_class("li", tid.show, "task-item", [
+    li_key(tid.show, [class_attr("task-item")], [
       detail,
-      node_class("div", "actions-" ++ tid.show, "task-actions", actions),
+      div([class_attr("task-actions")], actions),
     ])
   })
 
@@ -67,11 +67,11 @@ fun render_task_items_view(tasks : list<task>) : todo_view_effect list<vnode>
   map(tasks, task_item_view)
 
 fun task_list(key : string, tasks : list<task>) : todo_view_effect vnode
-  if is-empty(tasks) then text_class("p", key ++ "-empty", "empty", "No tasks in this view.") else node_class("ul", key, "task-list", render_task_items_view(tasks))
+  if is-empty(tasks) then p([class_attr("empty")], "No tasks in this view.") else ul_key(key, [class_attr("task-list")], render_task_items_view(tasks))
 
 fun filter_button(label : string, value : string, active : bool) : <register_listener<model,browser_event_effect>,div> vnode
   val class_name = if active then "button button-active" else "button"
-  button_class(value, class_name, [dispatch_todo_click(Set_filter(value))], label)
+  button([class_attr(class_name)], [dispatch_todo_click(Set_filter(value))], label)
 
 pub fun render_todo_panel(owner : model, panel_state : todo_panel_state) : todo_view_effect vnode
   component(todo_effect_scope(), fn() {
@@ -85,20 +85,20 @@ pub fun render_todo_panel(owner : model, panel_state : todo_panel_state) : todo_
       if has_recent_add_notice(panel_state) then browser_flash_marker(root_id, "todo-note", "effect-pulse") else ()
     })
     panel("Todo", panel_state.notice, "todo", "todo-panel", [
-      node_class("div", "summary", "summary-row", [
+      div([class_attr("summary-row")], [
         summary_chip("Tasks", total.show),
         summary_chip("Done", done_task_count(panel_state).show),
         summary_chip("Filter", panel_state.filter_name),
       ]),
-      node_class("div", "composer", "composer-row", [
-        text_input("draft", "input", panel_state.draft, "Add a task or effect experiment...", [text_attr("data-k-effect", "draft")], [
+      div([class_attr("composer-row")], [
+        input_text([class_attr("input"), text_attr("data-k-effect", "draft")], [
           on_named_input(panel_scope, "draft-input", fn(value, next_owner : model) next_owner(draft = value)),
           dispatch_todo_enter(Add_task),
-        ]),
-        button_class("add-task", "button button-primary", [dispatch_todo_click(Add_task)], "Add"),
-        button_class("clear-completed", "button", [dispatch_todo_click(Clear_completed)], "Clear done"),
+        ], panel_state.draft, "Add a task or effect experiment..."),
+        button([class_attr("button button-primary")], [dispatch_todo_click(Add_task)], "Add"),
+        button([class_attr("button")], [dispatch_todo_click(Clear_completed)], "Clear done"),
       ]),
-      node_class("div", "filters", "button-row", [
+      div([class_attr("button-row")], [
         filter_button("All", "all", panel_state.filter_name == "all"),
         filter_button("Active", "active", panel_state.filter_name == "active"),
         filter_button("Done", "done", panel_state.filter_name == "done"),

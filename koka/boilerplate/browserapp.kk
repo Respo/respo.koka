@@ -9,6 +9,7 @@ import demo/seed
 import demo/controller
 import demo/view
 import demo/tests
+import library/bridge
 import respo/state
 
 noinline val root_id_ref : ref<global,string> = unsafe-total { ref("app") }

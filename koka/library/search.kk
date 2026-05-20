@@ -185,27 +185,27 @@ fun search_case_button(item : search_case, requested_query : string, visible_que
     if query == visible_query then "button button-active"
     else if query == requested_query then "button button-primary bridge-button-pending"
     else "button"
-  button_class("search-case-" ++ query, class_name, [dispatch_search(query)], search_case/label(item))
+  button([class_attr(class_name)], [dispatch_search(query)], search_case/label(item))
 
 pub fun render_search_case_buttons(items : list<search_case>, requested_query : string, visible_query : string, dispatch_search : string -> listener) : <div> list<vnode>
   map(items, fn(item) search_case_button(item, requested_query, visible_query, dispatch_search))
 
 fun render_menu_keyword_pills(items : list<string>, key_prefix : string) : <div> list<vnode>
-  map-indexed(items, fn(index, item) text_class("span", key_prefix ++ "-keyword-" ++ index.show, "search-keyword-chip", item))
+  map-indexed(items, fn(index, item) span_key(key_prefix ++ "-keyword-" ++ index.show, [class_attr("search-keyword-chip")], item))
 
 fun search_menu_card(item : search_menu_item, query : string, dispatch_search : string -> listener) : <div> vnode
   val is_match = search_menu_matches_query(item, query)
   val button_class_name = if query == search_menu_item/query_hint(item) then "button button-active" else if is_match then "button button-primary" else "button"
-  node_class("article", "search-menu-" ++ search_menu_item/query_hint(item) ++ "-" ++ search_menu_item/title(item), if is_match then "search-menu-card search-menu-card-match" else "search-menu-card", [
-    node_class("div", "search-menu-head-" ++ search_menu_item/query_hint(item), "search-menu-head", [
-      node_class("div", "search-menu-copy-" ++ search_menu_item/query_hint(item), "stack", [
-        text_class("strong", "search-menu-title-" ++ search_menu_item/query_hint(item), "section-title", search_menu_item/title(item)),
-        text_class("p", "search-menu-route-" ++ search_menu_item/query_hint(item), "mono", search_menu_item/route_hint(item)),
+  article([class_attr(if is_match then "search-menu-card search-menu-card-match" else "search-menu-card")], [
+    div([class_attr("search-menu-head")], [
+      div([class_attr("stack")], [
+        strong([class_attr("section-title")], search_menu_item/title(item)),
+        p([class_attr("mono")], search_menu_item/route_hint(item)),
       ]),
-      button_class("search-menu-trigger-" ++ search_menu_item/query_hint(item), button_class_name, [dispatch_search(search_menu_item/query_hint(item))], "Search " ++ search_menu_item/query_hint(item)),
+      button([class_attr(button_class_name)], [dispatch_search(search_menu_item/query_hint(item))], "Search " ++ search_menu_item/query_hint(item)),
     ]),
-    text_class("p", "search-menu-note-" ++ search_menu_item/query_hint(item), "case-detail", search_menu_item/note(item)),
-    node_class("div", "search-menu-keywords-" ++ search_menu_item/query_hint(item), "search-menu-keywords", render_menu_keyword_pills(search_menu_item/keywords(item), search_menu_item/query_hint(item))),
+    p([class_attr("case-detail")], search_menu_item/note(item)),
+    div([class_attr("search-menu-keywords")], render_menu_keyword_pills(search_menu_item/keywords(item), search_menu_item/query_hint(item))),
   ])
 
 pub fun render_search_menu(items : list<search_menu_item>, query : string, dispatch_search : string -> listener) : <div> list<vnode>
@@ -293,33 +293,33 @@ pub fun apply_search_result(demo : search_demo, query : string, results : list<s
     stage_note = if recovered then recovered_note else resolved_note), recovered)
 
 fun search_auto_banner() : vnode
-  node_class("div", "search-auto-banner", "bridge-transition-banner search-auto-banner", [
-    node_class("div", "search-auto-head", "bridge-transition-head", [
-      text_class("strong", "search-auto-title", "bridge-fallback-title", "Typing pause armed an automatic search"),
-      text_class("span", "search-auto-status", "incident-status incident-status-investigating", "armed"),
+  div([class_attr("bridge-transition-banner search-auto-banner")], [
+    div([class_attr("bridge-transition-head")], [
+      strong([class_attr("bridge-fallback-title")], "Typing pause armed an automatic search"),
+      span([class_attr("incident-status incident-status-investigating")], "armed"),
     ]),
-    text_class("p", "search-auto-note", "case-detail", "If no newer input arrives, the browser bridge will auto-start the current menu query after the debounce window."),
+    p([class_attr("case-detail")], "If no newer input arrives, the browser bridge will auto-start the current menu query after the debounce window."),
   ])
 
 fun render_search_result_lines(lines : list<string>) : <div> list<vnode>
-  map-indexed(lines, fn(index, line) text_class("li", "search-result-" ++ index.show, "activity-item", line))
+  map-indexed(lines, fn(index, line) li_text_key("search-result-" ++ index.show, [class_attr("activity-item")], line))
 
 fun search_timeout_banner() : vnode
-  node_class("div", "search-timeout-banner", "bridge-transition-banner search-timeout-banner", [
-    node_class("div", "search-timeout-head", "bridge-transition-head", [
-      text_class("strong", "search-timeout-title", "bridge-fallback-title", "Timeout fired before the current result settled"),
-      text_class("span", "search-timeout-status", "incident-status incident-severity-p2", "timeout"),
+  div([class_attr("bridge-transition-banner search-timeout-banner")], [
+    div([class_attr("bridge-transition-head")], [
+      strong([class_attr("bridge-fallback-title")], "Timeout fired before the current result settled"),
+      span([class_attr("incident-status incident-severity-p2")], "timeout"),
     ]),
-    text_class("p", "search-timeout-note", "case-detail", "The current request is late. Suspense-lite keeps stale hits visible when possible and still accepts the same request if it eventually resolves."),
+    p([class_attr("case-detail")], "The current request is late. Suspense-lite keeps stale hits visible when possible and still accepts the same request if it eventually resolves."),
   ])
 
 fun search_transition_banner(demo : search_demo) : <div> vnode
-  node_class("div", "search-transition-banner", "bridge-transition-banner", [
-    node_class("div", "search-transition-head", "bridge-transition-head", [
-      text_class("strong", "search-transition-title", "bridge-fallback-title", "Refreshing search keeps stale hits visible"),
-      text_class("span", "search-transition-status", "incident-status incident-status-investigating", "refreshing"),
+  div([class_attr("bridge-transition-banner")], [
+    div([class_attr("bridge-transition-head")], [
+      strong([class_attr("bridge-fallback-title")], "Refreshing search keeps stale hits visible"),
+      span([class_attr("incident-status incident-status-investigating")], "refreshing"),
     ]),
-    text_class("p", "search-transition-note", "case-detail", "Showing results for `" ++ demo.visible_query ++ "` while querying `" ++ demo.requested_query ++ "` in the background."),
+    p([class_attr("case-detail")], "Showing results for `" ++ demo.visible_query ++ "` while querying `" ++ demo.requested_query ++ "` in the background."),
   ])
 
 pub fun render_search_stage(demo : search_demo, render_fallback : (string, string, string, string) -> <div> vnode) : <div> vnode
@@ -328,18 +328,44 @@ pub fun render_search_stage(demo : search_demo, render_fallback : (string, strin
   else if demo.visible_query == "" && demo.status != "ready" then
     render_fallback("search-pending-fallback", "Search fallback", demo.stage_note, "search-pending-fallback")
   else
-    node_class("article", "search-result-stage", if demo.status == "refreshing" then "bridge-shell-card search-stage search-stage-refreshing" else "bridge-shell-card search-stage", [
-      node_class("div", "search-stage-head", "bridge-shell-head", [
-        node_class("div", "search-stage-copy", "stack", [
-          text_class("strong", "search-stage-title", "section-title", "Results for `" ++ demo.visible_query ++ "`"),
-          text_class("p", "search-stage-note", "case-detail", demo.stage_note),
+    article([class_attr(if demo.status == "refreshing" then "bridge-shell-card search-stage search-stage-refreshing" else "bridge-shell-card search-stage")], [
+      div([class_attr("bridge-shell-head")], [
+        div([class_attr("stack")], [
+          strong([class_attr("section-title")], "Results for `" ++ demo.visible_query ++ "`"),
+          p([class_attr("case-detail")], demo.stage_note),
         ]),
-        node_class("div", "search-stage-badges", "bridge-shell-badges", [
-          text_class("span", "search-stage-status", "incident-status incident-status-investigating", demo.status),
+        div([class_attr("bridge-shell-badges")], [
+          span([class_attr("incident-status incident-status-investigating")], demo.status),
         ]),
       ]),
-      if demo.status == "refreshing" then search_transition_banner(demo) else node_class("div", "search-transition-placeholder", "stack", Nil),
-      if demo.auto_status == "armed" then search_auto_banner() else node_class("div", "search-auto-placeholder", "stack", Nil),
-      if demo.timeout_status == "timed_out" then search_timeout_banner() else node_class("div", "search-timeout-placeholder", "stack", Nil),
-      node_class("ul", "search-results", "activity-list", render_search_result_lines(demo.results)),
+      if demo.status == "refreshing" then search_transition_banner(demo) else div([class_attr("stack")], Nil),
+      if demo.auto_status == "armed" then search_auto_banner() else div([class_attr("stack")], Nil),
+      if demo.timeout_status == "timed_out" then search_timeout_banner() else div([class_attr("stack")], Nil),
+      ul([class_attr("activity-list")], render_search_result_lines(demo.results)),
     ])
+
+pub fun render_search_panel(demo : search_demo, render_summary_chip : (string, string) -> vnode, dispatch_submit : listener, dispatch_search : string -> listener, render_fallback : (string, string, string, string) -> <div> vnode) : <div> vnode
+  val current_query = if trim(demo.query_input) == "" then demo.visible_query else trim(demo.query_input)
+  section_key("lab-search", [class_attr("bridge-panel search-panel")], [
+    div([class_attr("bridge-panel-head")], [
+      div([class_attr("stack")], [
+        strong([class_attr("section-title")], "Suspense-lite search demo"),
+        p([class_attr("case-detail")], "User input stays interactive while a debounced auto-search, mocked server results, and timeout callbacks race through the bridge layer against a menu catalog."),
+      ]),
+      div([class_attr("summary-row bridge-meta")], [
+        render_summary_chip("Requested", if demo.requested_query == "" then "<none>" else demo.requested_query),
+        render_summary_chip("Visible", if demo.visible_query == "" then "<fallback>" else demo.visible_query),
+        render_summary_chip("Status", demo.status),
+        render_summary_chip("Timeout", demo.timeout_status),
+        render_summary_chip("Auto", demo.auto_status),
+      ]),
+    ]),
+    div([class_attr("composer-row")], [
+      input_text_key(search_query_channel(), [class_attr("input")], [input_listener(search_query_channel()), dispatch_submit], demo.query_input, "Pause on `edge`, `queue`, `image`, `dialog` ..."),
+      button([class_attr("button button-primary")], [dispatch_submit], "Run search"),
+      span([class_attr("mono")], "request #" ++ demo.request_id.show ++ " / auto #" ++ demo.auto_request_id.show),
+    ]),
+    div([class_attr("button-row bridge-case-row")], render_search_case_buttons(search_demo_cases(), demo.requested_query, demo.visible_query, dispatch_search)),
+    div([class_attr("search-menu-grid")], render_search_menu(search_menu_items(), current_query, dispatch_search)),
+    render_search_stage(demo, render_fallback),
+  ])

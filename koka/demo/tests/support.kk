@@ -1,11 +1,11 @@
 module demo/tests/support
 
-import demo/bridge
 import demo/dialogs
 import demo/labpanel
 import demo/model
 import demo/seed
 import demo/todopanel
+import library/bridge
 import library/search
 import respo/core
 import respo/state

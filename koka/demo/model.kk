@@ -1,5 +1,6 @@
 module demo/model
 
+import library/bridge
 import library/dialog
 import library/search
 import respo/state
@@ -34,7 +35,6 @@ pub effect fun wait_ms(delay : int) : ()
 pub effect fun fetch_lab_snapshot() : lab_snapshot
 pub effect fun post_lab_reply(incident_id : int, message : string) : string
 pub effect fun now_label() : string
-pub effect fun request_bridge_resource(payload : string, delay : int) : ()
 
 pub alias browser_event_effect = <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms>
 
@@ -56,14 +56,6 @@ pub struct lab_snapshot
   incidents : list<incident>
   summary : string
 
-pub struct suspense_bridge_demo
-  requested_case : string
-  visible_case : string
-  shell_status : string
-  detail_status : string
-  shell_request_id : int
-  detail_request_id : int
-
 pub struct workflow_lab
   incidents : list<incident>
   activity_log : list<string>
@@ -83,9 +75,6 @@ pub struct model
   todo_local_tree : list<state_entry>
   lab : workflow_lab
   dialog : dialog_demo
-
-pub fun initial_bridge_demo(requested_case : string) : suspense_bridge_demo
-  Suspense_bridge_demo(requested_case, "", "idle", "idle", 0, 0)
 
 pub fun normalize_route(route_name : string) : string
   if route_name == "todo" then "todo"

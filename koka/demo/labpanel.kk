@@ -3,6 +3,7 @@ module demo/labpanel
 import demo/model
 import demo/lab/events
 import demo/lab/view
+import library/bridge
 import respo/core
 import respo/state
 import demo/lab/state
