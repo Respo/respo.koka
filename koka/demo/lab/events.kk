@@ -5,6 +5,7 @@ import demo/lab/search
 import demo/model
 import demo/lab/state
 import demo/lab/workflow
+import library/search
 import respo/core
 
 pub type lab_action

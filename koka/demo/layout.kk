@@ -8,6 +8,7 @@ import demo/todopanel
 import demo/labpanel
 import demo/effectspanel
 import demo/testspanel
+import library/dialog
 import respo/core
 import respo/state
 

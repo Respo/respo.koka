@@ -4,6 +4,7 @@ import demo/dialogs
 import demo/layout
 import demo/model
 import demo/tests/support
+import library/dialog
 import respo/state
 
 pub fun dialog_alert_open_test() : <div> test_result

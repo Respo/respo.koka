@@ -4,6 +4,7 @@ import demo/model
 import demo/shared
 import demo/todo/events
 import demo/todo/state
+import demo/todo/viewmodel
 import runtime/dom
 import respo/core
 import respo/state
@@ -12,9 +13,6 @@ alias todo_view_effect = <push_hook_scope,pop_hook_scope,use_state_pair,use_effe
 
 fun status_text(done : bool) : string
   if done then "done" else "open"
-
-fun is_recent_add(owner : model) : bool
-  owner.notice == "Added a new task from the Koka store."
 
 pub fun task_item_view(item : task) : todo_view_effect vnode
   component(task_hook_scope(item), fn() {
@@ -75,35 +73,35 @@ fun filter_button(label : string, value : string, active : bool) : <register_lis
   val class_name = if active then "button button-active" else "button"
   button_class(value, class_name, [dispatch_todo_click(Set_filter(value))], label)
 
-pub fun render_todo_panel(item : model) : todo_view_effect vnode
+pub fun render_todo_panel(owner : model, panel_state : todo_panel_state) : todo_view_effect vnode
   component(todo_effect_scope(), fn() {
     val panel_scope = todo_effect_scope()
-    val visible = tasks_for(item.filter_name, item.tasks)
-    val total = length(item.tasks)
-    use_effect([item.notice, item.draft, total.show], fn(root_id) {
-      if is_recent_add(item) then browser_focus(root_id, "draft") else ()
+    val visible = visible_panel_tasks(panel_state)
+    val total = total_task_count(panel_state)
+    use_effect([panel_state.notice, panel_state.draft, total.show], fn(root_id) {
+      if has_recent_add_notice(panel_state) then browser_focus(root_id, "draft") else ()
     })
-    use_effect([item.notice, total.show], fn(root_id) {
-      if is_recent_add(item) then browser_flash_marker(root_id, "todo-note", "effect-pulse") else ()
+    use_effect([panel_state.notice, total.show], fn(root_id) {
+      if has_recent_add_notice(panel_state) then browser_flash_marker(root_id, "todo-note", "effect-pulse") else ()
     })
-    panel("Todo", item.notice, "todo", "todo-panel", [
+    panel("Todo", panel_state.notice, "todo", "todo-panel", [
       node_class("div", "summary", "summary-row", [
-        summary_chip("Tasks", length(item.tasks).show),
-        summary_chip("Done", length(filter(item.tasks, fn(task_item) task_item.done)).show),
-        summary_chip("Filter", item.filter_name),
+        summary_chip("Tasks", total.show),
+        summary_chip("Done", done_task_count(panel_state).show),
+        summary_chip("Filter", panel_state.filter_name),
       ]),
       node_class("div", "composer", "composer-row", [
-        text_input("draft", "input", item.draft, "Add a task or effect experiment...", [text_attr("data-k-effect", "draft")], [
-          on_named_input(panel_scope, "draft-input", fn(value, owner : model) owner(draft = value)),
+        text_input("draft", "input", panel_state.draft, "Add a task or effect experiment...", [text_attr("data-k-effect", "draft")], [
+          on_named_input(panel_scope, "draft-input", fn(value, next_owner : model) next_owner(draft = value)),
           dispatch_todo_enter(Add_task),
         ]),
         button_class("add-task", "button button-primary", [dispatch_todo_click(Add_task)], "Add"),
         button_class("clear-completed", "button", [dispatch_todo_click(Clear_completed)], "Clear done"),
       ]),
       node_class("div", "filters", "button-row", [
-        filter_button("All", "all", item.filter_name == "all"),
-        filter_button("Active", "active", item.filter_name == "active"),
-        filter_button("Done", "done", item.filter_name == "done"),
+        filter_button("All", "all", panel_state.filter_name == "all"),
+        filter_button("Active", "active", panel_state.filter_name == "active"),
+        filter_button("Done", "done", panel_state.filter_name == "done"),
       ]),
       task_list("visible-tasks", visible),
     ])

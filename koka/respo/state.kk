@@ -343,6 +343,15 @@ pub fun run_event_registry<s,e::E,a>(action : () -> <register_listener<s,e>,div>
   }
   action()
 
+pub fun run_stateful_component<s,e::E,a>(
+  owner : s,
+  tree : list<state_entry>,
+  assign_tree : (s, list<state_entry>) -> s,
+  render : (s) -> <use_named_state,set_named_state,clear_local_state,use_named_effect,push_hook_scope,pop_hook_scope,use_state,use_state_pair,use_effect,register_listener<s,e>,div> a
+) : <div> (s, a, list<scheduled_effect>, event_registry<s,e>)
+  val ((result, next_tree, pending_effects), handlers) = run_event_registry(fn() run_local_state(tree, fn() render(owner)))
+  (assign_tree(owner, next_tree), result, pending_effects, handlers)
+
 pub fun read_local_state(tree : list<state_entry>, action : () -> <use_named_state,div|e> a) : <div|e> a
   with fun use_named_state(entry_slot, codec, fallback) state_value(tree, entry_slot, codec, fallback)
   action()

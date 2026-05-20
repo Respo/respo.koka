@@ -2,6 +2,7 @@ module demo/tests/searchcases
 
 import demo/model
 import demo/tests/support
+import library/search
 
 pub fun search_auto_timer_armed_test() : <div> test_result
   val (typed, requests, audits) = capture_search_input(search_base_model(), "queue")

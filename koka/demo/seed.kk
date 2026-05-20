@@ -1,5 +1,7 @@
 module demo/seed
 
+import library/dialog
+import library/search
 import demo/model
 
 pub struct bridge_case
@@ -260,7 +262,7 @@ fun initial_lab() : workflow_lab
     "seeded",
     "boot",
     initial_bridge_demo(default_bridge_case_name()),
-    initial_search_demo(default_search_query()))
+    initial_search_demo(default_search_query(), "Type a query, pause to auto-search the menu catalog, keep stale results visible during refresh, and let timeout race against the mocked server response."))
 
 pub fun initial_model() : model
   Model(
@@ -276,4 +278,4 @@ pub fun initial_model() : model
     "overview",
     Nil,
     initial_lab(),
-    initial_dialog_demo())
+    initial_dialog_demo("No overlay interaction yet."))

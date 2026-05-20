@@ -12,9 +12,14 @@ pub fun lab_panel(item : model) : <div> vnode
   panel_node
 
 pub fun run_lab_panel(item : model) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
-  val lab = item.lab
-  val ((panel_node, next_tree, pending_effects), handlers) = run_event_registry(fn() run_local_state(lab.local_tree, fn() render_lab_panel(item)))
-  (item(lab = lab(local_tree = next_tree)), panel_node, pending_effects, handlers)
+  run_stateful_component(
+    item,
+    item.lab.local_tree,
+    fn(owner, next_tree) {
+      val lab = owner.lab
+      owner(lab = lab(local_tree = next_tree))
+    },
+    render_lab_panel)
 
 pub fun handle_lab_click(payload : string, owner : model) : <audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> maybe<model>
   route_lab_click(payload, owner)

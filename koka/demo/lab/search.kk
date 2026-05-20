@@ -3,33 +3,10 @@ module demo/lab/search
 import demo/bridge
 import demo/model
 import demo/seed
+import library/search
 
 fun search_idle_note() : string
   "Type a query, pause to auto-search the menu catalog, keep stale results visible during refresh, and let timeout race against the mocked server response."
-
-fun should_arm_auto_search(demo : search_demo, trimmed : string) : bool
-  if trimmed == "" then
-    False
-  else if demo.status == "ready" && trimmed == demo.visible_query then
-    False
-  else if trimmed == demo.requested_query && demo.status != "idle" && demo.status != "timed_out" then
-    False
-  else
-    True
-
-pub fun search_query_channel() : string
-  "lab-search-query"
-
-pub fun search_submit_payload() : string
-  "lab-search-submit"
-
-pub fun search_pick_payload(query : string) : string
-  "lab-search-pick|" ++ query
-
-pub fun decode_search_pick_payload(payload : string) : <div> maybe<string>
-  match split(payload, "|")
-    ["lab-search-pick", query] -> Just(query)
-    _ -> Nothing
 
 fun append_search_activity(lab : workflow_lab, line : string) : <div> workflow_lab
   lab(activity_log = lab.activity_log ++ [line])

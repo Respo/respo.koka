@@ -6,6 +6,7 @@ import demo/lab/search
 import demo/seed
 import demo/shared
 import demo/lab/state
+import library/search
 import respo/core
 import respo/state
 

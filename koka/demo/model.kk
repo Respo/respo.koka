@@ -1,5 +1,7 @@
 module demo/model
 
+import library/dialog
+import library/search
 import respo/state
 
 pub type incident_severity
@@ -23,21 +25,6 @@ pub fun show_status(s : incident_status) : string
     Status_firing -> "firing"
     Status_investigating -> "investigating"
     Status_acked -> "acked"
-
-pub type dialog_kind
-  Dialog_none
-  Dialog_alert
-  Dialog_prompt
-  Dialog_dialog
-  Dialog_drawer
-
-pub fun show_kind(k : dialog_kind) : string
-  match k
-    Dialog_none -> "none"
-    Dialog_alert -> "alert"
-    Dialog_prompt -> "prompt"
-    Dialog_dialog -> "dialog"
-    Dialog_drawer -> "drawer"
 
 pub effect fun confirm_action(message : string) : bool
 pub effect fun audit(message : string) : ()
@@ -77,27 +64,6 @@ pub struct suspense_bridge_demo
   shell_request_id : int
   detail_request_id : int
 
-pub struct dialog_demo
-  kind : dialog_kind
-  title : string
-  message : string
-  prompt_value : string
-  prompt_error : string
-  result_note : string
-  activity_log : list<string>
-
-pub struct search_demo
-  query_input : string
-  requested_query : string
-  visible_query : string
-  status : string
-  timeout_status : string
-  auto_status : string
-  request_id : int
-  auto_request_id : int
-  results : list<string>
-  stage_note : string
-
 pub struct workflow_lab
   incidents : list<incident>
   activity_log : list<string>
@@ -120,17 +86,6 @@ pub struct model
 
 pub fun initial_bridge_demo(requested_case : string) : suspense_bridge_demo
   Suspense_bridge_demo(requested_case, "", "idle", "idle", 0, 0)
-
-pub fun initial_dialog_demo() : dialog_demo
-  Dialog_demo(Dialog_none, "", "", "", "", "No overlay interaction yet.", Nil)
-
-pub fun initial_search_demo(query_input : string) : search_demo
-  Search_demo(query_input, "", "", "idle", "idle", "idle", 0, 0, Nil, "Type a query, pause to auto-search the menu catalog, keep stale results visible during refresh, and let timeout race against the mocked server response.")
-
-pub fun dialog_is_open(item : dialog_demo) : <div> bool
-  match item.kind
-    Dialog_none -> False
-    _ -> True
 
 pub fun normalize_route(route_name : string) : string
   if route_name == "todo" then "todo"

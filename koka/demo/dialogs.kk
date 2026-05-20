@@ -1,5 +1,6 @@
 module demo/dialogs
 
+import library/dialog
 import demo/model
 import runtime/dom
 import respo/core
@@ -9,21 +10,6 @@ fun append_dialog_attrs(left : list<attr>, right : list<attr>) : <div> list<attr
   match left
     Nil -> right
     Cons(head, rest) -> Cons(head, append_dialog_attrs(rest, right))
-
-pub fun dialog_open_payload(kind : string) : string
-  "dialog-open-" ++ kind
-
-pub fun dialog_close_payload() : string
-  "dialog-close"
-
-pub fun dialog_primary_payload() : string
-  "dialog-primary"
-
-pub fun dialog_submit_payload() : string
-  "dialog-submit"
-
-pub fun dialog_prompt_channel() : string
-  "dialog-prompt"
 
 fun dialog_dismiss_attr() : attr
   text_attr("data-k-dialog-dismiss", "true")
