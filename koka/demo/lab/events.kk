@@ -31,17 +31,17 @@ pub fun dispatch_lab_enter(action : lab_action) : listener
   enter_listener(lab_action_payload(action))
 
 fun find_lab_draft_channel(channel : string, items : list<incident>) : <div> maybe<int>
-  match find(items, fn(item) channel == incident_draft_channel(item))
+  match find(items, fn(item) channel == "lab-draft-" ++ incident/id(item).show)
     Just(item) -> Just(item.id)
     Nothing -> Nothing
 
 fun incident_id_from_toggle(payload : string, items : list<incident>) : <div> maybe<int>
-  match find(items, fn(item) payload == incident_toggle_payload(item))
+  match find(items, fn(item) payload == "lab-toggle-" ++ incident/id(item).show)
     Just(item) -> Just(item.id)
     Nothing -> Nothing
 
 fun incident_id_from_send(payload : string, items : list<incident>) : <div> maybe<int>
-  match find(items, fn(item) payload == incident_send_payload(item))
+  match find(items, fn(item) payload == "lab-send-" ++ incident/id(item).show)
     Just(item) -> Just(item.id)
     Nothing -> Nothing
 

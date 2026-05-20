@@ -52,12 +52,12 @@ fun incident_card(item : incident) : lab_view_effect vnode
         ]),
       ]),
       node_class("div", "incident-controls-" ++ iid.show, "incident-controls", [
-        button_class(incident_toggle_payload(item), "button", [on_named_click(item_scope, "toggle-expanded", fn(owner) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, iid)))], toggle_label),
-        text_input(incident_draft_channel(item), "input incident-input", draft, "Local reply draft, per card...", Nil, [
+        button_class("lab-toggle-" ++ iid.show, "button", [on_named_click(item_scope, "toggle-expanded", fn(owner) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, iid)))], toggle_label),
+        text_input("lab-draft-" ++ iid.show, "input incident-input", draft, "Local reply draft, per card...", Nil, [
           on_named_input(item_scope, "draft-input", fn(value, owner) commit_lab_tree(owner, fn() set_local_lab_draft(owner, iid, value))),
           dispatch_lab_enter(Send_reply(iid)),
         ]),
-        button_class(incident_send_payload(item), "button button-primary", [dispatch_lab_click(Send_reply(iid))], "Send reply"),
+        button_class("lab-send-" ++ iid.show, "button button-primary", [dispatch_lab_click(Send_reply(iid))], "Send reply"),
       ]),
       detail_node,
     ])
@@ -335,10 +335,10 @@ pub fun render_lab_panel(item : model) : lab_view_effect vnode
   val lab = item.lab
   val children = [
     node_class("div", "lab-summary", "summary-row", [
-      summary_chip("Incidents", lab_incident_count(lab).show),
-      summary_chip("Open", lab_open_count(lab).show),
-      summary_chip("Drafts", lab_draft_count(lab).show),
-      summary_chip("Local cells", lab_local_count(lab).show),
+      summary_chip("Incidents", length(lab.incidents).show),
+      summary_chip("Open", length(filter(lab.incidents, fn(incident_item) match incident_item.status { Status_acked -> False; _ -> True })).show),
+      summary_chip("Drafts", length(filter(lab.incidents, fn(incident_item) lab_incident_draft(lab, incident/id(incident_item)) != "")).show),
+      summary_chip("Local cells", count_entries(lab.local_tree).show),
       summary_chip("Last sync", lab.last_sync_label),
     ]),
   ] ++ lab_panel_sections(item.route_name, lab)

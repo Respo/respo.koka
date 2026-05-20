@@ -118,15 +118,6 @@ pub struct model
   lab : workflow_lab
   dialog : dialog_demo
 
-pub fun set_next_id(item : model, next_id : int) : model
-  item(next_id = next_id)
-
-pub fun set_todo_local_tree(item : model, todo_local_tree : list<state_entry>) : model
-  item(todo_local_tree = todo_local_tree)
-
-pub fun set_tasks(item : model, tasks : list<task>) : model
-  item(tasks = tasks)
-
 pub fun initial_bridge_demo(requested_case : string) : suspense_bridge_demo
   Suspense_bridge_demo(requested_case, "", "idle", "idle", 0, 0)
 
@@ -167,83 +158,17 @@ pub fun route_is_lab(route_name : string) : bool
 pub fun route_is_effects(route_name : string) : bool
   route_section(route_name) == "effects"
 
-pub fun task_toggle_id(item : task) : string
-  "toggle-" ++ task/id(item).show
-
-pub fun task_remove_id(item : task) : string
-  "remove-" ++ task/id(item).show
-
-pub fun task_edit_id(item : task) : string
-  "edit-" ++ task/id(item).show
-
-pub fun task_save_id(item : task) : string
-  "save-" ++ task/id(item).show
-
-pub fun task_cancel_id(item : task) : string
-  "cancel-" ++ task/id(item).show
-
-pub fun task_draft_channel(item : task) : string
-  "task-draft-" ++ task/id(item).show
-
-pub fun incident_toggle_payload(item : incident) : string
-  "lab-toggle-" ++ incident/id(item).show
-
-pub fun incident_draft_channel(item : incident) : string
-  "lab-draft-" ++ incident/id(item).show
-
-pub fun incident_send_payload(item : incident) : string
-  "lab-send-" ++ incident/id(item).show
-
-fun incident_state_base(incident_id : int) : string
-  "lab/incidents/" ++ incident_id.show
-
 fun incident_expanded_slot(incident_id : int) : state_slot
-  named_slot(incident_state_base(incident_id), "expanded")
+  named_slot("lab/incidents/" ++ incident_id.show, "expanded")
 
 fun incident_draft_slot(incident_id : int) : state_slot
-  named_slot(incident_state_base(incident_id), "draft")
+  named_slot("lab/incidents/" ++ incident_id.show, "draft")
 
 fun incident_expanded(item : workflow_lab, incident_id : int) : <div> bool
   slot_flag(item.local_tree, incident_expanded_slot(incident_id), False)
 
 fun incident_draft(item : workflow_lab, incident_id : int) : <div> string
   slot_text(item.local_tree, incident_draft_slot(incident_id), "")
-
-pub fun has_done_tasks(tasks : list<task>) : <div> bool
-  any(tasks, fn(i) i.done)
-
-pub fun count_all(tasks : list<task>) : <div> int
-  length(tasks)
-
-pub fun count_done(tasks : list<task>) : <div> int
-  length(filter(tasks, fn(i) i.done))
-
-fun count_incidents(items : list<incident>) : <div> int
-  length(items)
-
-fun count_open_incidents(items : list<incident>) : <div> int
-  length(filter(items, fn(item) match item.status { Status_acked -> False; _ -> True }))
-
-fun count_lines(lines : list<string>) : <div> int
-  length(lines)
-
-fun count_non_empty_drafts(item : workflow_lab, incidents : list<incident>) : <div> int
-  length(filter(incidents, fn(incident) incident_draft(item, incident/id(incident)) != ""))
-
-pub fun lab_incident_count(item : workflow_lab) : <div> int
-  count_incidents(item.incidents)
-
-pub fun lab_open_count(item : workflow_lab) : <div> int
-  count_open_incidents(item.incidents)
-
-pub fun lab_draft_count(item : workflow_lab) : <div> int
-  count_non_empty_drafts(item, item.incidents)
-
-pub fun lab_activity_count(item : workflow_lab) : <div> int
-  count_lines(item.activity_log)
-
-pub fun lab_local_count(item : workflow_lab) : <div> int
-  count_entries(item.local_tree)
 
 fun task_visible(item : task) : current_filter bool
   if current_filter == "active" then not(item.done)
@@ -257,49 +182,22 @@ pub fun tasks_for(filter_name : string, tasks : list<task>) : <div> list<task>
   with val current_filter = filter_name
   visible_tasks(tasks)
 
-pub fun find_incident_by_id(target_id : int, items : list<incident>) : <div> maybe<incident>
-  find(items, fn(item) target_id == incident/id(item))
-
-pub fun find_task_by_id(target_id : int, tasks : list<task>) : <div> maybe<task>
-  find(tasks, fn(item) target_id == task/id(item))
-
-pub fun lab_incident_by_id(item : workflow_lab, target_id : int) : <div> maybe<incident>
-  find_incident_by_id(target_id, item.incidents)
-
-pub fun set_notice(item : model, notice : string) : model
-  item(notice = notice)
-
-pub fun set_filter(item : model, filter_name : string) : model
-  item(filter_name = filter_name, notice = "Primary list switched to `" ++ filter_name ++ "`.")
-
-pub fun set_draft(item : model, draft : string) : model
-  item(draft = draft)
-
-pub fun set_lab(item : model, lab : workflow_lab) : model
-  item(lab = lab)
-
-pub fun set_dialog(item : model, dialog : dialog_demo) : model
-  item(dialog = dialog)
-
-pub fun set_route(item : model, route_name : string) : model
-  item(route_name = normalize_route(route_name))
-
 // Route changes remain data-only; render-time hooks now decide whether to execute browser effects.
 pub fun reduce_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,div> model
-  if payload == "route-overview" then set_route(item, "overview")
-  else if payload == "route-todo" then set_route(item, "todo")
-  else if payload == "route-lab" then set_route(item, "lab")
-  else if payload == "route-lab-board" then set_route(item, "lab-board")
-  else if payload == "route-lab-search" then set_route(item, "lab-search")
-  else if payload == "route-lab-bridge" then set_route(item, "lab-bridge")
-  else if payload == "route-effects" then set_route(item, "effects")
-  else if payload == "route-effects-core" then set_route(item, "effects-core")
-  else if payload == "route-effects-dialogs" then set_route(item, "effects-dialogs")
-  else if payload == "route-effects-workflow" then set_route(item, "effects-workflow")
-  else if payload == "route-effects-state" then set_route(item, "effects-state")
-  else if payload == "route-effects-timer" then set_route(item, "effects-timer")
-  else if payload == "route-checks" then set_route(item, "checks")
-  else set_notice(item, "Unknown action: " ++ payload)
+  if payload == "route-overview" then item(route_name = normalize_route("overview"))
+  else if payload == "route-todo" then item(route_name = normalize_route("todo"))
+  else if payload == "route-lab" then item(route_name = normalize_route("lab"))
+  else if payload == "route-lab-board" then item(route_name = normalize_route("lab-board"))
+  else if payload == "route-lab-search" then item(route_name = normalize_route("lab-search"))
+  else if payload == "route-lab-bridge" then item(route_name = normalize_route("lab-bridge"))
+  else if payload == "route-effects" then item(route_name = normalize_route("effects"))
+  else if payload == "route-effects-core" then item(route_name = normalize_route("effects-core"))
+  else if payload == "route-effects-dialogs" then item(route_name = normalize_route("effects-dialogs"))
+  else if payload == "route-effects-workflow" then item(route_name = normalize_route("effects-workflow"))
+  else if payload == "route-effects-state" then item(route_name = normalize_route("effects-state"))
+  else if payload == "route-effects-timer" then item(route_name = normalize_route("effects-timer"))
+  else if payload == "route-checks" then item(route_name = normalize_route("checks"))
+  else item(notice = "Unknown action: " ++ payload)
 
 pub fun reduce_input(channel : string, value : string, item : model) : <div> model
-  set_notice(item, "Unhandled input channel: " ++ channel ++ " = " ++ value)
+  item(notice = "Unhandled input channel: " ++ channel ++ " = " ++ value)

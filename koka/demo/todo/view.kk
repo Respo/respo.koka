@@ -24,13 +24,13 @@ pub fun task_item_view(item : task) : todo_view_effect vnode
     val (draft, set_draft) = use_state_pair(text_state_codec, item.title)
     use_effect([tid.show, if editing then "editing" else "idle"], fn(root_id) {
       if editing then {
-        browser_focus(root_id, task_draft_channel(item))
-        browser_flash_marker(root_id, task_draft_channel(item), "effect-pulse")
+        browser_focus(root_id, "task-draft-" ++ tid.show)
+        browser_flash_marker(root_id, "task-draft-" ++ tid.show, "effect-pulse")
       } else ()
     })
     val detail = if editing then
         node_class("div", "editor-" ++ tid.show, "task-main", [
-          text_input(task_draft_channel(item), "input", draft, "Edit title locally before saving...", [text_attr("data-k-effect", task_draft_channel(item))], [
+          text_input("task-draft-" ++ tid.show, "input", draft, "Edit title locally before saving...", [text_attr("data-k-effect", "task-draft-" ++ tid.show)], [
             on_named_input(item_scope, "draft-input", fn(value, owner) commit_task_tree(owner, fn() {
               set_editing(True)
               set_draft(value)
@@ -46,18 +46,18 @@ pub fun task_item_view(item : task) : todo_view_effect vnode
         ])
     val actions = if editing then
         [
-          button_class(task_save_id(item), "button button-primary", [dispatch_todo_click(Save_task_edit(tid))], "Save"),
-          button_class(task_cancel_id(item), "button", [on_named_click(item_scope, "cancel-edit", fn(owner) commit_task_tree(owner, fn() {
+          button_class("save-" ++ tid.show, "button button-primary", [dispatch_todo_click(Save_task_edit(tid))], "Save"),
+          button_class("cancel-" ++ tid.show, "button", [on_named_click(item_scope, "cancel-edit", fn(owner) commit_task_tree(owner, fn() {
             clear_slot(task_editing_slot(item))
             clear_slot(task_draft_slot(item))
-            set_notice(owner, "Cancelled local task edit.")
+            owner(notice = "Cancelled local task edit.")
           }))], "Cancel"),
         ]
       else
         [
-          button_class(task_edit_id(item), "button", [dispatch_todo_click(Start_task_edit(tid))], "Edit"),
-          button_class(task_toggle_id(item), "button", [dispatch_todo_click(Toggle_task(tid))], if item.done then "Undo" else "Done"),
-          button_class(task_remove_id(item), "button button-danger", [dispatch_todo_click(Remove_task(tid))], "Remove"),
+          button_class("edit-" ++ tid.show, "button", [dispatch_todo_click(Start_task_edit(tid))], "Edit"),
+          button_class("toggle-" ++ tid.show, "button", [dispatch_todo_click(Toggle_task(tid))], if item.done then "Undo" else "Done"),
+          button_class("remove-" ++ tid.show, "button button-danger", [dispatch_todo_click(Remove_task(tid))], "Remove"),
         ]
     node_class("li", tid.show, "task-item", [
       detail,
@@ -79,7 +79,7 @@ pub fun render_todo_panel(item : model) : todo_view_effect vnode
   component(todo_effect_scope(), fn() {
     val panel_scope = todo_effect_scope()
     val visible = tasks_for(item.filter_name, item.tasks)
-    val total = count_all(item.tasks)
+    val total = length(item.tasks)
     use_effect([item.notice, item.draft, total.show], fn(root_id) {
       if is_recent_add(item) then browser_focus(root_id, "draft") else ()
     })
@@ -88,13 +88,13 @@ pub fun render_todo_panel(item : model) : todo_view_effect vnode
     })
     panel("Todo", item.notice, "todo", "todo-panel", [
       node_class("div", "summary", "summary-row", [
-        summary_chip("Tasks", count_all(item.tasks).show),
-        summary_chip("Done", count_done(item.tasks).show),
+        summary_chip("Tasks", length(item.tasks).show),
+        summary_chip("Done", length(filter(item.tasks, fn(task_item) task_item.done)).show),
         summary_chip("Filter", item.filter_name),
       ]),
       node_class("div", "composer", "composer-row", [
         text_input("draft", "input", item.draft, "Add a task or effect experiment...", [text_attr("data-k-effect", "draft")], [
-          on_named_input(panel_scope, "draft-input", fn(value, owner) set_draft(owner, value)),
+          on_named_input(panel_scope, "draft-input", fn(value, owner : model) owner(draft = value)),
           dispatch_todo_enter(Add_task),
         ]),
         button_class("add-task", "button button-primary", [dispatch_todo_click(Add_task)], "Add"),

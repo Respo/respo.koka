@@ -77,7 +77,7 @@ fun set_dialog_result(owner : model, note : string, line : string) : <div> model
     prompt_error = "",
     result_note = note,
     activity_log = append_dialog_log(current.activity_log, line))
-  set_dialog(owner, next_dialog)
+  owner(dialog = next_dialog)
 
 fun open_dialog_demo(owner : model, kind : dialog_kind, title : string, message : string, prompt_value : string, notice : string) : <div> model
   val current = owner.dialog
@@ -88,7 +88,7 @@ fun open_dialog_demo(owner : model, kind : dialog_kind, title : string, message 
     prompt_value = prompt_value,
     prompt_error = "",
     activity_log = append_dialog_log(current.activity_log, "[open] " ++ title))
-  set_notice(set_dialog(owner, next_dialog), notice)
+  owner(dialog = next_dialog, notice = notice)
 
 fun validate_prompt(value : string) : <div> maybe<string>
   val trimmed = trim(value)
@@ -101,10 +101,10 @@ fun prompt_submit(owner : model) : <audit,div> model
   val current = owner.dialog
   val trimmed = trim(current.prompt_value)
   match validate_prompt(trimmed)
-    Just(message) -> set_notice(set_dialog(owner, current(prompt_error = message)), message)
+    Just(message) -> owner(dialog = current(prompt_error = message), notice = message)
     Nothing -> {
       audit("Prompt submitted: " ++ trimmed)
-      set_notice(set_dialog_result(owner, "Prompt submitted: " ++ trimmed, "[submit] prompt => " ++ trimmed), "Prompt dialog submitted through the overlay demo.")
+      set_dialog_result(owner, "Prompt submitted: " ++ trimmed, "[submit] prompt => " ++ trimmed)(notice = "Prompt dialog submitted through the overlay demo.")
     }
 
 fun dialog_primary_action(owner : model) : <audit,div> model
@@ -112,15 +112,15 @@ fun dialog_primary_action(owner : model) : <audit,div> model
   match current.kind
     Dialog_alert -> {
       audit("Alert acknowledged.")
-      set_notice(set_dialog_result(owner, "Alert acknowledged.", "[ack] alert overlay"), "Alert overlay acknowledged.")
+      set_dialog_result(owner, "Alert acknowledged.", "[ack] alert overlay")(notice = "Alert overlay acknowledged.")
     }
     Dialog_dialog -> {
       audit("Dialog action completed.")
-      set_notice(set_dialog_result(owner, "Dialog action completed.", "[accept] dialog overlay"), "Dialog overlay primary action completed.")
+      set_dialog_result(owner, "Dialog action completed.", "[accept] dialog overlay")(notice = "Dialog overlay primary action completed.")
     }
     Dialog_drawer -> {
       audit("Drawer action completed.")
-      set_notice(set_dialog_result(owner, "Drawer action completed.", "[accept] drawer overlay"), "Drawer overlay primary action completed.")
+      set_dialog_result(owner, "Drawer action completed.", "[accept] drawer overlay")(notice = "Drawer overlay primary action completed.")
     }
     _ -> owner
 
@@ -134,7 +134,7 @@ pub fun handle_dialog_click(payload : string, owner : model) : <audit,div> maybe
   else if payload == dialog_open_payload("drawer") then
     Just(open_dialog_demo(owner, Dialog_drawer, "Drawer demo", "This side sheet keeps the background visible while secondary actions happen in a dedicated panel.", "", "Opened drawer overlay demo."))
   else if payload == dialog_close_payload() then
-    Just(set_notice(set_dialog_result(owner, "Overlay dismissed.", "[close] overlay dismissed"), "Closed the overlay demo."))
+    Just(set_dialog_result(owner, "Overlay dismissed.", "[close] overlay dismissed")(notice = "Closed the overlay demo."))
   else if payload == dialog_primary_payload() then
     Just(dialog_primary_action(owner))
   else if payload == dialog_submit_payload() then
@@ -144,7 +144,7 @@ pub fun handle_dialog_click(payload : string, owner : model) : <audit,div> maybe
 pub fun handle_dialog_input(channel : string, value : string, owner : model) : <div> maybe<model>
   if channel == dialog_prompt_channel() then
     val current = owner.dialog
-    Just(set_dialog(owner, current(prompt_value = value, prompt_error = "")))
+    Just(owner(dialog = current(prompt_value = value, prompt_error = "")))
   else Nothing
 
 fun render_log_items(lines : list<string>) : <div> list<vnode>

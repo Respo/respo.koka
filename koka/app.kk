@@ -53,7 +53,7 @@ fun commit(item : model) : _e ()
   model_ref := next_model
   tree_ref := next_tree
   handlers_ref := next_handlers
-  log_registry_warnings(event_registry_warnings(next_handlers))
+  log_registry_warnings(event_registry/warnings(next_handlers))
   log_registry_warnings(event_registry_semantic_warnings(previous_handlers, next_handlers))
   run_pending_effects(pending_effects)
 
@@ -86,18 +86,18 @@ pub fun dispatch_input_bridge(channel : string, value : string) : _e ()
   dispatch_input(channel, value)
 
 pub fun dispatch_route_bridge(route_name : string) : _e ()
-  commit(set_route(!model_ref, route_name))
+  commit((!model_ref)(route_name = normalize_route(route_name)))
 
 // The browser bridge stays intentionally thin: attach DOM listeners, render once, and keep all state transitions in Koka.
 pub fun boot(root_id : string) : _e ()
   root_id_ref := root_id
   attach_events(root_id)
-  val start_model = set_route(initial_model(), browser_hash())
+  val start_model = initial_model()(route_name = normalize_route(browser_hash()))
   val (next_model, tree, pending_effects, handlers) = render_app(start_model, demo_test_results())
   model_ref := next_model
   tree_ref := tree
   handlers_ref := handlers
   mount_html(root_id, render_node("0", tree))
   browser_set_hash(next_model.route_name)
-  log_registry_warnings(event_registry_warnings(handlers))
+  log_registry_warnings(event_registry/warnings(handlers))
   run_pending_effects(pending_effects)
