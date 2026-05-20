@@ -1,5 +1,9 @@
 module library/dialog
 
+import runtime/dom
+import respo/core
+import respo/state
+
 pub type dialog_kind
   Dialog_none
   Dialog_alert
@@ -24,6 +28,23 @@ pub struct dialog_demo
   result_note : string
   activity_log : list<string>
 
+pub struct dialog_update
+  dialog : dialog_demo
+  notice : string
+  audit_message : maybe<string>
+
+pub type dialog_footer
+  Footer_submit(label : string)
+  Footer_primary_only(label : string)
+  Footer_primary_with_cancel(label : string)
+
+pub struct dialog_overlay_spec
+  shell_class : string
+  card_key : string
+  card_class : string
+  body_children : list<vnode>
+  footer : dialog_footer
+
 pub fun initial_dialog_demo(result_note : string) : dialog_demo
   Dialog_demo(Dialog_none, "", "", "", "", result_note, Nil)
 
@@ -46,3 +67,132 @@ pub fun dialog_submit_payload() : string
 
 pub fun dialog_prompt_channel() : string
   "dialog-prompt"
+
+fun append_dialog_attrs(left : list<attr>, right : list<attr>) : <div> list<attr>
+  match left
+    Nil -> right
+    Cons(head, rest) -> Cons(head, append_dialog_attrs(rest, right))
+
+fun dialog_dismiss_attr() : attr
+  text_attr("data-k-dialog-dismiss", "true")
+
+fun dialog_shell_attrs(current : dialog_demo) : list<attr>
+  [
+    text_attr("data-k-dialog-shell", "true"),
+    text_attr("data-k-dialog-surface", match current.kind { Dialog_drawer -> "drawer"; _ -> "modal" }),
+    text_attr("data-k-dialog-close", dialog_close_payload()),
+  ]
+
+pub fun dialog_primary_focus_marker() : string
+  "dialog-primary-focus"
+
+pub fun dialog_prompt_focus_marker() : string
+  "dialog-prompt-focus"
+
+pub fun dialog_focus_marker(current : dialog_demo) : string
+  match current.kind
+    Dialog_prompt -> dialog_prompt_focus_marker()
+    _ -> dialog_primary_focus_marker()
+
+pub fun dialog_pending_effects(current : dialog_demo) : <div> list<scheduled_effect>
+  if dialog_is_open(current) then
+    [Scheduled_effect("dialog/focus/" ++ current.kind.show_kind, fn(root_id) browser_focus(root_id, dialog_focus_marker(current)))]
+  else Nil
+
+fun append_dialog_log(lines : list<string>, value : string) : <div> list<string>
+  lines ++ [value]
+
+pub fun open_dialog(current : dialog_demo, kind : dialog_kind, title : string, message : string, prompt_value : string, notice : string) : <div> dialog_update
+  Dialog_update(
+    current(
+      kind = kind,
+      title = title,
+      message = message,
+      prompt_value = prompt_value,
+      prompt_error = "",
+      activity_log = append_dialog_log(current.activity_log, "[open] " ++ title)),
+    notice,
+    Nothing)
+
+pub fun close_dialog(current : dialog_demo, result_note : string, notice : string, log_line : string) : <div> dialog_update
+  Dialog_update(
+    current(
+      kind = Dialog_none,
+      title = "",
+      message = "",
+      prompt_value = "",
+      prompt_error = "",
+      result_note = result_note,
+      activity_log = append_dialog_log(current.activity_log, log_line)),
+    notice,
+    Nothing)
+
+pub fun update_dialog_prompt(current : dialog_demo, value : string) : dialog_demo
+  current(prompt_value = value, prompt_error = "")
+
+fun validate_prompt(value : string) : <div> maybe<string>
+  val trimmed = trim(value)
+  val size = chars/count(trimmed)
+  if size < 3 then Just("Use 3-8 characters.")
+  else if size > 8 then Just("Keep the prompt within 8 characters.")
+  else Nothing
+
+pub fun submit_dialog_prompt(current : dialog_demo, success_notice : string) : <div> dialog_update
+  val trimmed = trim(current.prompt_value)
+  match validate_prompt(trimmed)
+    Just(message) -> Dialog_update(current(prompt_error = message), message, Nothing)
+    Nothing -> Dialog_update(
+      close_dialog(current, "Prompt submitted: " ++ trimmed, success_notice, "[submit] prompt => " ++ trimmed).dialog,
+      success_notice,
+      Just("Prompt submitted: " ++ trimmed))
+
+pub fun resolve_dialog_primary(current : dialog_demo, result_note : string, notice : string, log_line : string, audit_message : string) : <div> dialog_update
+  Dialog_update(close_dialog(current, result_note, notice, log_line).dialog, notice, Just(audit_message))
+
+fun dismiss_button(key : string, class_name : string, marker : maybe<string>, payload : string, label : string) : vnode
+  val attrs = match marker
+    Just(found) -> [class_attr(class_name), text_attr("data-k-effect", found), dialog_dismiss_attr()]
+    Nothing -> [class_attr(class_name), dialog_dismiss_attr()]
+  text_node("button", key, props(attrs, [click_listener(payload)]), label)
+
+fun dialog_header(current : dialog_demo) : <div> vnode
+  node_class("div", "dialog-header", "dialog-header", [
+    node_class("div", "dialog-header-copy", "stack", [
+      text_class("strong", "dialog-title", "section-title", current.title),
+      text_class("p", "dialog-message", "case-detail", current.message),
+    ]),
+    dismiss_button("dialog-close-top", "button", Nothing, dialog_close_payload(), "Close"),
+  ])
+
+fun dialog_actions(footer : dialog_footer) : <div> vnode
+  match footer
+    Footer_submit(submit_label) ->
+      node_class("div", "dialog-actions", "button-row dialog-actions", [
+        dismiss_button("dialog-cancel", "button", Nothing, dialog_close_payload(), "Cancel"),
+        button_class("dialog-submit", "button button-primary", [click_listener(dialog_submit_payload())], submit_label),
+      ])
+    Footer_primary_only(primary_label) ->
+      node_class("div", "dialog-actions", "button-row dialog-actions", [
+        dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), dialog_primary_payload(), primary_label),
+      ])
+    Footer_primary_with_cancel(primary_label) ->
+      node_class("div", "dialog-actions", "button-row dialog-actions", [
+        dismiss_button("dialog-cancel", "button", Nothing, dialog_close_payload(), "Cancel"),
+        dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), dialog_primary_payload(), primary_label),
+      ])
+
+fun dismiss_backdrop() : <div> vnode
+  node("div", "dialog-backdrop", props(append_dialog_attrs([class_attr("dialog-backdrop")], [dialog_dismiss_attr()]), [click_listener(dialog_close_payload())]), Nil)
+
+fun overlay_card(current : dialog_demo, spec : dialog_overlay_spec) : <div> vnode
+  node_class("article", spec.card_key, spec.card_class, [
+    dialog_header(current),
+    node_class("div", spec.card_key ++ "-body", "dialog-panel-body", spec.body_children),
+    dialog_actions(spec.footer),
+  ])
+
+pub fun render_dialog_overlay(current : dialog_demo, spec : dialog_overlay_spec) : <div> vnode
+  node("section", spec.card_key ++ "-shell", props(append_dialog_attrs([class_attr(spec.shell_class)], dialog_shell_attrs(current)), Nil), [
+    dismiss_backdrop(),
+    overlay_card(current, spec),
+  ])

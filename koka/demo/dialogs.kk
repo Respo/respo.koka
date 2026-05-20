@@ -2,112 +2,35 @@ module demo/dialogs
 
 import library/dialog
 import demo/model
-import runtime/dom
 import respo/core
 import respo/state
 
-fun append_dialog_attrs(left : list<attr>, right : list<attr>) : <div> list<attr>
-  match left
-    Nil -> right
-    Cons(head, rest) -> Cons(head, append_dialog_attrs(rest, right))
-
-fun dialog_dismiss_attr() : attr
-  text_attr("data-k-dialog-dismiss", "true")
-
-fun dialog_shell_attrs(current : dialog_demo) : list<attr>
-  [
-    text_attr("data-k-dialog-shell", "true"),
-    text_attr("data-k-dialog-surface", match current.kind { Dialog_drawer -> "drawer"; _ -> "modal" }),
-    text_attr("data-k-dialog-close", dialog_close_payload()),
-  ]
-
-fun dialog_primary_focus_marker() : string
-  "dialog-primary-focus"
-
-fun dialog_prompt_focus_marker() : string
-  "dialog-prompt-focus"
-
-fun dialog_focus_marker(current : dialog_demo) : string
-  match current.kind
-    Dialog_prompt -> dialog_prompt_focus_marker()
-    _ -> dialog_primary_focus_marker()
+fun apply_dialog_update(owner : model, next_update : dialog_update) : model
+  owner(dialog = next_update.dialog, notice = next_update.notice)
 
 pub fun dialog_pending_effects(owner : model) : <div> list<scheduled_effect>
-  val current = owner.dialog
-  if dialog_is_open(current) then
-    [Scheduled_effect("dialog/focus/" ++ current.kind.show_kind, fn(root_id) browser_focus(root_id, dialog_focus_marker(current)))]
-  else Nil
-
-fun dialog_button(key : string, class_name : string, marker : string, listeners : list<listener>, label : string) : vnode
-  text_node("button", key, props([class_attr(class_name), text_attr("data-k-effect", marker)], listeners), label)
-
-fun dismiss_button(key : string, class_name : string, marker : maybe<string>, payload : string, label : string) : vnode
-  val attrs = match marker
-    Just(found) -> [class_attr(class_name), text_attr("data-k-effect", found), dialog_dismiss_attr()]
-    Nothing -> [class_attr(class_name), dialog_dismiss_attr()]
-  text_node("button", key, props(attrs, [click_listener(payload)]), label)
-
-fun dismiss_backdrop(current : dialog_demo) : <div> vnode
-  node("div", "dialog-backdrop", props(append_dialog_attrs([class_attr("dialog-backdrop")], [dialog_dismiss_attr()]), [click_listener(dialog_close_payload())]), Nil)
-
-fun append_dialog_log(lines : list<string>, value : string) : <div> list<string>
-  lines ++ [value]
-
-fun set_dialog_result(owner : model, note : string, line : string) : <div> model
-  val current = owner.dialog
-  val next_dialog = current(
-    kind = Dialog_none,
-    title = "",
-    message = "",
-    prompt_value = "",
-    prompt_error = "",
-    result_note = note,
-    activity_log = append_dialog_log(current.activity_log, line))
-  owner(dialog = next_dialog)
+  dialog/dialog_pending_effects(owner.dialog)
 
 fun open_dialog_demo(owner : model, kind : dialog_kind, title : string, message : string, prompt_value : string, notice : string) : <div> model
-  val current = owner.dialog
-  val next_dialog = current(
-    kind = kind,
-    title = title,
-    message = message,
-    prompt_value = prompt_value,
-    prompt_error = "",
-    activity_log = append_dialog_log(current.activity_log, "[open] " ++ title))
-  owner(dialog = next_dialog, notice = notice)
+  apply_dialog_update(owner, open_dialog(owner.dialog, kind, title, message, prompt_value, notice))
 
-fun validate_prompt(value : string) : <div> maybe<string>
-  val trimmed = trim(value)
-  val size = chars/count(trimmed)
-  if size < 3 then Just("Use 3-8 characters.")
-  else if size > 8 then Just("Keep the prompt within 8 characters.")
-  else Nothing
+fun apply_audited_update(owner : model, next_update : dialog_update) : <audit,div> model
+  match next_update.audit_message
+    Just(message) -> {
+      audit(message)
+      apply_dialog_update(owner, next_update)
+    }
+    Nothing -> apply_dialog_update(owner, next_update)
 
 fun prompt_submit(owner : model) : <audit,div> model
-  val current = owner.dialog
-  val trimmed = trim(current.prompt_value)
-  match validate_prompt(trimmed)
-    Just(message) -> owner(dialog = current(prompt_error = message), notice = message)
-    Nothing -> {
-      audit("Prompt submitted: " ++ trimmed)
-      set_dialog_result(owner, "Prompt submitted: " ++ trimmed, "[submit] prompt => " ++ trimmed)(notice = "Prompt dialog submitted through the overlay demo.")
-    }
+  apply_audited_update(owner, submit_dialog_prompt(owner.dialog, "Prompt dialog submitted through the overlay demo."))
 
 fun dialog_primary_action(owner : model) : <audit,div> model
   val current = owner.dialog
   match current.kind
-    Dialog_alert -> {
-      audit("Alert acknowledged.")
-      set_dialog_result(owner, "Alert acknowledged.", "[ack] alert overlay")(notice = "Alert overlay acknowledged.")
-    }
-    Dialog_dialog -> {
-      audit("Dialog action completed.")
-      set_dialog_result(owner, "Dialog action completed.", "[accept] dialog overlay")(notice = "Dialog overlay primary action completed.")
-    }
-    Dialog_drawer -> {
-      audit("Drawer action completed.")
-      set_dialog_result(owner, "Drawer action completed.", "[accept] drawer overlay")(notice = "Drawer overlay primary action completed.")
-    }
+    Dialog_alert -> apply_audited_update(owner, resolve_dialog_primary(current, "Alert acknowledged.", "Alert overlay acknowledged.", "[ack] alert overlay", "Alert acknowledged."))
+    Dialog_dialog -> apply_audited_update(owner, resolve_dialog_primary(current, "Dialog action completed.", "Dialog overlay primary action completed.", "[accept] dialog overlay", "Dialog action completed."))
+    Dialog_drawer -> apply_audited_update(owner, resolve_dialog_primary(current, "Drawer action completed.", "Drawer overlay primary action completed.", "[accept] drawer overlay", "Drawer action completed."))
     _ -> owner
 
 pub fun handle_dialog_click(payload : string, owner : model) : <audit,div> maybe<model>
@@ -120,7 +43,7 @@ pub fun handle_dialog_click(payload : string, owner : model) : <audit,div> maybe
   else if payload == dialog_open_payload("drawer") then
     Just(open_dialog_demo(owner, Dialog_drawer, "Drawer demo", "This side sheet keeps the background visible while secondary actions happen in a dedicated panel.", "", "Opened drawer overlay demo."))
   else if payload == dialog_close_payload() then
-    Just(set_dialog_result(owner, "Overlay dismissed.", "[close] overlay dismissed")(notice = "Closed the overlay demo."))
+    Just(apply_dialog_update(owner, close_dialog(owner.dialog, "Overlay dismissed.", "Closed the overlay demo.", "[close] overlay dismissed")))
   else if payload == dialog_primary_payload() then
     Just(dialog_primary_action(owner))
   else if payload == dialog_submit_payload() then
@@ -129,8 +52,7 @@ pub fun handle_dialog_click(payload : string, owner : model) : <audit,div> maybe
 
 pub fun handle_dialog_input(channel : string, value : string, owner : model) : <div> maybe<model>
   if channel == dialog_prompt_channel() then
-    val current = owner.dialog
-    Just(owner(dialog = current(prompt_value = value, prompt_error = "")))
+    Just(owner(dialog = update_dialog_prompt(owner.dialog, value)))
   else Nothing
 
 fun render_log_items(lines : list<string>) : <div> list<vnode>
@@ -158,15 +80,6 @@ pub fun dialog_demo_case(owner : model) : <div> vnode
     ]),
   ])
 
-fun dialog_header(current : dialog_demo) : <div> vnode
-  node_class("div", "dialog-header", "dialog-header", [
-    node_class("div", "dialog-header-copy", "stack", [
-      text_class("strong", "dialog-title", "section-title", current.title),
-      text_class("p", "dialog-message", "case-detail", current.message),
-    ]),
-    dismiss_button("dialog-close-top", "button", Nothing, dialog_close_payload(), "Close"),
-  ])
-
 fun prompt_body(current : dialog_demo) : <div> list<vnode>
   [
     text_input("dialog-prompt-input", "input", current.prompt_value, "3-8 chars", [text_attr("data-k-effect", dialog_prompt_focus_marker())], [input_listener(dialog_prompt_channel()), enter_listener(dialog_submit_payload())]),
@@ -188,55 +101,12 @@ fun dialog_custom_body(label : string, current : dialog_demo) : <div> list<vnode
     ]),
   ]
 
-fun dialog_actions(current : dialog_demo) : <div> vnode
+fun overlay_spec(current : dialog_demo) : <div> dialog_overlay_spec
   match current.kind
-    Dialog_prompt ->
-      node_class("div", "dialog-actions", "button-row dialog-actions", [
-        dismiss_button("dialog-cancel", "button", Nothing, dialog_close_payload(), "Cancel"),
-        button_class("dialog-submit", "button button-primary", [click_listener(dialog_submit_payload())], "Submit"),
-      ])
-    Dialog_alert ->
-      node_class("div", "dialog-actions", "button-row dialog-actions", [
-        dismiss_button("dialog-alert-read", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), dialog_primary_payload(), "I read it"),
-      ])
-    Dialog_drawer ->
-      node_class("div", "dialog-actions", "button-row dialog-actions", [
-        dismiss_button("dialog-cancel", "button", Nothing, dialog_close_payload(), "Cancel"),
-        dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), dialog_primary_payload(), "Commit drawer"),
-      ])
-    _ ->
-      node_class("div", "dialog-actions", "button-row dialog-actions", [
-        dismiss_button("dialog-cancel", "button", Nothing, dialog_close_payload(), "Cancel"),
-        dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), dialog_primary_payload(), "Run dialog action"),
-      ])
-
-fun overlay_card(key : string, class_name : string, current : dialog_demo, body_children : list<vnode>) : <div> vnode
-  node_class("article", key, class_name, [
-    dialog_header(current),
-    node_class("div", key ++ "-body", "dialog-panel-body", body_children),
-    dialog_actions(current),
-  ])
+    Dialog_prompt -> Dialog_overlay_spec("dialog-overlay-shell dialog-overlay-center", "prompt-overlay", "dialog-overlay-card", prompt_body(current), Footer_submit("Submit"))
+    Dialog_alert -> Dialog_overlay_spec("dialog-overlay-shell dialog-overlay-center", "alert-overlay", "dialog-overlay-card", [text_class("p", "alert-note", "case-detail", "This alert is state-driven and lives inside the same VDOM tree as the rest of the app.")], Footer_primary_only("I read it"))
+    Dialog_dialog -> Dialog_overlay_spec("dialog-overlay-shell dialog-overlay-center", "dialog-overlay", "dialog-overlay-card", dialog_custom_body("dialog-custom", current), Footer_primary_with_cancel("Run dialog action"))
+    _ -> Dialog_overlay_spec("dialog-overlay-shell dialog-overlay-drawer", "drawer-overlay", "dialog-overlay-card drawer-overlay-card", dialog_custom_body("drawer-custom", current), Footer_primary_with_cancel("Commit drawer"))
 
 pub fun render_dialog_overlay(owner : model) : <div> vnode
-  val current = owner.dialog
-  match current.kind
-    Dialog_prompt ->
-      node("section", "dialog-overlay", props(append_dialog_attrs([class_attr("dialog-overlay-shell dialog-overlay-center")], dialog_shell_attrs(current)), Nil), [
-        dismiss_backdrop(current),
-        overlay_card("prompt-overlay", "dialog-overlay-card", current, prompt_body(current)),
-      ])
-    Dialog_alert ->
-      node("section", "dialog-overlay", props(append_dialog_attrs([class_attr("dialog-overlay-shell dialog-overlay-center")], dialog_shell_attrs(current)), Nil), [
-        dismiss_backdrop(current),
-        overlay_card("alert-overlay", "dialog-overlay-card", current, [text_class("p", "alert-note", "case-detail", "This alert is state-driven and lives inside the same VDOM tree as the rest of the app.")]),
-      ])
-    Dialog_dialog ->
-      node("section", "dialog-overlay", props(append_dialog_attrs([class_attr("dialog-overlay-shell dialog-overlay-center")], dialog_shell_attrs(current)), Nil), [
-        dismiss_backdrop(current),
-        overlay_card("dialog-overlay", "dialog-overlay-card", current, dialog_custom_body("dialog-custom", current)),
-      ])
-    _ ->
-      node("section", "drawer-overlay", props(append_dialog_attrs([class_attr("dialog-overlay-shell dialog-overlay-drawer")], dialog_shell_attrs(current)), Nil), [
-        dismiss_backdrop(current),
-        overlay_card("drawer-overlay", "dialog-overlay-card drawer-overlay-card", current, dialog_custom_body("drawer-custom", current)),
-      ])
+  dialog/render_dialog_overlay(owner.dialog, overlay_spec(owner.dialog))
