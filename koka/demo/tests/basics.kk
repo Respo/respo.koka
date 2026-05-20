@@ -1,9 +1,11 @@
 module demo/tests/basics
 
 import library/bridge
+import library/route
 import demo/model
 import demo/seed
 import demo/tests/support
+import demo/todo/events
 import demo/todo/state
 import demo/todopanel
 import respo/core
@@ -65,29 +67,24 @@ pub fun registered_click_handler_test() : <div> test_result
   val started = match handle_todo_click("edit-2", initial_model())
     Just(result) -> result
     Nothing -> initial_model()
-  val (next_item, _panel_node, _effects, handlers) = run_todo_panel(started)
-  match find(started.tasks, fn(item) 2 == task/id(item))
-    Nothing -> Test_result("Registered click handler stays local", "task #2 missing", False)
-    Just(item) -> {
-      val local_click_id = state_slot/path(named_listener_slot(task_hook_scope(item), Click_event, "cancel-edit"))
-      val global_add_handler = find_registered_click(handlers, "add-task")
-      match find_registered_click(handlers, local_click_id)
-        Nothing -> Test_result("Registered click handler stays local", local_click_id ++ " missing", False)
-        Just(found_click) -> {
-          val updated = run_registered_click(found_click, next_item)
-          val updated_task = match find(updated.tasks, fn(task_item) 2 == task/id(task_item))
-            Just(found) -> found
-            Nothing -> item
-          val editor_state = snapshot_task_editor(updated, updated_task)
-          val has_global_add_handler = match global_add_handler
-            Just(_) -> True
-            Nothing -> False
-          Test_result(
-            "Registered click handler stays local",
-            "clicks=" ++ count_registered_clicks(handlers).show ++ ", notice=" ++ updated.notice,
-            not(has_global_add_handler) && not(task_editor_state/editing(editor_state)) && updated.notice == "Cancelled local task edit.")
-        }
-    }
+  val (_, panel_node, _effects, handlers) = run_todo_panel(started)
+  val cancel_payload = match vnode_find_text(panel_node, "Cancel")
+    Just(node) -> vnode_click_payload(node)
+    Nothing -> ""
+  val updated = match handle_todo_click(cancel_payload, started)
+    Just(result) -> result
+    Nothing -> started
+  val updated_task = match find(updated.tasks, fn(task_item) 2 == task/id(task_item))
+    Just(found) -> found
+    Nothing -> Task(2, "missing", False)
+  val editor_state = snapshot_task_editor(updated, updated_task)
+  val in_registry = match find_registered_click(handlers, cancel_payload)
+    Just(_) -> True
+    Nothing -> False
+  Test_result(
+    "Rendered cancel payload routes through todo click handler",
+    "payload=" ++ cancel_payload ++ ", local=" ++ in_registry.show ++ ", notice=" ++ updated.notice,
+    cancel_payload == todo_action_payload(Cancel_task_edit(2)) && not(in_registry) && not(task_editor_state/editing(editor_state)) && updated.notice == "Cancelled local task edit.")
 
 pub fun timer_simulation_test() : <div> test_result
   val (label, waits) = capture_waits(fn() timer_logic())
@@ -104,8 +101,12 @@ pub fun route_subroute_normalization_test() : <div> test_result
   with fun post_lab_reply(_incident_id, message) message
   with fun request_bridge_resource(_payload, _delay) ()
   with fun wait_ms(_delay) ()
-  val lab_route = reduce_click("route-lab-search", initial_model()).route_name
-  val effects_route = reduce_click("route-effects-dialogs", initial_model()).route_name
+  val lab_route = match handle_route_click(route_action_payload(Navigate("lab-search")), initial_model())
+    Just(result) -> result.route_name
+    Nothing -> "missing"
+  val effects_route = match handle_route_click(route_action_payload(Navigate("effects-dialogs")), initial_model())
+    Just(result) -> result.route_name
+    Nothing -> "missing"
   val legacy_lab = normalize_route("lab")
   val legacy_effects = normalize_route("effects")
   Test_result(
@@ -118,9 +119,9 @@ pub fun route_subroute_normalization_test() : <div> test_result
 // attributes, and firing handlers through the registry - mirroring how the browser
 // delegates DOM events, without needing a real DOM.
 
-// Verify that a button's data-k-click value and the registry agree: the payload
-// visible in the rendered HTML is the same key that resolves to a live handler.
-pub fun vnode_click_payload_matches_registry_test() : <div> test_result
+// Verify that a button's data-k-click value is enough to route the todo action,
+// even when the handler is not stored in the local registry.
+pub fun vnode_click_payload_matches_route_test() : <div> test_result
   with fun confirm_action(_) False
   with fun audit(_) ()
   with val current_operator = "test-operator"
@@ -136,16 +137,22 @@ pub fun vnode_click_payload_matches_registry_test() : <div> test_result
   val cancel_node_payload = match vnode_find_text(tree, "Cancel")
     Just(node) -> vnode_click_payload(node)
     Nothing -> ""
+  val routed = match handle_todo_click(cancel_node_payload, editing)
+    Just(result) -> result
+    Nothing -> editing
+  val editor_state = match find(routed.tasks, fn(item) 2 == task/id(item))
+    Just(item) -> snapshot_task_editor(routed, item)
+    Nothing -> Task_editor_state(False, "")
   val in_registry = match find_registered_click(registry, cancel_node_payload)
     Just(_) -> True
     Nothing -> False
   Test_result(
-    "Vnode click payload matches registry",
-    "payload=" ++ cancel_node_payload ++ ", in_registry=" ++ in_registry.show,
-    cancel_node_payload != "" && in_registry)
+    "Vnode click payload matches route",
+    "payload=" ++ cancel_node_payload ++ ", local=" ++ in_registry.show ++ ", notice=" ++ routed.notice,
+    cancel_node_payload == todo_action_payload(Cancel_task_edit(2)) && not(in_registry) && routed.notice == "Cancelled local task edit." && not(task_editor_state/editing(editor_state)))
 
-// Verify that firing the "cancel-edit" handler via harness produces the same
-// outcome as the low-level slot-path lookup in registered_click_handler_test.
+// Verify that firing the cancel payload via harness produces the same outcome
+// as routing that payload through the todo click entry.
 pub fun harness_cancel_edit_test() : <div> test_result
   with fun confirm_action(_) False
   with fun audit(_) ()
@@ -159,12 +166,12 @@ pub fun harness_cancel_edit_test() : <div> test_result
     Just(r) -> r
     Nothing -> initial_model()
   val h0 = todo_harness(editing)
-  val h1 = harness_fire_named_click(h0, "cancel-edit", todo_harness)
+  val h1 = todo_harness_click_payload(h0, todo_action_payload(Cancel_task_edit(2)))
   val editor_state = match find(h1.owner.tasks, fn(item) 2 == task/id(item))
     Just(item) -> snapshot_task_editor(h1.owner, item)
     Nothing -> Task_editor_state(False, "")
   Test_result(
-    "Harness cancel-edit via semantic handler",
+    "Harness cancel via click payload",
     "notice=" ++ h1.owner.notice ++ ", editing=" ++ task_editor_state/editing(editor_state).show,
     h1.owner.notice == "Cancelled local task edit." && not(task_editor_state/editing(editor_state)))
 
@@ -181,7 +188,7 @@ pub fun harness_draft_input_test() : <div> test_result
     "draft=" ++ h1.owner.draft ++ ", input-value=" ++ input_value,
     h1.owner.draft == "typed via harness" && input_value == "typed via harness")
 
-// Multi-step: type into draft, then fire cancel-edit on a task being edited.
+// Multi-step: type into draft, then fire cancel on a task being edited.
 // Verifies that two sequential harness steps compose correctly.
 pub fun harness_multi_step_test() : <div> test_result
   with fun confirm_action(_) False
@@ -198,8 +205,8 @@ pub fun harness_multi_step_test() : <div> test_result
   val h0 = todo_harness(editing)
   // Step 1: type into the panel draft field
   val h1 = harness_fire_named_input(h0, "draft-input", "step1 draft", todo_harness)
-  // Step 2: cancel the task edit via local handler
-  val h2 = harness_fire_named_click(h1, "cancel-edit", todo_harness)
+  // Step 2: cancel the task edit via click payload
+  val h2 = todo_harness_click_payload(h1, todo_action_payload(Cancel_task_edit(2)))
   val editor_state = match find(h2.owner.tasks, fn(item) 2 == task/id(item))
     Just(item) -> snapshot_task_editor(h2.owner, item)
     Nothing -> Task_editor_state(False, "")

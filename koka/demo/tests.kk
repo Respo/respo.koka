@@ -22,7 +22,7 @@ pub fun demo_test_results() : <div> list<test_result>
     generic_state_codec_test(),
     auto_hook_scope_test(),
     listener_registry_guard_test(),
-    vnode_click_payload_matches_registry_test(),
+    vnode_click_payload_matches_route_test(),
     harness_cancel_edit_test(),
     harness_draft_input_test(),
     harness_multi_step_test(),

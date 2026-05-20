@@ -46,10 +46,7 @@ pub fun task_item_view(item : task) : todo_view_effect vnode
     val actions = if editing then
         [
           button([class_attr("button button-primary")], [dispatch_todo_click(Save_task_edit(tid))], "Save"),
-          button([class_attr("button")], [on_named_click(item_scope, "cancel-edit", fn(owner) commit_task_tree(owner, fn() {
-            cancel_task_editor(item)
-            owner(notice = "Cancelled local task edit.")
-          }))], "Cancel"),
+          button([class_attr("button")], [dispatch_todo_click(Cancel_task_edit(tid))], "Cancel"),
         ]
       else
         [

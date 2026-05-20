@@ -1,11 +1,12 @@
 module demo/routebar
 
 import demo/model
+import library/route
 import respo/core
 
 fun route_button(label : string, route_name : string, active : bool) : vnode
   val class_name = if active then "button route-tab route-tab-active" else "button route-tab"
-  button([class_attr(class_name)], [click_listener("route-" ++ route_name)], label)
+  button([class_attr(class_name)], [click_listener(route_action_payload(Navigate(route_name)))], label)
 
 fun lab_subroutes(active_route : string) : vnode
   div([class_attr("route-bar route-sub-bar")], [

@@ -34,28 +34,29 @@ fun start_bridge_detail(owner : model, case_name : string) : <request_bridge_res
   owner(lab = next_lab, notice = "Outer shell resolved; nested diagnostics are still loading.")
 
 pub fun resolve_bridge_result(owner : model, payload : string) : <request_bridge_resource,audit,div> maybe<model>
-  match decode_bridge_result_payload(payload)
-    Just(Bridge_signal(resource_tag, case_name, request_id)) -> {
-      val lab = owner.lab
-      val demo = lab.bridge_demo
-      if resource_tag == "bridge-shell" then
-        if not(bridge_shell_matches(demo, case_name, request_id)) then
-          Just(owner)
-        else
-          Just(resolve_bridge_shell(owner, case_name))
-      else if resource_tag == "bridge-detail" then
-        if not(bridge_detail_matches(demo, case_name, request_id)) then
-          Just(owner)
-        else {
-          audit("Nested suspense-like detail resolved for `" ++ case_name ++ "`.")
-          val next_demo = resolve_bridge_detail_demo(demo)
-          val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] nested detail ready for " ++ case_name)
-          Just(owner(lab = next_lab, notice = "Nested diagnostics resolved after the shell became visible."))
-        }
-      else Nothing
-    }
-    Nothing -> Nothing
-
+  maybe(decode_bridge_result_payload(payload), Nothing, fn(signal) {
+    match signal
+      Bridge_signal(resource_tag, case_name, request_id) -> {
+        val lab = owner.lab
+        val demo = lab.bridge_demo
+        if resource_tag == "bridge-shell" then
+          if not(bridge_shell_matches(demo, case_name, request_id)) then
+            Just(owner)
+          else
+            Just(resolve_bridge_shell(owner, case_name))
+        else if resource_tag == "bridge-detail" then
+          if not(bridge_detail_matches(demo, case_name, request_id)) then
+            Just(owner)
+          else {
+            audit("Nested suspense-like detail resolved for `" ++ case_name ++ "`.")
+            val next_demo = resolve_bridge_detail_demo(demo)
+            val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] nested detail ready for " ++ case_name)
+            Just(owner(lab = next_lab, notice = "Nested diagnostics resolved after the shell became visible."))
+          }
+        else Nothing
+      }
+  })
+  
 fun update_incident_reply(items : list<incident>, target_id : int, message : string, updated_by : string) : <div> list<incident>
   match items
     Nil -> Nil

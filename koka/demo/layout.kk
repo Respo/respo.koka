@@ -9,6 +9,7 @@ import demo/labpanel
 import demo/effectspanel
 import demo/testspanel
 import library/dialog
+import library/route
 import respo/core
 import respo/state
 

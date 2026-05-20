@@ -5,25 +5,30 @@ import demo/labpanel
 import demo/model
 import demo/todopanel
 import library/bridge
+import library/maybe
+
+fun resolve_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> maybe<model>
+  handle_todo_click(payload, item).or-else {
+    handle_lab_click(payload, item).or-else {
+      handle_dialog_click(payload, item).or-else {
+        handle_route_click(payload, item)
+      }
+    }
+  }
 
 pub fun dispatch_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> model
-  match handle_todo_click(payload, item)
-    Just(result) -> result
-    Nothing ->
-      match handle_lab_click(payload, item)
-        Just(result) -> result
-        Nothing ->
-          match handle_dialog_click(payload, item)
-            Just(result) -> result
-            Nothing -> reduce_click(payload, item)
+  resolve_click(payload, item).unwrap-or-else {
+    reduce_click(payload, item)
+  }
+
+fun resolve_input(channel : string, value : string, item : model) : <request_bridge_resource,div> maybe<model>
+  handle_todo_input(channel, value, item).or-else {
+    handle_lab_input(channel, value, item).or-else {
+      handle_dialog_input(channel, value, item)
+    }
+  }
 
 pub fun dispatch_input(channel : string, value : string, item : model) : <request_bridge_resource,div> model
-  match handle_todo_input(channel, value, item)
-    Just(result) -> result
-    Nothing ->
-      match handle_lab_input(channel, value, item)
-        Just(result) -> result
-        Nothing ->
-          match handle_dialog_input(channel, value, item)
-            Just(result) -> result
-            Nothing -> reduce_input(channel, value, item)
+  resolve_input(channel, value, item).unwrap-or-else {
+    reduce_input(channel, value, item)
+  }

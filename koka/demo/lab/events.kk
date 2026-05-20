@@ -5,6 +5,7 @@ import demo/model
 import demo/lab/state
 import demo/lab/workflow
 import library/bridge
+import library/maybe
 import library/search
 import respo/core
 
@@ -32,19 +33,13 @@ pub fun dispatch_lab_enter(action : lab_action) : listener
   enter_listener(lab_action_payload(action))
 
 fun find_lab_draft_channel(channel : string, items : list<incident>) : <div> maybe<int>
-  match find(items, fn(item) channel == "lab-draft-" ++ incident/id(item).show)
-    Just(item) -> Just(item.id)
-    Nothing -> Nothing
+  find(items, fn(item) channel == "lab-draft-" ++ incident/id(item).show).map(incident/id)
 
 fun incident_id_from_toggle(payload : string, items : list<incident>) : <div> maybe<int>
-  match find(items, fn(item) payload == "lab-toggle-" ++ incident/id(item).show)
-    Just(item) -> Just(item.id)
-    Nothing -> Nothing
+  find(items, fn(item) payload == "lab-toggle-" ++ incident/id(item).show).map(incident/id)
 
 fun incident_id_from_send(payload : string, items : list<incident>) : <div> maybe<int>
-  match find(items, fn(item) payload == "lab-send-" ++ incident/id(item).show)
-    Just(item) -> Just(item.id)
-    Nothing -> Nothing
+  find(items, fn(item) payload == "lab-send-" ++ incident/id(item).show).map(incident/id)
 
 pub fun dispatch_lab_action(action : lab_action, owner : model) : <audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> model
   match action
@@ -62,29 +57,22 @@ fun decode_lab_action(payload : string, owner : model) : <div> maybe<lab_action>
     Just(Run_sync)
   else if payload == search_submit_payload() then
     Just(Submit_search)
-  else match decode_bridge_load_payload(payload)
-    Just(case_name) -> Just(Load_bridge_case(case_name))
-    Nothing -> match decode_search_pick_payload(payload)
-      Just(query) -> Just(Search_for(query))
-      Nothing -> match incident_id_from_send(payload, owner.lab.incidents)
-        Just(incident_id) -> Just(Send_reply(incident_id))
-        Nothing -> Nothing
+  else
+    decode_bridge_load_payload(payload).map(Load_bridge_case) ||
+    decode_search_pick_payload(payload).map(Search_for) ||
+    incident_id_from_send(payload, owner.lab.incidents).map(Send_reply)
 
 pub fun route_lab_click(payload : string, owner : model) : <audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> maybe<model>
-  match decode_lab_action(payload, owner)
-    Just(action) -> Just(dispatch_lab_action(action, owner))
-    Nothing -> match resolve_search_result(owner, payload)
-      Just(result) -> Just(result)
-      Nothing -> match resolve_bridge_result(owner, payload)
-        Just(result) -> Just(result)
-        Nothing -> match incident_id_from_toggle(payload, owner.lab.incidents)
-          Just(target_id) -> Just(commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, target_id)))
-          Nothing -> Nothing
+  decode_lab_action(payload, owner).map(fn(action) dispatch_lab_action(action, owner)).or-else {
+    resolve_search_result(owner, payload).or-else {
+      resolve_bridge_result(owner, payload).or-else {
+        incident_id_from_toggle(payload, owner.lab.incidents).map(fn(target_id) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, target_id)))
+      }
+    }
+  }
 
 pub fun route_lab_input(channel : string, value : string, owner : model) : <request_bridge_resource,div> maybe<model>
   if channel == search_query_channel() then
     Just(set_search_query(owner, value))
   else
-    match find_lab_draft_channel(channel, owner.lab.incidents)
-      Just(target_id) -> Just(commit_lab_tree(owner, fn() set_local_lab_draft(owner, target_id, value)))
-      Nothing -> Nothing
+    find_lab_draft_channel(channel, owner.lab.incidents).map(fn(target_id) commit_lab_tree(owner, fn() set_local_lab_draft(owner, target_id, value)))

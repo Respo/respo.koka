@@ -132,9 +132,7 @@ pub fun bridge_result_payload(resource_kind : string, resource_key : string, req
 
 pub fun decode_bridge_result_payload(payload : string) : <div> maybe<bridge_signal>
   match split(payload, "|")
-    [resource_tag, resource_key, request_id_text] -> match parse-int(request_id_text)
-      Just(request_id) -> Just(Bridge_signal(resource_tag, resource_key, request_id))
-      Nothing -> Nothing
+    [resource_tag, resource_key, request_id_text] -> parse-int(request_id_text).map(fn(request_id) Bridge_signal(resource_tag, resource_key, request_id))
     _ -> Nothing
 
 pub fun request_bridge_result(resource_kind : string, resource_key : string, request_id : int, delay : int) : <request_bridge_resource,div> ()

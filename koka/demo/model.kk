@@ -2,6 +2,7 @@ module demo/model
 
 import library/bridge
 import library/dialog
+import library/route
 import library/search
 import respo/state
 
@@ -76,44 +77,6 @@ pub struct model
   lab : workflow_lab
   dialog : dialog_demo
 
-pub fun normalize_route(route_name : string) : string
-  if route_name == "todo" then "todo"
-  else if route_name == "lab" || route_name == "lab-board" then "lab-board"
-  else if route_name == "lab-search" then "lab-search"
-  else if route_name == "lab-bridge" then "lab-bridge"
-  else if route_name == "effects" || route_name == "effects-core" then "effects-core"
-  else if route_name == "effects-dialogs" then "effects-dialogs"
-  else if route_name == "effects-workflow" then "effects-workflow"
-  else if route_name == "effects-state" then "effects-state"
-  else if route_name == "effects-timer" then "effects-timer"
-  else if route_name == "checks" then "checks"
-  else "overview"
-
-pub fun route_section(route_name : string) : string
-  if route_name == "todo" then "todo"
-  else if route_name == "lab-board" || route_name == "lab-search" || route_name == "lab-bridge" then "lab"
-  else if route_name == "effects-core" || route_name == "effects-dialogs" || route_name == "effects-workflow" || route_name == "effects-state" || route_name == "effects-timer" then "effects"
-  else if route_name == "checks" then "checks"
-  else "overview"
-
-pub fun route_is_lab(route_name : string) : bool
-  route_section(route_name) == "lab"
-
-pub fun route_is_effects(route_name : string) : bool
-  route_section(route_name) == "effects"
-
-fun incident_expanded_slot(incident_id : int) : state_slot
-  hook_named_state_slot("lab/incidents/" ++ incident_id.show, "expanded")
-
-fun incident_draft_slot(incident_id : int) : state_slot
-  hook_named_state_slot("lab/incidents/" ++ incident_id.show, "draft")
-
-fun incident_expanded(item : workflow_lab, incident_id : int) : <div> bool
-  slot_flag(item.local_tree, incident_expanded_slot(incident_id), False)
-
-fun incident_draft(item : workflow_lab, incident_id : int) : <div> string
-  slot_text(item.local_tree, incident_draft_slot(incident_id), "")
-
 fun task_visible(item : task) : current_filter bool
   if current_filter == "active" then not(item.done)
   else if current_filter == "done" then item.done
@@ -126,22 +89,14 @@ pub fun tasks_for(filter_name : string, tasks : list<task>) : <div> list<task>
   with val current_filter = filter_name
   visible_tasks(tasks)
 
+pub fun handle_route_click(payload : string, item : model) : <div> maybe<model>
+  route_click_target(payload).map(fn(route_name) item(route_name = route_name))
+
 // Route changes remain data-only; render-time hooks now decide whether to execute browser effects.
 pub fun reduce_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,div> model
-  if payload == "route-overview" then item(route_name = normalize_route("overview"))
-  else if payload == "route-todo" then item(route_name = normalize_route("todo"))
-  else if payload == "route-lab" then item(route_name = normalize_route("lab"))
-  else if payload == "route-lab-board" then item(route_name = normalize_route("lab-board"))
-  else if payload == "route-lab-search" then item(route_name = normalize_route("lab-search"))
-  else if payload == "route-lab-bridge" then item(route_name = normalize_route("lab-bridge"))
-  else if payload == "route-effects" then item(route_name = normalize_route("effects"))
-  else if payload == "route-effects-core" then item(route_name = normalize_route("effects-core"))
-  else if payload == "route-effects-dialogs" then item(route_name = normalize_route("effects-dialogs"))
-  else if payload == "route-effects-workflow" then item(route_name = normalize_route("effects-workflow"))
-  else if payload == "route-effects-state" then item(route_name = normalize_route("effects-state"))
-  else if payload == "route-effects-timer" then item(route_name = normalize_route("effects-timer"))
-  else if payload == "route-checks" then item(route_name = normalize_route("checks"))
-  else item(notice = "Unknown action: " ++ payload)
+  match handle_route_click(payload, item)
+    Just(next_item) -> next_item
+    Nothing -> item(notice = "Unknown action: " ++ payload)
 
 pub fun reduce_input(channel : string, value : string, item : model) : <div> model
   item(notice = "Unhandled input channel: " ++ channel ++ " = " ++ value)

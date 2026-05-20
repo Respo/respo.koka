@@ -2,6 +2,7 @@ module demo/todo/events
 
 import demo/model
 import demo/todo/state
+import library/maybe
 import respo/core
 import respo/state
 
@@ -12,6 +13,7 @@ pub type todo_action
   Toggle_task(task_id : int)
   Remove_task(task_id : int)
   Start_task_edit(task_id : int)
+  Cancel_task_edit(task_id : int)
   Save_task_edit(task_id : int)
 
 pub fun todo_action_payload(action : todo_action) : string
@@ -22,6 +24,7 @@ pub fun todo_action_payload(action : todo_action) : string
     Toggle_task(task_id) -> "toggle-" ++ task_id.show
     Remove_task(task_id) -> "remove-" ++ task_id.show
     Start_task_edit(task_id) -> "edit-" ++ task_id.show
+    Cancel_task_edit(task_id) -> "cancel-" ++ task_id.show
     Save_task_edit(task_id) -> "save-" ++ task_id.show
 
 pub fun dispatch_todo_click(action : todo_action) : listener
@@ -52,34 +55,22 @@ fun clear_done_local_state(tasks : list<task>) : <clear_local_state,div> ()
   clear_done_task_editors(tasks)
 
 fun find_task_draft_channel(channel : string, tasks : list<task>) : <div> maybe<int>
-  match find(tasks, fn(item) channel == "task-draft-" ++ task/id(item).show)
-    Just(item) -> Just(task/id(item))
-    Nothing -> Nothing
+  find(tasks, fn(item) channel == "task-draft-" ++ task/id(item).show).map(task/id)
 
 fun task_id_from_edit(payload : string, tasks : list<task>) : <div> maybe<int>
-  match find(tasks, fn(item) payload == "edit-" ++ task/id(item).show)
-    Just(item) -> Just(task/id(item))
-    Nothing -> Nothing
+  find(tasks, fn(item) payload == "edit-" ++ task/id(item).show).map(task/id)
 
 fun task_id_from_save(payload : string, tasks : list<task>) : <div> maybe<int>
-  match find(tasks, fn(item) payload == "save-" ++ task/id(item).show)
-    Just(item) -> Just(task/id(item))
-    Nothing -> Nothing
+  find(tasks, fn(item) payload == "save-" ++ task/id(item).show).map(task/id)
 
 fun task_id_from_cancel(payload : string, tasks : list<task>) : <div> maybe<int>
-  match find(tasks, fn(item) payload == "cancel-" ++ task/id(item).show)
-    Just(item) -> Just(task/id(item))
-    Nothing -> Nothing
+  find(tasks, fn(item) payload == "cancel-" ++ task/id(item).show).map(task/id)
 
 fun task_id_from_toggle(payload : string, tasks : list<task>) : <div> maybe<int>
-  match find(tasks, fn(item) payload == "toggle-" ++ task/id(item).show)
-    Just(item) -> Just(task/id(item))
-    Nothing -> Nothing
+  find(tasks, fn(item) payload == "toggle-" ++ task/id(item).show).map(task/id)
 
 fun task_id_from_remove(payload : string, tasks : list<task>) : <div> maybe<int>
-  match find(tasks, fn(item) payload == "remove-" ++ task/id(item).show)
-    Just(item) -> Just(task/id(item))
-    Nothing -> Nothing
+  find(tasks, fn(item) payload == "remove-" ++ task/id(item).show).map(task/id)
 
 fun todo_add_task(owner : model) : <audit,div> model
   if owner.draft == "" then
@@ -168,6 +159,7 @@ pub fun dispatch_todo_action(action : todo_action, owner : model) : <confirm_act
     Toggle_task(task_id) -> todo_handle_toggle(owner, "toggle-" ++ task_id.show)
     Remove_task(task_id) -> commit_task_hooks(owner, fn() todo_handle_remove(owner, "remove-" ++ task_id.show))
     Start_task_edit(task_id) -> commit_task_hooks(owner, fn() todo_start_task_edit(owner, task_id))
+    Cancel_task_edit(task_id) -> commit_task_hooks(owner, fn() todo_cancel_task_edit(owner, task_id))
     Save_task_edit(task_id) -> commit_task_hooks(owner, fn() todo_save_task_edit(owner, task_id))
 
 fun decode_todo_action(payload : string, owner : model) : <div> maybe<todo_action>
@@ -182,27 +174,18 @@ fun decode_todo_action(payload : string, owner : model) : <div> maybe<todo_actio
     Just(Set_filter("done"))
   else if payload == "clear-completed" then
     Just(Clear_completed)
-  else match task_id_from_toggle(payload, tasks)
-    Just(task_id) -> Just(Toggle_task(task_id))
-    Nothing -> match task_id_from_remove(payload, tasks)
-      Just(task_id) -> Just(Remove_task(task_id))
-      Nothing -> match task_id_from_edit(payload, tasks)
-        Just(task_id) -> Just(Start_task_edit(task_id))
-        Nothing -> match task_id_from_save(payload, tasks)
-          Just(task_id) -> Just(Save_task_edit(task_id))
-          Nothing -> Nothing
+  else
+    task_id_from_toggle(payload, tasks).map(Toggle_task) ||
+    task_id_from_remove(payload, tasks).map(Remove_task) ||
+    task_id_from_edit(payload, tasks).map(Start_task_edit) ||
+    task_id_from_cancel(payload, tasks).map(Cancel_task_edit) ||
+    task_id_from_save(payload, tasks).map(Save_task_edit)
 
 pub fun route_todo_click(payload : string, owner : model) : <confirm_action,audit,div> maybe<model>
-  match decode_todo_action(payload, owner)
-    Just(action) -> Just(dispatch_todo_action(action, owner))
-    Nothing -> match task_id_from_cancel(payload, owner.tasks)
-      Just(target_id) -> Just(commit_task_tree(owner, fn() todo_cancel_task_edit(owner, target_id)))
-      Nothing -> Nothing
+  decode_todo_action(payload, owner).map(fn(action) dispatch_todo_action(action, owner))
 
 pub fun route_todo_input(channel : string, value : string, owner : model) : <div> maybe<model>
   if channel == "draft" then
     Just(owner(draft = value))
   else
-    match find_task_draft_channel(channel, owner.tasks)
-      Just(target_id) -> Just(commit_task_tree(owner, fn() todo_set_task_edit_draft(owner, target_id, value)))
-      Nothing -> Nothing
+    find_task_draft_channel(channel, owner.tasks).map(fn(target_id) commit_task_tree(owner, fn() todo_set_task_edit_draft(owner, target_id, value)))
