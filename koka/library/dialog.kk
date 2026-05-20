@@ -153,7 +153,7 @@ fun dismiss_button(key : string, class_name : string, marker : maybe<string>, pa
   val attrs = match marker
     Just(found) -> [class_attr(class_name), text_attr("data-k-effect", found), dialog_dismiss_attr()]
     Nothing -> [class_attr(class_name), dialog_dismiss_attr()]
-  text_node("button", key, props(attrs, [click_listener(payload)]), label)
+  button_key(key, attrs, [click_listener(payload)], label)
 
 fun dialog_header(current : dialog_demo) : <div> vnode
   div([class_attr("dialog-header")], [
@@ -182,7 +182,7 @@ fun dialog_actions(footer : dialog_footer) : <div> vnode
       ])
 
 fun dismiss_backdrop() : <div> vnode
-  node("div", "dialog-backdrop", props(append_dialog_attrs([class_attr("dialog-backdrop")], [dialog_dismiss_attr()]), [click_listener(dialog_close_payload())]), Nil)
+  el("div", "dialog-backdrop", append_dialog_attrs([class_attr("dialog-backdrop")], [dialog_dismiss_attr()]), [click_listener(dialog_close_payload())], "", Nil)
 
 fun overlay_card(current : dialog_demo, spec : dialog_overlay_spec) : <div> vnode
   article_key(spec.card_key, [class_attr(spec.card_class)], [

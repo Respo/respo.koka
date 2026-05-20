@@ -7,7 +7,6 @@ pub type dom_event_kind
 
 pub struct attr(name : string, value : string)
 pub struct listener(kind : dom_event_kind, payload : string)
-pub struct node_props(attrs : list<attr>, listeners : list<listener>)
 pub struct vnode(tag : string, key : string, attrs : list<attr>, listeners : list<listener>, text : string, children : list<vnode>)
 pub struct patch(path : string, kind : string, name : string, value : string, html : string)
 
@@ -17,11 +16,6 @@ pub fun dom_event_kind_name(kind : dom_event_kind) : string
     Input_event -> "input"
     Enter_event -> "enter"
 
-pub fun props(attrs : list<attr>, listeners : list<listener>) : node_props
-  Node_props(attrs, listeners)
-
-pub val empty_props : node_props = Node_props(Nil, Nil)
-
 fun auto_key() : string
   ""
 
@@ -29,16 +23,6 @@ fun auto_key() : string
 // Keep `key` stable among siblings; feature code should usually build nodes through `el(...)` and higher-level state/event helpers.
 pub fun el(tag : string, key : string, attrs : list<attr>, listeners : list<listener>, text : string, children : list<vnode>) : vnode
   Vnode(tag, key, attrs, listeners, text, children)
-
-// React-like constructors that group attrs/listeners as props and separate text-vs-children rendering.
-pub fun node(tag : string, key : string, options : node_props, children : list<vnode>) : vnode
-  el(tag, key, node_props/attrs(options), node_props/listeners(options), "", children)
-
-pub fun text_node(tag : string, key : string, options : node_props, text : string) : vnode
-  el(tag, key, node_props/attrs(options), node_props/listeners(options), text, Nil)
-
-pub fun leaf_node(tag : string, key : string, options : node_props) : vnode
-  el(tag, key, node_props/attrs(options), node_props/listeners(options), "", Nil)
 
 // React-like tag helpers default to an automatic empty key; keep explicit keyed variants for lists and targeted tests.
 pub fun div(attrs : list<attr>, children : list<vnode>) : vnode

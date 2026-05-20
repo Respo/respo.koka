@@ -12,3 +12,5 @@ src/generated/
 .koka/
 
 blog/*
+test_output.txt
+test_results.txt
