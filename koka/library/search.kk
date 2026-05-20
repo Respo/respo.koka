@@ -179,6 +179,38 @@ pub fun search_case_summary(query : string) : <div> string
 pub fun search_menu_matches_query(item : search_menu_item, query : string) : <div> bool
   query_matches_keywords(compact_terms(split(trim(query), " ")), search_menu_item/keywords(item))
 
+fun search_case_button(item : search_case, requested_query : string, visible_query : string, dispatch_search : string -> listener) : <div> vnode
+  val query = search_case/query(item)
+  val class_name =
+    if query == visible_query then "button button-active"
+    else if query == requested_query then "button button-primary bridge-button-pending"
+    else "button"
+  button_class("search-case-" ++ query, class_name, [dispatch_search(query)], search_case/label(item))
+
+pub fun render_search_case_buttons(items : list<search_case>, requested_query : string, visible_query : string, dispatch_search : string -> listener) : <div> list<vnode>
+  map(items, fn(item) search_case_button(item, requested_query, visible_query, dispatch_search))
+
+fun render_menu_keyword_pills(items : list<string>, key_prefix : string) : <div> list<vnode>
+  map-indexed(items, fn(index, item) text_class("span", key_prefix ++ "-keyword-" ++ index.show, "search-keyword-chip", item))
+
+fun search_menu_card(item : search_menu_item, query : string, dispatch_search : string -> listener) : <div> vnode
+  val is_match = search_menu_matches_query(item, query)
+  val button_class_name = if query == search_menu_item/query_hint(item) then "button button-active" else if is_match then "button button-primary" else "button"
+  node_class("article", "search-menu-" ++ search_menu_item/query_hint(item) ++ "-" ++ search_menu_item/title(item), if is_match then "search-menu-card search-menu-card-match" else "search-menu-card", [
+    node_class("div", "search-menu-head-" ++ search_menu_item/query_hint(item), "search-menu-head", [
+      node_class("div", "search-menu-copy-" ++ search_menu_item/query_hint(item), "stack", [
+        text_class("strong", "search-menu-title-" ++ search_menu_item/query_hint(item), "section-title", search_menu_item/title(item)),
+        text_class("p", "search-menu-route-" ++ search_menu_item/query_hint(item), "mono", search_menu_item/route_hint(item)),
+      ]),
+      button_class("search-menu-trigger-" ++ search_menu_item/query_hint(item), button_class_name, [dispatch_search(search_menu_item/query_hint(item))], "Search " ++ search_menu_item/query_hint(item)),
+    ]),
+    text_class("p", "search-menu-note-" ++ search_menu_item/query_hint(item), "case-detail", search_menu_item/note(item)),
+    node_class("div", "search-menu-keywords-" ++ search_menu_item/query_hint(item), "search-menu-keywords", render_menu_keyword_pills(search_menu_item/keywords(item), search_menu_item/query_hint(item))),
+  ])
+
+pub fun render_search_menu(items : list<search_menu_item>, query : string, dispatch_search : string -> listener) : <div> list<vnode>
+  map(items, fn(item) search_menu_card(item, query, dispatch_search))
+
 pub fun should_arm_auto_search(demo : search_demo, trimmed : string) : bool
   if trimmed == "" then
     False

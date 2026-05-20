@@ -2,8 +2,8 @@ module demo/lab/workflow
 
 import demo/bridge
 import demo/model
-import demo/seed
 import demo/lab/state
+import library/bridge
 import respo/state
 
 fun append_lines(lines : list<string>, value : string) : <div> list<string>

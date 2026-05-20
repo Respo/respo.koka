@@ -3,9 +3,9 @@ module demo/lab/view
 import demo/model
 import demo/lab/events
 import demo/lab/search
-import demo/seed
 import demo/shared
 import demo/lab/state
+import library/bridge
 import library/search
 import respo/core
 import respo/state
@@ -80,90 +80,6 @@ fun activity_panel(lab : workflow_lab) : <div> vnode
     node_class("ul", "lab-activity-list", "activity-list", render_activity_items(lab.activity_log)),
   ])
 
-fun bridge_case_button(item : bridge_case, requested_case : string, visible_case : string) : <div> vnode
-  val case_name = bridge_case/name(item)
-  val class_name =
-    if case_name == visible_case then "button button-active"
-    else if case_name == requested_case then "button button-primary bridge-button-pending"
-    else "button"
-  button_class("bridge-case-" ++ case_name, class_name, [dispatch_lab_click(Load_bridge_case(case_name))], bridge_case/label(item))
-
-fun render_bridge_case_buttons(items : list<bridge_case>, requested_case : string, visible_case : string) : <div> list<vnode>
-  map(items, fn(item) bridge_case_button(item, requested_case, visible_case))
-
-fun bridge_fallback(key : string, title : string, note : string, class_name : string) : <div> vnode
-  node_class("div", key, "bridge-fallback " ++ class_name, [
-    text_class("strong", key ++ "-title", "bridge-fallback-title", title),
-    text_class("p", key ++ "-note", "case-detail", note),
-    node_class("div", key ++ "-bars", "bridge-fallback-bars", [
-      node_class("span", key ++ "-bar-1", "bridge-bar bridge-bar-wide", Nil),
-      node_class("span", key ++ "-bar-2", "bridge-bar bridge-bar-mid", Nil),
-      node_class("span", key ++ "-bar-3", "bridge-bar bridge-bar-short", Nil),
-    ]),
-  ])
-
-fun render_bridge_detail_lines(lines : list<string>) : <div> list<vnode>
-  map-indexed(lines, fn(index, line) text_class("li", "bridge-detail-" ++ index.show, "activity-item", line))
-
-fun bridge_transition_banner(demo : suspense_bridge_demo) : <div> vnode
-  node_class("div", "bridge-transition-banner", "bridge-transition-banner", [
-    node_class("div", "bridge-transition-head", "bridge-transition-head", [
-      text_class("strong", "bridge-transition-title", "bridge-fallback-title", "Transition keeps stale content visible"),
-      text_class("span", "bridge-transition-status", "incident-status incident-status-investigating", "refreshing"),
-    ]),
-    text_class("p", "bridge-transition-note", "case-detail", "Currently showing `" ++ demo.visible_case ++ "` while the browser bridge resolves `" ++ demo.requested_case ++ "` in the background."),
-    node_class("div", "bridge-transition-rail", "bridge-transition-rail", [
-      text_class("span", "bridge-visible-token", "bridge-token bridge-token-current", "visible: " ++ demo.visible_case),
-      text_class("span", "bridge-arrow-token", "bridge-arrow-token", "->"),
-      text_class("span", "bridge-requested-token", "bridge-token bridge-token-next", "next: " ++ demo.requested_case),
-    ]),
-  ])
-
-fun bridge_detail_node(case_item : bridge_case, demo : suspense_bridge_demo) : <div> vnode
-  if demo.detail_status == "ready" then
-    node_class("div", "bridge-detail", "bridge-detail-card", [
-      text_class("strong", "bridge-detail-title", "section-title", bridge_case/detail_title(case_item)),
-      text_class("p", "bridge-detail-note", "case-detail", "Nested boundary resolved after the outer shell became visible."),
-      node_class("ul", "bridge-detail-list", "activity-list", render_bridge_detail_lines(bridge_case/detail_lines(case_item))),
-    ])
-  else
-    bridge_fallback("bridge-detail-fallback", "Nested fallback", "Shell is visible, but the diagnostic trace is still suspended through the browser callback bridge.", "bridge-detail-fallback")
-
-fun bridge_shell_node(case_item : bridge_case, demo : suspense_bridge_demo) : <div> vnode
-  val is_refreshing = demo.shell_status == "refreshing"
-  val shell_class = if is_refreshing then "bridge-shell-card bridge-shell-refreshing" else "bridge-shell-card"
-  val status_text = if is_refreshing then "showing stale shell while requesting `" ++ demo.requested_case ++ "`" else "outer boundary resolved"
-  val body_children = if is_refreshing then
-    [
-      node_class("div", "bridge-shell-head", "bridge-shell-head", [
-        node_class("div", "bridge-shell-copy", "stack", [
-          text_class("strong", "bridge-shell-title", "section-title", bridge_case/shell_title(case_item)),
-          text_class("p", "bridge-shell-summary", "case-detail", bridge_case/shell_summary(case_item)),
-        ]),
-        node_class("div", "bridge-shell-badges", "bridge-shell-badges", [
-          text_class("span", "bridge-shell-status", "incident-status incident-status-investigating", status_text),
-        ]),
-      ]),
-      bridge_transition_banner(demo),
-      text_class("p", "bridge-shell-stage-note", "bridge-state-note", bridge_case/stage_note(case_item)),
-      bridge_detail_node(case_item, demo),
-    ]
-  else
-    [
-      node_class("div", "bridge-shell-head", "bridge-shell-head", [
-        node_class("div", "bridge-shell-copy", "stack", [
-          text_class("strong", "bridge-shell-title", "section-title", bridge_case/shell_title(case_item)),
-          text_class("p", "bridge-shell-summary", "case-detail", bridge_case/shell_summary(case_item)),
-        ]),
-        node_class("div", "bridge-shell-badges", "bridge-shell-badges", [
-          text_class("span", "bridge-shell-status", "incident-status incident-status-investigating", status_text),
-        ]),
-      ]),
-      text_class("p", "bridge-shell-stage-note", "bridge-state-note", bridge_case/stage_note(case_item)),
-      bridge_detail_node(case_item, demo),
-    ]
-  node_class("article", "bridge-shell", shell_class, body_children)
-
 fun suspense_bridge_panel(lab : workflow_lab) : <div> vnode
   val demo = lab.bridge_demo
   val requested_case = demo.requested_case
@@ -172,15 +88,7 @@ fun suspense_bridge_panel(lab : workflow_lab) : <div> vnode
   val requested_note = match bridge_case_by_name(requested_case)
     Just(case_item) -> bridge_case/stage_note(case_item)
     Nothing -> "Select a bridge case to start the suspense-like demo."
-  val stage_node = match bridge_case_by_name(selected_case)
-    Just(case_item) -> if visible_case == "" && demo.shell_status != "ready" then
-      bridge_fallback("bridge-shell-fallback", "Outer fallback", requested_note, "bridge-shell-fallback")
-    else
-      bridge_shell_node(case_item, demo)
-    Nothing -> node_class("div", "bridge-empty", "bridge-empty", [
-      text_class("strong", "bridge-empty-title", "section-title", "Suspense-like bridge demo"),
-      text_class("p", "bridge-empty-note", "case-detail", "Select a case to trigger a browser callback that resolves the shell and nested diagnostics in two stages."),
-    ])
+  val stage_node = render_bridge_stage(bridge_case_by_name(selected_case), requested_note, requested_case, visible_case, demo.shell_status, demo.detail_status)
   node_class("section", "lab-bridge", "bridge-panel", [
     node_class("div", "bridge-panel-head", "bridge-panel-head", [
       node_class("div", "bridge-panel-copy", "stack", [
@@ -194,41 +102,9 @@ fun suspense_bridge_panel(lab : workflow_lab) : <div> vnode
         summary_chip("Detail", demo.detail_status),
       ]),
     ]),
-    node_class("div", "bridge-case-row", "button-row bridge-case-row", render_bridge_case_buttons(bridge_demo_cases(), requested_case, visible_case)),
+    node_class("div", "bridge-case-row", "button-row bridge-case-row", render_bridge_case_buttons(bridge_demo_cases(), requested_case, visible_case, fn(case_name) dispatch_lab_click(Load_bridge_case(case_name)))),
     stage_node,
   ])
-
-fun search_case_button(item : search_case, requested_query : string, visible_query : string) : <div> vnode
-  val query = search_case/query(item)
-  val class_name =
-    if query == visible_query then "button button-active"
-    else if query == requested_query then "button button-primary bridge-button-pending"
-    else "button"
-  button_class("search-case-" ++ query, class_name, [dispatch_lab_click(Search_for(query))], search_case/label(item))
-
-fun render_search_case_buttons(items : list<search_case>, requested_query : string, visible_query : string) : <div> list<vnode>
-  map(items, fn(item) search_case_button(item, requested_query, visible_query))
-
-fun render_menu_keyword_pills(items : list<string>, key_prefix : string) : <div> list<vnode>
-  map-indexed(items, fn(index, item) text_class("span", key_prefix ++ "-keyword-" ++ index.show, "search-keyword-chip", item))
-
-fun search_menu_card(item : search_menu_item, query : string) : <div> vnode
-  val is_match = search_menu_matches_query(item, query)
-  val button_class_name = if query == search_menu_item/query_hint(item) then "button button-active" else if is_match then "button button-primary" else "button"
-  node_class("article", "search-menu-" ++ search_menu_item/query_hint(item) ++ "-" ++ search_menu_item/title(item), if is_match then "search-menu-card search-menu-card-match" else "search-menu-card", [
-    node_class("div", "search-menu-head-" ++ search_menu_item/query_hint(item), "search-menu-head", [
-      node_class("div", "search-menu-copy-" ++ search_menu_item/query_hint(item), "stack", [
-        text_class("strong", "search-menu-title-" ++ search_menu_item/query_hint(item), "section-title", search_menu_item/title(item)),
-        text_class("p", "search-menu-route-" ++ search_menu_item/query_hint(item), "mono", search_menu_item/route_hint(item)),
-      ]),
-      button_class("search-menu-trigger-" ++ search_menu_item/query_hint(item), button_class_name, [dispatch_lab_click(Search_for(search_menu_item/query_hint(item)))], "Search " ++ search_menu_item/query_hint(item)),
-    ]),
-    text_class("p", "search-menu-note-" ++ search_menu_item/query_hint(item), "case-detail", search_menu_item/note(item)),
-    node_class("div", "search-menu-keywords-" ++ search_menu_item/query_hint(item), "search-menu-keywords", render_menu_keyword_pills(search_menu_item/keywords(item), search_menu_item/query_hint(item))),
-  ])
-
-fun render_search_menu(items : list<search_menu_item>, query : string) : <div> list<vnode>
-  map(items, fn(item) search_menu_card(item, query))
 
 fun suspense_search_panel(lab : workflow_lab) : <div> vnode
   val demo = lab.search_demo
@@ -252,9 +128,9 @@ fun suspense_search_panel(lab : workflow_lab) : <div> vnode
       button_class(search_submit_payload(), "button button-primary", [dispatch_lab_click(Submit_search)], "Run search"),
       text_class("span", "search-summary", "mono", "request #" ++ demo.request_id.show ++ " / auto #" ++ demo.auto_request_id.show),
     ]),
-    node_class("div", "search-case-row", "button-row bridge-case-row", render_search_case_buttons(search_demo_cases(), demo.requested_query, demo.visible_query)),
-    node_class("div", "search-menu-grid", "search-menu-grid", render_search_menu(search_menu_items(), current_query)),
-    render_search_stage(demo, bridge_fallback),
+    node_class("div", "search-case-row", "button-row bridge-case-row", render_search_case_buttons(search_demo_cases(), demo.requested_query, demo.visible_query, fn(query) dispatch_lab_click(Search_for(query)))),
+    node_class("div", "search-menu-grid", "search-menu-grid", render_search_menu(search_menu_items(), current_query, fn(query) dispatch_lab_click(Search_for(query)))),
+    render_search_stage(demo, render_bridge_fallback),
   ])
 
 fun lab_panel_note(route_name : string) : string

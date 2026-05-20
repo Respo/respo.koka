@@ -1,84 +1,9 @@
 module demo/seed
 
+import library/bridge
 import library/dialog
 import library/search
 import demo/model
-
-pub struct bridge_case
-  name : string
-  label : string
-  stage_note : string
-  shell_title : string
-  shell_summary : string
-  detail_title : string
-  detail_lines : list<string>
-  shell_delay : int
-  detail_delay : int
-
-fun suspense_cases() : list<bridge_case>
-  [
-    Bridge_case(
-      "edge-auth",
-      "Edge Auth Bundle",
-      "Outer boundary keeps the last visible incident brief while the browser callback resolves a newer auth snapshot.",
-      "Auth bundle drift at the edge",
-      "Two POPs are still serving an older login shell, so the demo keeps stale content on screen until the replacement shell lands.",
-      "Nested diagnostics stream",
-      [
-        "cdn.trace: auth-shell-v42 is still hot in iad / hkg",
-        "origin.diff: manifest hash moved from 7fd2 to 91ac",
-        "mitigation: warm the new shell before swapping visible traffic",
-      ],
-      520,
-      980),
-    Bridge_case(
-      "queue-drain",
-      "Replay Queue Drain",
-      "This case shows a slower outer shell and a faster nested payload once the queue owner flips.",
-      "Replay queue ownership handoff",
-      "The staging queue is rebalancing across workers, so the demo waits longer before revealing the next operator view.",
-      "Queue replay trace",
-      [
-        "ingress: backlog crest detected after deploy wave 19",
-        "scheduler: ownership moved to cache-safe workers",
-        "replay: pressure drops only after the nested trace resolves",
-      ],
-      820,
-      540),
-    Bridge_case(
-      "image-burst",
-      "Thumbnail Burst",
-      "The shell swaps quickly, but the nested diagnostics intentionally linger to mimic a second Suspense boundary.",
-      "Thumbnail region warmup burst",
-      "A new region is ready to reveal high-level status, while the per-stage trace keeps streaming under a nested fallback.",
-      "Worker warmup detail",
-      [
-        "loader: region enters warm path after first request batch",
-        "cache: derived variants refill after the shell is already visible",
-        "tail-latency: final p95 settles only when nested detail completes",
-      ],
-      360,
-      1180),
-  ]
-
-pub fun bridge_demo_cases() : list<bridge_case>
-  suspense_cases()
-
-pub fun default_bridge_case_name() : string
-  "edge-auth"
-
-pub fun bridge_case_by_name(case_name : string) : <div> maybe<bridge_case>
-  find(suspense_cases(), fn(item) bridge_case/name(item) == case_name)
-
-pub fun bridge_shell_delay(case_name : string) : <div> int
-  match bridge_case_by_name(case_name)
-    Just(item) -> bridge_case/shell_delay(item)
-    Nothing -> 600
-
-pub fun bridge_detail_delay(case_name : string) : <div> int
-  match bridge_case_by_name(case_name)
-    Just(item) -> bridge_case/detail_delay(item)
-    Nothing -> 900
 
 pub fun mock_lab_snapshot() : lab_snapshot
   Lab_snapshot(
