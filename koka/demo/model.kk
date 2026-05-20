@@ -257,10 +257,29 @@ pub fun bridge_detail_request_id(item : suspense_bridge_demo) : int
 
 pub fun normalize_route(route_name : string) : string
   if route_name == "todo" then "todo"
-  else if route_name == "lab" then "lab"
-  else if route_name == "effects" then "effects"
+  else if route_name == "lab" || route_name == "lab-board" then "lab-board"
+  else if route_name == "lab-search" then "lab-search"
+  else if route_name == "lab-bridge" then "lab-bridge"
+  else if route_name == "effects" || route_name == "effects-core" then "effects-core"
+  else if route_name == "effects-dialogs" then "effects-dialogs"
+  else if route_name == "effects-workflow" then "effects-workflow"
+  else if route_name == "effects-state" then "effects-state"
+  else if route_name == "effects-timer" then "effects-timer"
   else if route_name == "checks" then "checks"
   else "overview"
+
+pub fun route_section(route_name : string) : string
+  if route_name == "todo" then "todo"
+  else if route_name == "lab-board" || route_name == "lab-search" || route_name == "lab-bridge" then "lab"
+  else if route_name == "effects-core" || route_name == "effects-dialogs" || route_name == "effects-workflow" || route_name == "effects-state" || route_name == "effects-timer" then "effects"
+  else if route_name == "checks" then "checks"
+  else "overview"
+
+pub fun route_is_lab(route_name : string) : bool
+  route_section(route_name) == "lab"
+
+pub fun route_is_effects(route_name : string) : bool
+  route_section(route_name) == "effects"
 
 pub fun task_toggle_id(item : task) : string
   "toggle-" ++ task/id(item).show
@@ -384,7 +403,15 @@ pub fun reduce_click(payload : string, item : model) : <confirm_action,audit,cur
   if payload == "route-overview" then set_route(item, "overview")
   else if payload == "route-todo" then set_route(item, "todo")
   else if payload == "route-lab" then set_route(item, "lab")
+  else if payload == "route-lab-board" then set_route(item, "lab-board")
+  else if payload == "route-lab-search" then set_route(item, "lab-search")
+  else if payload == "route-lab-bridge" then set_route(item, "lab-bridge")
   else if payload == "route-effects" then set_route(item, "effects")
+  else if payload == "route-effects-core" then set_route(item, "effects-core")
+  else if payload == "route-effects-dialogs" then set_route(item, "effects-dialogs")
+  else if payload == "route-effects-workflow" then set_route(item, "effects-workflow")
+  else if payload == "route-effects-state" then set_route(item, "effects-state")
+  else if payload == "route-effects-timer" then set_route(item, "effects-timer")
   else if payload == "route-checks" then set_route(item, "checks")
   else set_notice(item, "Unknown action: " ++ payload)
 

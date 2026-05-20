@@ -17,7 +17,7 @@ fun intro_panel(item : model) : <div> vnode
       text_class("h1", "intro-title", "page-title", "Respo core + dense debug demo"),
       text_class("span", "route-indicator", "route-indicator", "route: #" ++ model_route_name(item)),
     ]),
-    text_class("p", "intro-note", "section-note", "`respo/*` holds VDOM helpers; `demo/*` now includes a workflow lab with local state, staged waits, mocked server handlers, and route-level demos."),
+    text_class("p", "intro-note", "section-note", "`respo/*` holds VDOM helpers; `demo/*` now exposes finer subroutes so search, bridge, dialogs, workflow, and timing demos are easier to inspect in isolation."),
   ])
 
 fun overview_stage(item : model, results : list<test_result>) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
@@ -42,10 +42,10 @@ fun route_stage(item : model, results : list<test_result>) : <div> (model, vnode
   if model_route_name(item) == "todo" then
     val (next_item, todo_node, pending_effects, handlers) = run_todo_panel(item)
     (next_item, node_class("div", "todo-stage", "single-stage", [todo_node]), pending_effects, handlers)
-  else if model_route_name(item) == "lab" then
+  else if route_is_lab(model_route_name(item)) then
     val (next_item, lab_node, pending_effects, handlers) = run_lab_panel(item)
     (next_item, node_class("div", "lab-stage", "single-stage", [lab_node]), pending_effects, handlers)
-  else if model_route_name(item) == "effects" then
+  else if route_is_effects(model_route_name(item)) then
     (item, node_class("div", "effects-stage", "single-stage", [effects_panel(item, results)]), Nil, empty_event_registry())
   else if model_route_name(item) == "checks" then
     (item, node_class("div", "checks-stage", "single-stage", [tests_panel(results)]), Nil, empty_event_registry())

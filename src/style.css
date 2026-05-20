@@ -109,6 +109,16 @@ body {
   gap: 6px;
 }
 
+.route-sub-bar {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(164, 178, 196, 0.24);
+}
+
+.route-sub-bar-empty {
+  display: none;
+}
+
 .button-row,
 .task-actions {
   display: flex;

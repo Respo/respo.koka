@@ -49,7 +49,7 @@ pub fun search_resolve_before_timeout_test() : <div> test_result
   Test_result(
     "Search resolves before timeout",
     "visible=" ++ search_visible_query(demo) ++ ", status=" ++ search_status(demo) ++ ", first=" ++ first_text(search_results(demo)),
-    search_visible_query(demo) == "edge" && search_status(demo) == "ready" && search_timeout_status(demo) == "idle" && length(search_results(demo)) == 2 && first_text(search_results(demo)) == "Edge auth bundle -> /lab/bridge/edge-auth | Staged shell/detail bridge around auth drift at the edge POPs." && length(stale_requests) == 0 && length(audits) == 1)
+    search_visible_query(demo) == "edge" && search_status(demo) == "ready" && search_timeout_status(demo) == "idle" && length(search_results(demo)) == 2 && first_text(search_results(demo)) == "Edge auth bundle -> #lab-bridge | Staged shell/detail bridge around auth drift at the edge POPs." && length(stale_requests) == 0 && length(audits) == 1)
 
 pub fun search_timeout_then_recover_test() : <div> test_result
   val typed = search_input(search_base_model(), "queue")

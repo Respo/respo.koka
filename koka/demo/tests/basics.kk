@@ -93,3 +93,21 @@ pub fun timer_simulation_test() : <div> test_result
   val total = sum(waits)
   val steps = length(waits)
   Test_result("Timer simulation", steps.show ++ " waits / " ++ total.show ++ "ms / result=" ++ label, label == "timer-ready" && steps == 3 && total == 80)
+
+pub fun route_subroute_normalization_test() : <div> test_result
+  with fun confirm_action(_message) False
+  with fun audit(_message) ()
+  with val current_operator = "test-operator"
+  with fun fetch_lab_snapshot() mock_lab_snapshot()
+  with fun now_label() "10:00:00"
+  with fun post_lab_reply(_incident_id, message) message
+  with fun request_bridge_resource(_payload, _delay) ()
+  with fun wait_ms(_delay) ()
+  val lab_route = model_route_name(reduce_click("route-lab-search", initial_model()))
+  val effects_route = model_route_name(reduce_click("route-effects-dialogs", initial_model()))
+  val legacy_lab = normalize_route("lab")
+  val legacy_effects = normalize_route("effects")
+  Test_result(
+    "Route subpages normalize",
+    "lab=" ++ lab_route ++ ", effects=" ++ effects_route ++ ", legacy=" ++ legacy_lab ++ "/" ++ legacy_effects,
+    lab_route == "lab-search" && effects_route == "effects-dialogs" && legacy_lab == "lab-board" && legacy_effects == "effects-core")

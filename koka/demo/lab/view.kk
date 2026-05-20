@@ -305,9 +305,32 @@ fun suspense_search_panel(lab : workflow_lab) : <div> vnode
     search_result_stage(demo),
   ])
 
+fun lab_panel_note(route_name : string) : string
+  if route_name == "lab-search" then "Search is isolated here so debounced auto-run, timeout racing, stale-result retention, and the menu catalog are easier to inspect by themselves."
+  else if route_name == "lab-bridge" then "Bridge is isolated here so the staged shell/detail suspense-like behavior is not competing with the workflow board or search demo."
+  else "Board keeps the incident workflow, local drafts, activity log, and staged sync actions together without the search and bridge demos crowding the same page."
+
+fun lab_panel_sections(route_name : string, lab : workflow_lab) : lab_view_effect list<vnode>
+  if route_name == "lab-search" then
+    [suspense_search_panel(lab)]
+  else if route_name == "lab-bridge" then
+    [suspense_bridge_panel(lab)]
+  else
+    [
+      node_class("div", "lab-actions", "button-row", [
+        button_class("lab-load", "button", [dispatch_lab_click(Load_board)], "Load mock board"),
+        button_class("lab-sync", "button button-primary", [dispatch_lab_click(Run_sync)], "Run staged sync"),
+        text_class("span", "lab-status", "mono", "status: " ++ lab_sync_status(lab)),
+      ]),
+      node_class("div", "lab-body", "lab-body-grid", [
+        incident_grid(lab),
+        activity_panel(lab),
+      ]),
+    ]
+
 pub fun render_lab_panel(item : model) : lab_view_effect vnode
   val lab = model_lab(item)
-  panel("Workflow lab", "This demo mixes component-local draft state, staged waits, a mocked server snapshot, and an ambient operator identity.", "lab", "lab-panel", [
+  val children = [
     node_class("div", "lab-summary", "summary-row", [
       summary_chip("Incidents", lab_incident_count(lab).show),
       summary_chip("Open", lab_open_count(lab).show),
@@ -315,15 +338,5 @@ pub fun render_lab_panel(item : model) : lab_view_effect vnode
       summary_chip("Local cells", lab_local_count(lab).show),
       summary_chip("Last sync", lab_last_sync_label(lab)),
     ]),
-    node_class("div", "lab-actions", "button-row", [
-      button_class("lab-load", "button", [dispatch_lab_click(Load_board)], "Load mock board"),
-      button_class("lab-sync", "button button-primary", [dispatch_lab_click(Run_sync)], "Run staged sync"),
-      text_class("span", "lab-status", "mono", "status: " ++ lab_sync_status(lab)),
-    ]),
-    suspense_search_panel(lab),
-    suspense_bridge_panel(lab),
-    node_class("div", "lab-body", "lab-body-grid", [
-      incident_grid(lab),
-      activity_panel(lab),
-    ]),
-  ])
+  ] ++ lab_panel_sections(model_route_name(item), lab)
+  panel("Workflow lab", lab_panel_note(model_route_name(item)), "lab", "lab-panel", children)
