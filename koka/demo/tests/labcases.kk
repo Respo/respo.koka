@@ -15,7 +15,7 @@ pub fun lab_local_routing_test() : <div> test_result
   with fun now_label() "T+120"
   with fun audit(_message) ()
   with fun request_bridge_resource(_payload, _delay) ()
-  val base = set_route(initial_model(), "lab")
+  val base = initial_model()(route_name = normalize_route("lab"))
   val drafted = match handle_lab_input("lab-draft-101", "Shift traffic to backup POP.", base)
     Just(result) -> result
     Nothing -> base
@@ -26,25 +26,25 @@ pub fun lab_local_routing_test() : <div> test_result
   Test_result("Workflow lab local routing", "draft=" ++ lab_incident_draft(lab, 101) ++ ", expanded=" ++ lab_incident_expanded(lab, 101).show, lab_incident_draft(lab, 101) == "Shift traffic to backup POP." && lab_incident_expanded(lab, 101))
 
 pub fun workflow_sync_test() : <div> test_result
-  val (next, waits, audits) = capture_workflow(fn() perform_sync(set_route(initial_model(), "lab")))
+  val (next, waits, audits) = capture_workflow(fn() perform_sync(initial_model()(route_name = normalize_route("lab"))))
   val total = sum(waits)
   val lab = next.lab
   Test_result(
     "Workflow sync captures waits",
-    "incidents=" ++ lab_incident_count(lab).show ++ ", waits=" ++ total.show ++ "ms, audits=" ++ length(audits).show ++ ", sync=" ++ lab.last_sync_label,
-    lab_incident_count(lab) == 3 && total == 120 && length(audits) == 1 && lab.last_sync_label == "T+120")
+    "incidents=" ++ length(lab.incidents).show ++ ", waits=" ++ total.show ++ "ms, audits=" ++ length(audits).show ++ ", sync=" ++ lab.last_sync_label,
+    length(lab.incidents) == 3 && total == 120 && length(audits) == 1 && lab.last_sync_label == "T+120")
 
 pub fun workflow_reply_test() : <div> test_result
-  val base = set_route(initial_model(), "lab")
+  val base = initial_model()(route_name = normalize_route("lab"))
   val prepared = commit_lab_tree(base, fn() set_local_lab_draft(base, 102, "Shift replay traffic onto the cache-safe queue."))
   val (next, waits, _audits) = capture_workflow(fn() send_reply(prepared, 102))
   val total = sum(waits)
   val lab = next.lab
   val cleared = lab_incident_draft(lab, 102) == ""
-  val acked = match lab_incident_by_id(lab, 102)
+  val acked = match find(lab.incidents, fn(item) 102 == incident/id(item))
     Just(item) -> (match item.status { Status_acked -> True; _ -> False }) && item.server_note == "Shift replay traffic onto the cache-safe queue."
     Nothing -> False
-  Test_result("Workflow reply clears local draft", "waits=" ++ total.show ++ "ms, drafts=" ++ lab_draft_count(lab).show ++ ", status=" ++ lab.sync_status, cleared && acked && total == 60)
+  Test_result("Workflow reply clears local draft", "waits=" ++ total.show ++ "ms, drafts=" ++ length(filter(lab.incidents, fn(item) lab_incident_draft(lab, incident/id(item)) != "")).show ++ ", status=" ++ lab.sync_status, cleared && acked && total == 60)
 
 pub fun bridge_pending_test() : <div> test_result
   val (next, requests, audits) = capture_bridge_load(bridge_base_model(), "edge-auth")

@@ -11,7 +11,7 @@ pub fun state_tree_test() : <div> test_result
   val tree = assoc_slot_flag(assoc_slot_text(Nil, draft_slot, "Shift traffic to backup POP."), expanded_slot, True)
   val draft = slot_text(tree, draft_slot, "")
   val expanded = slot_flag(tree, expanded_slot, False)
-  val normalized_name = state_slot_path(named_slot("todo/tasks/2", "7draft"))
+  val normalized_name = state_slot/path(named_slot("todo/tasks/2", "7draft"))
   Test_result("State tree local state", "draft=" ++ draft ++ ", expanded=" ++ expanded.show ++ ", named=" ++ normalized_name, draft == "Shift traffic to backup POP." && expanded && normalized_name == "todo/tasks/2/_7draft")
 
 pub fun generic_state_codec_test() : <div> test_result
@@ -44,10 +44,10 @@ pub fun auto_hook_scope_test() : <div> test_result
   })
   val left_after = slot_text(next_tree, hook_state_slot("todo/tasks/7", 0), "")
   val right_after = slot_text(next_tree, hook_state_slot("lab/incidents/11", 0), "")
-  val effect_path = state_slot_path(hook_effect_slot("lab/incidents/11", 0))
+  val effect_path = state_slot/path(hook_effect_slot("lab/incidents/11", 0))
   val has_effect = match pending_effects {
     Nil -> False
-    Cons(item, _rest) -> scheduled_effect_path(item) == effect_path
+    Cons(item, _rest) -> scheduled_effect/path(item) == effect_path
   }
   Test_result(
     "Auto hook scopes stay isolated",
@@ -71,10 +71,10 @@ pub fun listener_registry_guard_test() : <div> test_result
   })
   val merged_registry = append_event_registries(merged_left, merged_right)
   val duplicate_count = count_registered_clicks(duplicate_registry)
-  val duplicate_warnings = length(event_registry_warnings(duplicate_registry))
-  val merged_warnings = length(event_registry_warnings(merged_registry))
-  val merged_semantic = match find_registered_click(merged_registry, state_slot_path(handler_slot))
-    Just(found) -> registered_click_semantic_name(found)
+  val duplicate_warnings = length(event_registry/warnings(duplicate_registry))
+  val merged_warnings = length(event_registry/warnings(merged_registry))
+  val merged_semantic = match find_registered_click(merged_registry, state_slot/path(handler_slot))
+    Just(found) -> registered_click/semantic_name(found)
     Nothing -> "missing"
   Test_result(
     "Listener registry guards",

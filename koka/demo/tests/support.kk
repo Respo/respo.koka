@@ -6,6 +6,7 @@ import demo/lab/search
 import demo/labpanel
 import demo/model
 import demo/seed
+import demo/todopanel
 import respo/core
 import respo/state
 
@@ -68,7 +69,7 @@ pub fun capture_bridge(action : () -> <request_bridge_resource,wait_ms,fetch_lab
   action()
 
 pub fun bridge_base_model() : model
-  set_route(initial_model(), "lab")
+  initial_model()(route_name = normalize_route("lab"))
 
 pub fun bridge_click(owner : model, payload : string) : <request_bridge_resource,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,audit,current_operator,div> model
   match handle_lab_click(payload, owner)
@@ -94,7 +95,7 @@ pub fun bridge_ready_model(case_name : string) : <div> model
   detail_ready
 
 pub fun search_base_model() : model
-  set_route(initial_model(), "lab")
+  initial_model()(route_name = normalize_route("lab"))
 
 pub fun capture_search_input(owner : model, value : string) : <div> (model, list<string>, list<string>)
   capture_bridge(fn() {
@@ -123,7 +124,7 @@ pub fun capture_search_auto(owner : model, query : string, auto_request_id : int
   capture_bridge_click(owner, bridge_result_payload("search-auto", query, auto_request_id))
 
 pub fun dialog_base_model() : model
-  set_route(initial_model(), "effects")
+  initial_model()(route_name = normalize_route("effects"))
 
 pub fun dialog_click(owner : model, payload : string) : <audit,div> model
   match handle_dialog_click(payload, owner)
@@ -168,10 +169,57 @@ pub fun bridge_expectation_result(owner : model, requests : list<string>, audits
   (detail, passed)
 
 fun attrs_have_value(attrs : list<attr>, target_name : string, target_value : string) : <div> bool
-  any(attrs, fn(item) attr_name(item) == target_name && attr_value(item) == target_value)
+  any(attrs, fn(item) attr/name(item) == target_name && attr/value(item) == target_value)
 
 fun children_have_attr_value(nodes : list<vnode>, target_name : string, target_value : string) : <div> bool
   any(nodes, fn(node) vnode_has_attr_value(node, target_name, target_value))
 
 pub fun vnode_has_attr_value(node : vnode, target_name : string, target_value : string) : <div> bool
-  attrs_have_value(vnode_attrs(node), target_name, target_value) || children_have_attr_value(vnode_children(node), target_name, target_value)
+  attrs_have_value(vnode/attrs(node), target_name, target_value) || children_have_attr_value(vnode/children(node), target_name, target_value)
+
+// --- Component harness ---
+// Wraps one rendered frame (model + vnode + effects + registry) so tests can fire
+// events and re-render in a composable way without manually threading the 4-tuple.
+
+pub struct component_harness
+  owner : model
+  tree : vnode
+  effects : list<scheduled_effect>
+  registry : event_registry<model, browser_event_effect>
+
+pub fun todo_harness(owner : model) : <div> component_harness
+  val (next_model, tree, effects, registry) = run_todo_panel(owner)
+  Component_harness(next_model, tree, effects, registry)
+
+// Fire a locally-registered click by semantic name; re-render via render_fn.
+// The caller must have browser_event_effect in scope (same as capture_bridge tests).
+pub fun harness_fire_named_click(
+  h : component_harness,
+  semantic_name : string,
+  render_fn : (model) -> <div> component_harness
+) : <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms,div> component_harness
+  match find_registered_click_by_semantic(h.registry, semantic_name)
+    Nothing -> h
+    Just(found) -> render_fn(run_registered_click(found, h.owner))
+
+// Fire a locally-registered input by semantic name; re-render via render_fn.
+pub fun harness_fire_named_input(
+  h : component_harness,
+  semantic_name : string,
+  value : string,
+  render_fn : (model) -> <div> component_harness
+) : <div> component_harness
+  match find_registered_input_by_semantic(h.registry, semantic_name)
+    Nothing -> h
+    Just(found) -> render_fn(run_registered_input(found, value, h.owner))
+
+// Fire a click using the exact payload string (the value in data-k-click).
+// Looks in the registry first; no-ops if not found (global dispatch is out of scope here).
+pub fun harness_fire_click_payload(
+  h : component_harness,
+  payload : string,
+  render_fn : (model) -> <div> component_harness
+) : <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms,div> component_harness
+  match find_registered_click(h.registry, payload)
+    Just(found) -> render_fn(run_registered_click(found, h.owner))
+    Nothing -> h

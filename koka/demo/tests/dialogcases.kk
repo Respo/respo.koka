@@ -44,7 +44,7 @@ pub fun dialog_prompt_focus_effect_test() : <div> test_result
   Test_result(
     "Dialog prompt schedules focus effect",
     "effects=" ++ length(effects).show ++ ", marker=" ++ vnode_has_attr_value(overlay_node, "data-k-effect", "dialog-prompt-focus").show,
-    any(effects, fn(item) scheduled_effect_path(item) == "dialog/focus/prompt") && vnode_has_attr_value(overlay_node, "data-k-effect", "dialog-prompt-focus"))
+    any(effects, fn(item) scheduled_effect/path(item) == "dialog/focus/prompt") && vnode_has_attr_value(overlay_node, "data-k-effect", "dialog-prompt-focus"))
 
 pub fun dialog_drawer_action_test() : <div> test_result
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("drawer"))

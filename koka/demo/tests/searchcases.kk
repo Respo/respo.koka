@@ -100,3 +100,56 @@ pub fun search_stale_result_ignored_test() : <div> test_result
     "Search ignores stale result after retarget",
     "requested=" ++ demo.requested_query ++ ", status=" ++ demo.status ++ ", requests=" ++ length(requests).show,
     length(requests) == 0 && length(audits) == 0 && demo.requested_query == "edge" && demo.status == "pending")
+
+pub fun search_refresh_timeout_stale_visible_test() : <div> test_result
+  val edge_ready = {
+    val (started, _requests, _audits) = capture_search_submit(search_base_model())
+    val (resolved, _result_requests, _result_audits) = capture_search_result(started, "edge", 1)
+    resolved
+  }
+  val typed = search_input(edge_ready, "queue")
+  val (refreshing, _refresh_requests, _refresh_audits) = capture_search_submit(typed)
+  val (after_timeout, _requests, audits) = capture_search_timeout(refreshing, "queue", 2)
+  val demo = after_timeout.lab.search_demo
+  Test_result(
+    "Search refresh timeout keeps stale results visible",
+    "status=" ++ demo.status ++ ", timeout=" ++ demo.timeout_status ++ ", visible=" ++ demo.visible_query ++ ", results=" ++ length(demo.results).show,
+    demo.status == "refreshing" && demo.timeout_status == "timed_out" && demo.visible_query == "edge" && length(demo.results) == 2 && length(audits) == 1)
+
+pub fun search_refresh_timeout_then_recover_test() : <div> test_result
+  val edge_ready = {
+    val (started, _requests, _audits) = capture_search_submit(search_base_model())
+    val (resolved, _result_requests, _result_audits) = capture_search_result(started, "edge", 1)
+    resolved
+  }
+  val typed = search_input(edge_ready, "queue")
+  val (refreshing, _refresh_requests, _refresh_audits) = capture_search_submit(typed)
+  val (after_timeout, _timeout_requests, timeout_audits) = capture_search_timeout(refreshing, "queue", 2)
+  val (recovered, _result_requests, result_audits) = capture_search_result(after_timeout, "queue", 2)
+  val timeout_demo = after_timeout.lab.search_demo
+  val recovered_demo = recovered.lab.search_demo
+  Test_result(
+    "Search refresh recovers after timeout with late result",
+    "timeout-status=" ++ timeout_demo.status ++ ", ts=" ++ timeout_demo.timeout_status ++ ", visible-after=" ++ recovered_demo.visible_query ++ ", status-after=" ++ recovered_demo.status,
+    timeout_demo.status == "refreshing" && timeout_demo.timeout_status == "timed_out" && timeout_demo.visible_query == "edge" && recovered_demo.status == "ready" && recovered_demo.timeout_status == "idle" && recovered_demo.visible_query == "queue" && length(timeout_audits) == 1 && length(result_audits) == 1)
+
+pub fun search_auto_cancelled_by_submit_test() : <div> test_result
+  val (typed, _input_requests, _input_audits) = capture_search_input(search_base_model(), "queue")
+  val auto_id = typed.lab.search_demo.auto_request_id
+  val (submitted, _submit_requests, _submit_audits) = capture_search_submit(typed)
+  val (ignored, requests, audits) = capture_search_auto(submitted, "queue", auto_id)
+  val demo = ignored.lab.search_demo
+  Test_result(
+    "Search auto timer ignored after manual submit cancels it",
+    "status=" ++ demo.status ++ ", auto=" ++ demo.auto_status ++ ", requests=" ++ length(requests).show,
+    demo.status == "pending" && demo.auto_status == "idle" && length(requests) == 0 && length(audits) == 0)
+
+pub fun search_pick_starts_pending_test() : <div> test_result
+  val (picked, requests, audits) = capture_search_pick(search_base_model(), "queue")
+  val demo = picked.lab.search_demo
+  val has_result_request = any(requests, fn(item) item == "bridge-search|queue|1@760")
+  val has_timeout_request = any(requests, fn(item) item == "bridge-search-timeout|queue|1@320")
+  Test_result(
+    "Search pick starts pending for selected query",
+    "status=" ++ demo.status ++ ", requested=" ++ demo.requested_query ++ ", requests=" ++ length(requests).show,
+    length(requests) == 2 && length(audits) == 1 && has_result_request && has_timeout_request && demo.status == "pending" && demo.requested_query == "queue" && demo.auto_status == "idle")
