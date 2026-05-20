@@ -230,58 +230,6 @@ fun search_menu_card(item : search_menu_item, query : string) : <div> vnode
 fun render_search_menu(items : list<search_menu_item>, query : string) : <div> list<vnode>
   map(items, fn(item) search_menu_card(item, query))
 
-fun search_auto_banner(demo : search_demo) : <div> vnode
-  node_class("div", "search-auto-banner", "bridge-transition-banner search-auto-banner", [
-    node_class("div", "search-auto-head", "bridge-transition-head", [
-      text_class("strong", "search-auto-title", "bridge-fallback-title", "Typing pause armed an automatic search"),
-      text_class("span", "search-auto-status", "incident-status incident-status-investigating", "armed"),
-    ]),
-    text_class("p", "search-auto-note", "case-detail", "If no newer input arrives, the browser bridge will auto-start the current menu query after the debounce window."),
-  ])
-
-fun render_search_result_lines(lines : list<string>) : <div> list<vnode>
-  map-indexed(lines, fn(index, line) text_class("li", "search-result-" ++ index.show, "activity-item", line))
-
-fun search_timeout_banner(demo : search_demo) : <div> vnode
-  node_class("div", "search-timeout-banner", "bridge-transition-banner search-timeout-banner", [
-    node_class("div", "search-timeout-head", "bridge-transition-head", [
-      text_class("strong", "search-timeout-title", "bridge-fallback-title", "Timeout fired before the current result settled"),
-      text_class("span", "search-timeout-status", "incident-status incident-severity-p2", "timeout"),
-    ]),
-    text_class("p", "search-timeout-note", "case-detail", "The current request is late. Suspense-lite keeps stale hits visible when possible and still accepts the same request if it eventually resolves."),
-  ])
-
-fun search_transition_banner(demo : search_demo) : <div> vnode
-  node_class("div", "search-transition-banner", "bridge-transition-banner", [
-    node_class("div", "search-transition-head", "bridge-transition-head", [
-      text_class("strong", "search-transition-title", "bridge-fallback-title", "Refreshing search keeps stale hits visible"),
-      text_class("span", "search-transition-status", "incident-status incident-status-investigating", "refreshing"),
-    ]),
-    text_class("p", "search-transition-note", "case-detail", "Showing results for `" ++ demo.visible_query ++ "` while querying `" ++ demo.requested_query ++ "` in the background."),
-  ])
-
-fun search_result_stage(demo : search_demo) : <div> vnode
-  if demo.visible_query == "" && demo.status == "timed_out" then
-    bridge_fallback("search-timeout-fallback", "Search timeout", demo.stage_note, "search-timeout-fallback")
-  else if demo.visible_query == "" && demo.status != "ready" then
-    bridge_fallback("search-pending-fallback", "Search fallback", demo.stage_note, "search-pending-fallback")
-  else
-    node_class("article", "search-result-stage", if demo.status == "refreshing" then "bridge-shell-card search-stage search-stage-refreshing" else "bridge-shell-card search-stage", [
-      node_class("div", "search-stage-head", "bridge-shell-head", [
-        node_class("div", "search-stage-copy", "stack", [
-          text_class("strong", "search-stage-title", "section-title", "Results for `" ++ demo.visible_query ++ "`"),
-          text_class("p", "search-stage-note", "case-detail", demo.stage_note),
-        ]),
-        node_class("div", "search-stage-badges", "bridge-shell-badges", [
-          text_class("span", "search-stage-status", "incident-status incident-status-investigating", demo.status),
-        ]),
-      ]),
-      if demo.status == "refreshing" then search_transition_banner(demo) else node_class("div", "search-transition-placeholder", "stack", Nil),
-      if demo.auto_status == "armed" then search_auto_banner(demo) else node_class("div", "search-auto-placeholder", "stack", Nil),
-      if demo.timeout_status == "timed_out" then search_timeout_banner(demo) else node_class("div", "search-timeout-placeholder", "stack", Nil),
-      node_class("ul", "search-results", "activity-list", render_search_result_lines(demo.results)),
-    ])
-
 fun suspense_search_panel(lab : workflow_lab) : <div> vnode
   val demo = lab.search_demo
   val current_query = if trim(demo.query_input) == "" then demo.visible_query else trim(demo.query_input)
@@ -306,7 +254,7 @@ fun suspense_search_panel(lab : workflow_lab) : <div> vnode
     ]),
     node_class("div", "search-case-row", "button-row bridge-case-row", render_search_case_buttons(search_demo_cases(), demo.requested_query, demo.visible_query)),
     node_class("div", "search-menu-grid", "search-menu-grid", render_search_menu(search_menu_items(), current_query)),
-    search_result_stage(demo),
+    render_search_stage(demo, bridge_fallback),
   ])
 
 fun lab_panel_note(route_name : string) : string
