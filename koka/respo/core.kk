@@ -11,62 +11,11 @@ pub struct node_props(attrs : list<attr>, listeners : list<listener>)
 pub struct vnode(tag : string, key : string, attrs : list<attr>, listeners : list<listener>, text : string, children : list<vnode>)
 pub struct patch(path : string, kind : string, name : string, value : string, html : string)
 
-pub fun attr_name(item : attr) : string
-  attr/name(item)
-
-pub fun attr_value(item : attr) : string
-  attr/value(item)
-
-pub fun listener_kind(item : listener) : dom_event_kind
-  listener/kind(item)
-
 pub fun dom_event_kind_name(kind : dom_event_kind) : string
   match kind
     Click_event -> "click"
     Input_event -> "input"
     Enter_event -> "enter"
-
-pub fun listener_payload(item : listener) : string
-  listener/payload(item)
-
-pub fun node_props_attrs(item : node_props) : list<attr>
-  node_props/attrs(item)
-
-pub fun node_props_listeners(item : node_props) : list<listener>
-  node_props/listeners(item)
-
-pub fun vnode_tag(item : vnode) : string
-  vnode/tag(item)
-
-pub fun vnode_key(item : vnode) : string
-  vnode/key(item)
-
-pub fun vnode_attrs(item : vnode) : list<attr>
-  vnode/attrs(item)
-
-pub fun vnode_listeners(item : vnode) : list<listener>
-  vnode/listeners(item)
-
-pub fun vnode_text(item : vnode) : string
-  vnode/text(item)
-
-pub fun vnode_children(item : vnode) : list<vnode>
-  vnode/children(item)
-
-pub fun patch_path(item : patch) : string
-  patch/path(item)
-
-pub fun patch_kind(item : patch) : string
-  patch/kind(item)
-
-pub fun patch_name(item : patch) : string
-  patch/name(item)
-
-pub fun patch_value(item : patch) : string
-  patch/value(item)
-
-pub fun patch_html_value(item : patch) : string
-  patch/html(item)
 
 pub fun props(attrs : list<attr>, listeners : list<listener>) : node_props
   Node_props(attrs, listeners)
@@ -83,13 +32,13 @@ pub fun el(tag : string, key : string, attrs : list<attr>, listeners : list<list
 
 // React-like constructors that group attrs/listeners as props and separate text-vs-children rendering.
 pub fun node(tag : string, key : string, options : node_props, children : list<vnode>) : vnode
-  el(tag, key, node_props_attrs(options), node_props_listeners(options), "", children)
+  el(tag, key, node_props/attrs(options), node_props/listeners(options), "", children)
 
 pub fun text_node(tag : string, key : string, options : node_props, text : string) : vnode
-  el(tag, key, node_props_attrs(options), node_props_listeners(options), text, Nil)
+  el(tag, key, node_props/attrs(options), node_props/listeners(options), text, Nil)
 
 pub fun leaf_node(tag : string, key : string, options : node_props) : vnode
-  el(tag, key, node_props_attrs(options), node_props_listeners(options), "", Nil)
+  el(tag, key, node_props/attrs(options), node_props/listeners(options), "", Nil)
 
 pub fun node_class(tag : string, key : string, class_name : string, children : list<vnode>) : vnode
   node(tag, key, class_props(class_name), children)
@@ -135,3 +84,45 @@ pub fun input_listener(payload : string) : listener
 // Prefer `on_enter(...)` in app code unless you intentionally want raw string routing.
 pub fun enter_listener(payload : string) : listener
   Listener(Enter_event, payload)
+
+// --- Vnode query helpers (useful in tests and inspectors) ---
+
+// Recursively find the first vnode in the subtree whose key matches target_key.
+pub fun vnode_find_key(node : vnode, target_key : string) : <div> maybe<vnode>
+  if vnode/key(node) == target_key then Just(node)
+  else vnode_find_key_in_children(vnode/children(node), target_key)
+
+fun vnode_find_key_in_children(children : list<vnode>, target : string) : <div> maybe<vnode>
+  match children
+    Nil -> Nothing
+    Cons(child, rest) ->
+      match vnode_find_key(child, target)
+        Just(found) -> Just(found)
+        Nothing -> vnode_find_key_in_children(rest, target)
+
+// Return the value of an attribute by name; "" if not present.
+pub fun vnode_get_attr(node : vnode, name : string) : string
+  find_vnode_attr(vnode/attrs(node), name)
+
+fun find_vnode_attr(attrs : list<attr>, name : string) : string
+  match attrs
+    Nil -> ""
+    Cons(item, rest) -> if attr/name(item) == name then attr/value(item) else find_vnode_attr(rest, name)
+
+// Return the payload of the first click listener on a node; "" if absent.
+pub fun vnode_click_payload(node : vnode) : string
+  find_listener_payload_by_kind(vnode/listeners(node), Click_event)
+
+// Return the channel of the first input listener on a node; "" if absent.
+pub fun vnode_input_channel(node : vnode) : string
+  find_listener_payload_by_kind(vnode/listeners(node), Input_event)
+
+fun find_listener_payload_by_kind(listeners : list<listener>, target : dom_event_kind) : string
+  match listeners
+    Nil -> ""
+    Cons(item, rest) ->
+      match (listener/kind(item), target)
+        (Click_event, Click_event) -> listener/payload(item)
+        (Input_event, Input_event) -> listener/payload(item)
+        (Enter_event, Enter_event) -> listener/payload(item)
+        _ -> find_listener_payload_by_kind(rest, target)
