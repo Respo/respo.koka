@@ -24,8 +24,7 @@ pub fun lab_local_routing_test() : <div> test_result
   val toggled = match handle_lab_click("lab-toggle-101", drafted)
     Just(result) -> result
     Nothing -> drafted
-  val lab = toggled.lab
-  Test_result("Workflow lab local routing", "draft=" ++ lab_incident_draft(lab, 101) ++ ", expanded=" ++ lab_incident_expanded(lab, 101).show, lab_incident_draft(lab, 101) == "Shift traffic to backup POP." && lab_incident_expanded(lab, 101))
+  Test_result("Workflow lab local routing", "draft=" ++ lab_incident_draft(toggled.app_local_tree, 101) ++ ", expanded=" ++ lab_incident_expanded(toggled.app_local_tree, 101).show, lab_incident_draft(toggled.app_local_tree, 101) == "Shift traffic to backup POP." && lab_incident_expanded(toggled.app_local_tree, 101))
 
 pub fun workflow_sync_test() : <div> test_result
   val (next, waits, audits) = capture_workflow(fn() perform_sync(initial_model()(route_name = normalize_route("lab"))))
@@ -42,11 +41,11 @@ pub fun workflow_reply_test() : <div> test_result
   val (next, waits, _audits) = capture_workflow(fn() send_reply(prepared, 102))
   val total = sum(waits)
   val lab = next.lab
-  val cleared = lab_incident_draft(lab, 102) == ""
+  val cleared = lab_incident_draft(next.app_local_tree, 102) == ""
   val acked = match find(lab.incidents, fn(item) 102 == incident/id(item))
     Just(item) -> (match item.status { Status_acked -> True; _ -> False }) && item.server_note == "Shift replay traffic onto the cache-safe queue."
     Nothing -> False
-  Test_result("Workflow reply clears local draft", "waits=" ++ total.show ++ "ms, drafts=" ++ length(filter(lab.incidents, fn(item) lab_incident_draft(lab, incident/id(item)) != "")).show ++ ", status=" ++ lab.sync_status, cleared && acked && total == 60)
+  Test_result("Workflow reply clears local draft", "waits=" ++ total.show ++ "ms, drafts=" ++ length(filter(lab.incidents, fn(item) lab_incident_draft(next.app_local_tree, incident/id(item)) != "")).show ++ ", status=" ++ lab.sync_status, cleared && acked && total == 60)
 
 pub fun bridge_pending_test() : <div> test_result
   val (next, requests, audits) = capture_bridge_load(bridge_base_model(), "edge-auth")

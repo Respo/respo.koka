@@ -34,7 +34,7 @@ pub fun todo_edit_local_state_test() : <div> test_result
   val saved_task = match find(saved.tasks, fn(item) 2 == task/id(item))
     Just(item) -> snapshot_task_editor(saved, item)
     Nothing -> Task_editor_state(False, "")
-  val local_entries = count_entries(saved.todo_local_tree)
+  val local_entries = count_entries(saved.app_local_tree)
   Test_result(
     "Todo item local editing",
     "title=" ++ title ++ ", local=" ++ local_entries.show ++ ", editing=" ++ task_editor_state/editing(started_task).show,

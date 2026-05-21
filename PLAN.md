@@ -158,11 +158,11 @@ Tasks:
 
 ## Current Working Set
 
-The next implementation slice is Phase 1.
+The next implementation slice is the first Phase 3 migration.
 
-- rewrite the app root so shell interactions can register local listeners
-- move route bar clicks onto the same local listener path model as dialogs and todo items
-- lock this with an app-level regression test
+- keep the shared app-owned runtime tree small at first
+- migrate dialog overlay local runtime state before moving todo/lab
+- validate that the shared tree is keyed by component paths rather than feature-specific storage slots
 
 ## Non-Goals
 

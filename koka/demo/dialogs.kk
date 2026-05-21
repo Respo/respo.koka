@@ -9,9 +9,9 @@ import respo/state
 alias dialog_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,use_effect,register_listener<model,browser_event_effect>,div>
 alias dialog_demo_effect = <current_hook_scope_name,register_listener<model,browser_event_effect>,div>
 
-fun apply_dialog_update(owner : model, next_update : dialog_update) : model
+fun apply_dialog_update(owner : model, next_update : dialog_update) : <div> model
   val next_owner = owner(dialog = next_update.dialog, notice = next_update.notice)
-  if owner.dialog.kind.show_kind == next_update.dialog.kind.show_kind then next_owner else next_owner(dialog_local_tree = Nil)
+  if owner.dialog.kind.show_kind == next_update.dialog.kind.show_kind then next_owner else next_owner(app_local_tree = clear_state_branch(next_owner.app_local_tree, component_local_path("overlays", "dialog")))
 
 fun open_dialog_demo(owner : model, kind : dialog_kind, title : string, message : string, prompt_value : string, notice : string) : <div> model
   apply_dialog_update(owner, open_dialog(owner.dialog, kind, title, message, prompt_value, notice))
@@ -114,8 +114,8 @@ pub fun render_dialog_overlay(owner : model) : dialog_view_effect vnode
     val submit_action = on_local_click("submit-action", fn(next_owner : model) prompt_submit(next_owner))
     val submit_enter = on_local_enter("submit-action", fn(next_owner : model) prompt_submit(next_owner))
     val prompt_input = on_local_input("prompt-input", fn(value, next_owner : model) next_owner(dialog = update_dialog_prompt(next_owner.dialog, value)))
-    use_effect([current.kind.show_kind, current.prompt_error, current.title], fn(root_id) {
-      if dialog_is_open(current) then browser_focus(root_id, dialog_focus_marker(current)) else ()
+    use_effect([current.kind.show_kind, current.prompt_error, current.title], fn() {
+      if dialog_is_open(current) then dom_focus(dialog_focus_marker(current)) else ()
     })
     dialog/render_dialog_overlay(current, overlay_spec(current, prompt_input, submit_enter), Dialog_overlay_controls(close_overlay, primary_action, submit_action))
   })
@@ -123,6 +123,6 @@ pub fun render_dialog_overlay(owner : model) : dialog_view_effect vnode
 pub fun run_dialog_overlay(owner : model) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
   run_stateful_component(
     owner,
-    owner.dialog_local_tree,
-    fn(next_owner, next_tree) next_owner(dialog_local_tree = next_tree),
+    owner.app_local_tree,
+    fn(next_owner, next_tree) next_owner(app_local_tree = next_tree),
     fn(next_owner) render_dialog_overlay(next_owner))

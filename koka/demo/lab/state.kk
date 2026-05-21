@@ -9,11 +9,11 @@ pub alias lab_local_effect = <set_named_state,clear_local_state,use_state,use_st
 fun incident_component_key(incident_id : int) : string
   incident_id.show
 
-pub fun lab_incident_expanded(item : workflow_lab, incident_id : int) : <div> bool
-  read_component_named_state(item.local_tree, "incidents", incident_component_key(incident_id), "expanded", flag_state_codec, False)
+pub fun lab_incident_expanded(tree : list<state_entry>, incident_id : int) : <div> bool
+  read_component_named_state(tree, "incidents", incident_component_key(incident_id), "expanded", flag_state_codec, False)
 
-pub fun lab_incident_draft(item : workflow_lab, incident_id : int) : <div> string
-  read_component_named_state(item.local_tree, "incidents", incident_component_key(incident_id), "draft", text_state_codec, "")
+pub fun lab_incident_draft(tree : list<state_entry>, incident_id : int) : <div> string
+  read_component_named_state(tree, "incidents", incident_component_key(incident_id), "draft", text_state_codec, "")
 
 pub fun finalize_incident_reply_tree(tree : list<state_entry>, incident_id : int) : <div> list<state_entry>
   clear_component_named_state_in_tree(
@@ -22,13 +22,9 @@ pub fun finalize_incident_reply_tree(tree : list<state_entry>, incident_id : int
     incident_component_key(incident_id),
     "draft")
 
-pub fun set_lab_local_tree(owner : model, next_tree : list<state_entry>) : model
-  val lab = owner.lab
-  owner(lab = lab(local_tree = next_tree))
-
 pub fun commit_lab_tree(owner : model, action : () -> <lab_local_effect,use_named_state,use_named_effect,current_hook_scope_name,push_hook_scope,pop_hook_scope|e> model) : <div|e> model
-  val (next_model, next_tree, _pending_effect) = run_local_state(owner.lab.local_tree, action)
-  set_lab_local_tree(next_model, next_tree)
+  val (next_model, next_tree, _pending_effect) = run_local_state(owner.app_local_tree, action)
+  next_model(app_local_tree = next_tree)
 
 pub fun set_local_lab_draft(owner : model, incident_id : int, draft : string) : <lab_local_effect> model
   if draft == "" then
@@ -38,5 +34,5 @@ pub fun set_local_lab_draft(owner : model, incident_id : int, draft : string) : 
   owner
 
 pub fun toggle_local_lab_expanded(owner : model, incident_id : int) : <lab_local_effect> model
-  set_component_named_state("incidents", incident_component_key(incident_id), "expanded", flag_state_codec, not(lab_incident_expanded(owner.lab, incident_id)))
+  set_component_named_state("incidents", incident_component_key(incident_id), "expanded", flag_state_codec, not(lab_incident_expanded(owner.app_local_tree, incident_id)))
   owner

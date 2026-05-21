@@ -47,3 +47,12 @@ pub extern browser_schedule_click(payload : string, delay : int) : ()
 
 pub extern html_escape(text : string) : string
   js "_html_escape"
+
+pub extern set_root_id(root_id : string) : io ()
+  js "_set_root_id"
+
+pub extern dom_focus(field_name : string) : io ()
+  js "_dom_focus"
+
+pub extern dom_flash(marker_name : string, class_name : string) : io ()
+  js "_dom_flash"

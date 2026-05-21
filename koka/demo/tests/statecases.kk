@@ -39,7 +39,7 @@ pub fun auto_hook_scope_test() : <div> test_result
     })
     val right_result = component("lab/incidents/11", fn() {
       val draft = use_state(text_state_codec, "right")
-      use_effect([draft], fn(_root_id) ())
+      use_effect([draft], fn() ())
       draft
     })
     (left_result, right_result)

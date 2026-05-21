@@ -21,7 +21,6 @@ fun initial_lab() : workflow_lab
   Workflow_lab(
     mock_lab_snapshot().incidents,
     ["[boot] Seeded workflow lab with a deterministic snapshot."],
-    Nil,
     "seeded",
     "boot",
     initial_bridge_demo(default_bridge_case_name()),
@@ -41,5 +40,4 @@ pub fun initial_model() : model
     "overview",
     Nil,
     initial_lab(),
-    Nil,
     initial_dialog_demo("No overlay interaction yet."))

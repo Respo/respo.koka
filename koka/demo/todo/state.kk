@@ -23,11 +23,11 @@ pub fun clear_done_task_editors(tasks : list<task>) : <clear_local_state,div> ()
   )
 
 pub fun commit_task_hooks(owner : model, action : () -> <todo_local_effect,use_named_state,use_named_effect,current_hook_scope_name,push_hook_scope,pop_hook_scope|e> model) : <div|e> model
-  val (next_model, next_tree, _pending_effects) = run_local_state(owner.todo_local_tree, action)
-  next_model(todo_local_tree = next_tree)
+  val (next_model, next_tree, _pending_effects) = run_local_state(owner.app_local_tree, action)
+  next_model(app_local_tree = next_tree)
 
 pub fun commit_task_tree(owner : model, action : () -> <todo_local_effect,use_named_state,use_named_effect,current_hook_scope_name,push_hook_scope,pop_hook_scope|e> model) : <div|e> model
   commit_task_hooks(owner, action)
 
 pub fun snapshot_task_editor(owner : model, item : task) : <div> task_editor_state
-  read_task_state(owner.todo_local_tree, item)
+  read_task_state(owner.app_local_tree, item)

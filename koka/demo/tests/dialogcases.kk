@@ -86,6 +86,15 @@ pub fun dialog_prompt_focus_effect_test() : <div> test_result
     "effects=" ++ length(effects).show ++ ", marker=" ++ vnode_has_attr_value(overlay_node, "data-k-effect", "dialog-prompt-focus").show,
     any(effects, fn(item) scheduled_effect/path(item) == dialog_overlay_effect_path()) && vnode_has_attr_value(overlay_node, "data-k-effect", "dialog-prompt-focus"))
 
+pub fun dialog_overlay_uses_app_local_tree_test() : <div> test_result
+  val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("prompt"))
+  val h0 = app_harness(opened)
+  val in_app_tree = any(h0.owner.app_local_tree, fn(item) state_entry/path(item) == dialog_overlay_effect_path())
+  Test_result(
+    "Dialog overlay uses app local tree",
+    "entries=" ++ count_entries(h0.owner.app_local_tree).show ++ ", effect-in-tree=" ++ in_app_tree.show,
+    in_app_tree)
+
 pub fun dialog_drawer_action_test() : <div> test_result
   with fun confirm_action(_message) False
   with fun audit(_message) ()

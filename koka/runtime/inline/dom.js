@@ -323,3 +323,17 @@ function _html_escape(text) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
+
+let _current_root_id = "app";
+
+function _set_root_id(id) {
+  _current_root_id = String(id);
+}
+
+function _dom_focus(fieldName) {
+  _browser_focus(_current_root_id, fieldName);
+}
+
+function _dom_flash(markerName, className) {
+  _browser_flash_marker(_current_root_id, markerName, className);
+}

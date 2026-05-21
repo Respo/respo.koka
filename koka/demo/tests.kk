@@ -44,6 +44,7 @@ pub fun demo_test_results() : <div> list<test_result>
     dialog_prompt_validation_test(),
     dialog_prompt_submit_test(),
     dialog_prompt_focus_effect_test(),
+    dialog_overlay_uses_app_local_tree_test(),
     dialog_drawer_action_test(),
     search_auto_timer_armed_test(),
     search_auto_timer_starts_pending_test(),

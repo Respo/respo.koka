@@ -95,7 +95,7 @@ pub fun perform_sync(item : model) : <wait_ms,fetch_lab_snapshot,now_label,audit
 
 pub fun send_reply(item : model, incident_id : int) : <wait_ms,post_lab_reply,now_label,audit,current_operator,div> model
   val lab = item.lab
-  val draft = lab_incident_draft(lab, incident_id)
+  val draft = lab_incident_draft(item.app_local_tree, incident_id)
   if draft == "" then
     item(notice = "Draft is empty for this incident card.")
   else
@@ -108,11 +108,11 @@ pub fun send_reply(item : model, incident_id : int) : <wait_ms,post_lab_reply,no
         wait_ms(20)
         val stamp = now_label()
         val operator = current_operator
-        val next_tree = finalize_incident_reply_tree(lab.local_tree, incident_id)
+        val next_tree = finalize_incident_reply_tree(item.app_local_tree, incident_id)
         val next_incidents = update_incident_reply(lab.incidents, incident_id, draft, operator ++ " @ " ++ stamp)
         val next_logs = append_lines(lab.activity_log, "[" ++ stamp ++ "] " ++ server_reply)
-        val next_lab = lab(incidents = next_incidents, activity_log = next_logs, local_tree = next_tree, sync_status = "reply-sent", last_sync_label = stamp)
-        item(lab = next_lab, notice = "Workflow lab reply sent with mocked server effect.")
+        val next_lab = lab(incidents = next_incidents, activity_log = next_logs, sync_status = "reply-sent", last_sync_label = stamp)
+        item(lab = next_lab, app_local_tree = next_tree, notice = "Workflow lab reply sent with mocked server effect.")
       }
 
 pub fun resolve_bridge_shell(owner : model, case_name : string) : <request_bridge_resource,audit,div> model

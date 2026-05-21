@@ -60,7 +60,6 @@ pub struct lab_snapshot
 pub struct workflow_lab
   incidents : list<incident>
   activity_log : list<string>
-  local_tree : list<state_entry>
   sync_status : string
   last_sync_label : string
   bridge_demo : suspense_bridge_demo
@@ -73,9 +72,8 @@ pub struct model
   filter_name : string
   notice : string
   route_name : string
-  todo_local_tree : list<state_entry>
+  app_local_tree : list<state_entry>
   lab : workflow_lab
-  dialog_local_tree : list<state_entry>
   dialog : dialog_demo
 
 fun task_visible(item : task) : current_filter bool

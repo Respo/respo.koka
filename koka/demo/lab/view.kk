@@ -54,7 +54,7 @@ fun incident_card(item : incident) : lab_view_effect vnode
       button([class_attr("button")], [on_local_click("toggle-expanded", fn(owner : model) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, iid)))], toggle_label),
       input_text_key("lab-draft-" ++ iid.show, [class_attr("input incident-input")], [
         on_local_input("draft-input", fn(value, owner : model) commit_lab_tree(owner, fn() set_local_lab_draft(owner, iid, value))),
-        dispatch_lab_enter(Send_reply(iid)),
+        on_local_enter("send-reply", fn(owner : model) dispatch_lab_action(Send_reply(iid), owner)),
       ], draft, "Local reply draft, per card..."),
       button([class_attr("button button-primary")], [dispatch_lab_click(Send_reply(iid))], "Send reply"),
     ]),
@@ -106,8 +106,8 @@ pub fun render_lab_panel(item : model) : lab_view_effect vnode
     div([class_attr("summary-row")], [
       summary_chip("Incidents", length(lab.incidents).show),
       summary_chip("Open", length(filter(lab.incidents, fn(incident_item) match incident_item.status { Status_acked -> False; _ -> True })).show),
-      summary_chip("Drafts", length(filter(lab.incidents, fn(incident_item) lab_incident_draft(lab, incident/id(incident_item)) != "")).show),
-      summary_chip("Local cells", count_entries(lab.local_tree).show),
+      summary_chip("Drafts", length(filter(lab.incidents, fn(incident_item) lab_incident_draft(item.app_local_tree, incident/id(incident_item)) != "")).show),
+      summary_chip("Local cells", count_entries(item.app_local_tree).show),
       summary_chip("Last sync", lab.last_sync_label),
     ]),
   ] ++ lab_panel_sections(item.route_name, lab)

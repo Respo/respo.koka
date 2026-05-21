@@ -33,7 +33,7 @@ fun run_pending_effects(items : list<scheduled_effect>) : _e ()
   match items
     Nil -> ()
     Cons(item, rest) -> {
-      run_scheduled_effect(item, !root_id_ref)
+      run_scheduled_effect(item)
       run_pending_effects(rest)
     }
 
@@ -91,6 +91,7 @@ pub fun dispatch_route_bridge(route_name : string) : _e ()
 
 pub fun boot(root_id : string) : _e ()
   root_id_ref := root_id
+  set_root_id(root_id)
   attach_events(root_id)
   val start_model = initial_model()(route_name = normalize_route(browser_hash()))
   val (next_model, tree, pending_effects, handlers) = render_app(start_model, demo_test_results())

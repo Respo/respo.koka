@@ -1,0 +1,165 @@
+]4;0;?\[6nload    : std/core
+load    : demo/tests
+load    : demo/tests/support
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/string
+load    : std/core/exn
+load    : std/core/bool
+load    : std/core/order
+load    : std/core/char
+load    : std/core/int
+load    : std/core/vector
+load    : std/core/sslice
+load    : std/core/maybe
+load    : std/core/maybe2
+load    : std/core/list
+load    : std/core/either
+load    : std/core/show
+load    : std/core/tuple
+load    : std/core/lazy
+load    : std/core/console
+load    : std/core/debug
+load    : std/core/delayed
+load    : demo/tests/basics
+load    : demo/tests/todocases
+load    : demo/tests/dialogcases
+load    : demo/tests/searchcases
+load    : demo/tests/labcases
+load    : demo/tests/statecases
+load    : demo/seed
+load    : demo/labpanel
+load    : demo/todopanel
+load    : demo/dialogs
+load    : demo/model
+load    : library/bridge
+load    : respo/core
+load    : library/route
+load    : library/search
+load    : respo/state
+load    : demo/tests/appharness
+load    : demo/todo/events
+load    : respo/renderer
+load    : library/dialog
+load    : demo/todo/state
+load    : demo/lab/events
+load    : demo/lab/state
+load    : demo/lab/workflow
+load    : runtime/dom
+load    : demo/view
+load    : demo/todo/view
+load    : demo/todo/viewmodel
+load    : demo/lab/view
+load    : demo/controller
+load    : demo/lab/search
+load    : demo/layout
+load    : library/maybe
+load    : demo/shared
+load    : demo/testspanel
+load    : demo/routebar
+load    : demo/effectspanel
+parse   : .../demo/dialogs.kk
+parse   : .../runtime/dom.kk
+parse   : .../demo/shared.kk
+parse   : .../demo/lab/view.kk
+parse   : .../demo/labpanel.kk
+parse   : .../demo/tests/support.kk
+parse   : .../demo/todo/view.kk
+parse   : .../demo/controller.kk
+parse   : .../demo/effectspanel.kk
+parse   : .../demo/routebar.kk
+parse   : .../demo/tests/basics.kk
+parse   : .../demo/view.kk
+parse   : .../respo/renderer.kk
+parse   : .../demo/testspanel.kk
+parse   : .../demo/tests/appharness.kk
+parse   : .../demo/tests/dialogcases.kk
+parse   : .../demo/tests/searchcases.kk
+parse   : .../demo/todopanel.kk
+parse   : .../demo/tests/statecases.kk
+parse   : .../demo/tests/todocases.kk
+parse   : .../demo/layout.kk
+parse   : .../demo/tests/labcases.kk
+parse   : .../tests_main.kk
+parse   : .../demo/tests.kk
+check   : demo/shared
+check   : runtime/dom
+check   : demo/routebar
+check   : demo/lab/view
+check   : respo/renderer
+check   : demo/todo/view
+check   : demo/dialogs
+check   : demo/labpanel
+check   : demo/todopanel
+check   : demo/tests/support
+check   : demo/controller
+check   : demo/tests/labcases
+check   : demo/effectspanel
+check   : demo/tests/statecases
+check   : demo/testspanel
+check   : demo/tests/todocases
+check   : demo/tests/searchcases
+check   : demo/layout
+check   : demo/view
+check   : demo/tests/appharness
+check   : demo/tests/basics
+check   : demo/tests/dialogcases
+check   : demo/tests
+check   : tests_main
+linking : tests_main/@main
+created : ../.koka-test/v3.2.3/js-debug-53423e/tests__main__main.mjs
+demo/layout.kk(77,44): type warning: stage_node shadows an earlier local definition or parameter
+
+demo/layout.kk(63, 7): type warning: pattern variable stage_node is unused (or a wrongly spelled constructor?)
+   hint: prepend an underscore to make it a wildcard pattern
+
+[pass] Component render snapshot - Stable HTML output for a small component.
+[pass] Confirm decline keeps state - Removal cancelled by confirm effect.
+[pass] Confirm accept removes task - Remaining tasks: 2
+[pass] Ambient filter previews - active=2, done=1
+[pass] Registered input handler updates draft - inputs=1, draft=closure draft
+[pass] Rendered cancel payload stays local - payload=tasks/_2/listeners/click/cancel-edit, local=True, notice=Cancelled local task edit.
+[pass] Timer simulation - 3 waits / 80ms / result=timer-ready
+[pass] Route subpages normalize - lab=lab-search, effects=effects-dialogs, legacy=lab-board/effects-core
+[pass] Route bar uses local listener - payload=app/root/listeners/click/nav-checks, route=checks, local=True
+[pass] State tree local state - draft=Shift traffic to backup POP., expanded=True, named=todo/tasks/2/_7draft, hook-state=todo/tasks/2/state/draft, hook-effect=todo/effects/effect/notice-pulse
+[pass] Generic use_state codec - draft=hello, open-before=False, open-after=True
+[pass] Auto hook scopes stay isolated - left-before=left, right-before=right, left-after=left next, right-after=, effect=True
+[pass] Listener registry guards - duplicate-count=1, duplicate-warnings=1, merged-warnings=1, semantic=danger-remove
+[pass] Vnode click payload matches route - payload=tasks/_2/listeners/click/cancel-edit, local=True, notice=Cancelled local task edit.
+[pass] Harness cancel via click payload - notice=Cancelled local task edit., editing=False
+[pass] Harness input updates model and vnode - draft=typed via harness, input-value=typed via harness
+[pass] Harness multi-step input then click - draft=step1 draft, notice=Cancelled local task edit., editing=False
+[pass] Workflow lab local routing - draft=Shift traffic to backup POP., expanded=True
+[pass] Add task schedules focus - draft=, effects=6
+[pass] Start edit schedules focus - expected=tasks/_2/effect/0, effects=3
+[pass] Todo item local editing - title=Prototype local title edits before save, local=7, editing=True
+[pass] Todo draft uses attribute patch - patches=1, attrs=1, replace=0
+[pass] Workflow sync captures waits - incidents=3, waits=120ms, audits=1, sync=T+120
+[pass] Workflow reply clears local draft - waits=60ms, drafts=0, status=reply-sent
+[pass] Bridge demo enters pending - request=bridge-shell|edge-auth|1@520, requests=1, audits=1, visible=, requested=edge-auth, shell=pending, detail=idle
+[pass] Bridge demo resolves nested detail - request=bridge-detail|edge-auth|1@980, requests=1, audits=1, visible=edge-auth, requested=edge-auth, shell=ready, detail=ready, shell-audits=1, nested-requests=0
+[pass] Bridge refresh keeps visible shell - request=bridge-shell|queue-drain|2@820, requests=1, audits=1, visible=edge-auth, requested=queue-drain, shell=refreshing, detail=ready
+[pass] Bridge ignores stale shell result - request=<none>, requests=0, audits=0, visible=edge-auth, requested=queue-drain, shell=refreshing, detail=ready
+[pass] Bridge ignores stale detail result - request=<none>, requests=0, audits=0, visible=edge-auth, requested=queue-drain, shell=refreshing, detail=ready
+[pass] Bridge ignores old detail after shell swap - detail-request=bridge-detail|queue-drain|2@540, request=<none>, requests=0, audits=0, visible=queue-drain, requested=queue-drain, shell=ready, detail=pending, shell-audits=1
+[pass] Dialog alert opens overlay - kind=alert, title=Alert demo, local=True
+[pass] Dialog prompt validates input - error=Use 3-8 characters., local-input=True, local-submit=True
+[pass] Dialog prompt submits and closes - kind=none, result=Prompt submitted: bridge, payload=overlays/dialog/listeners/click/submit-action
+[pass] Dialog prompt schedules focus effect - effects=1, marker=True
+[pass] Dialog drawer action closes overlay - opened=drawer, kind=none, result=Drawer action completed., local=True
+[pass] Search input arms auto timer - auto=armed, requests=1, query=queue
+[pass] Search auto timer starts pending request - status=pending, auto=idle, requests=2
+[pass] Search ignores stale auto timer after newer input - auto=armed, auto-id=2, requests=0
+[pass] Search demo enters pending - requests=2, status=pending, timeout=pending
+[pass] Search resolves before timeout - visible=edge, status=ready, first=Edge auth bundle -> #lab-bridge | Staged shell/detail bridge around auth drift at the edge POPs.
+[pass] Search recovers after timeout - timeout-status=timed_out, recovered=ready, visible=queue
+[pass] Search refresh keeps stale hits visible - visible=edge, requested=image, status=refreshing
+[pass] Search ignores stale timeout after retarget - requested=edge, status=pending, requests=0
+[pass] Search ignores stale result after retarget - requested=edge, status=pending, requests=0
+[pass] Search refresh timeout keeps stale results visible - status=refreshing, timeout=timed_out, visible=edge, results=2
+[pass] Search refresh recovers after timeout with late result - timeout-status=refreshing, ts=timed_out, visible-after=queue, status-after=ready
+[pass] Search auto timer ignored after manual submit cancels it - status=pending, auto=idle, requests=0
+[pass] Search pick starts pending for selected query - status=pending, requested=queue, requests=2

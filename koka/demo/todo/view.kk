@@ -73,10 +73,10 @@ pub fun task_item_view(item : task) : todo_view_effect vnode
           notice = "Saved task title from local state.")
       }
     }))
-    use_effect([tid.show, if editing then "editing" else "idle"], fn(root_id) {
+    use_effect([tid.show, if editing then "editing" else "idle"], fn() {
       if editing then {
-        browser_focus(root_id, "task-draft-" ++ tid.show)
-        browser_flash_marker(root_id, "task-draft-" ++ tid.show, "effect-pulse")
+        dom_focus("task-draft-" ++ tid.show)
+        dom_flash("task-draft-" ++ tid.show, "effect-pulse")
       } else ()
     })
     val detail = if editing then
@@ -127,11 +127,11 @@ pub fun render_todo_panel(owner : model, panel_state : todo_panel_state) : todo_
     val visible = visible_panel_tasks(panel_state)
     val total = total_task_count(panel_state)
     val should_focus_draft = has_recent_add_notice(panel_state)
-    use_effect([panel_state.notice, panel_state.draft, total.show], fn(root_id) {
-      if should_focus_draft then browser_focus(root_id, "draft") else ()
+    use_effect([panel_state.notice, panel_state.draft, total.show], fn() {
+      if should_focus_draft then dom_focus("draft") else ()
     })
-    use_effect([panel_state.notice, total.show], fn(root_id) {
-      if should_focus_draft then browser_flash_marker(root_id, "todo-note", "effect-pulse") else ()
+    use_effect([panel_state.notice, total.show], fn() {
+      if should_focus_draft then dom_flash("todo-note", "effect-pulse") else ()
     })
     panel("Todo", panel_state.notice, "todo", "todo-panel", [
       div([class_attr("summary-row")], [
@@ -142,7 +142,7 @@ pub fun render_todo_panel(owner : model, panel_state : todo_panel_state) : todo_
       div([class_attr("composer-row")], [
         input_text([class_attr("input"), text_attr("data-k-effect", "draft")], [
           on_local_input("draft-input", fn(value, next_owner : model) next_owner(draft = value)),
-          dispatch_todo_enter(Add_task),
+          on_local_enter("add-task", fn(m : model) dispatch_todo_action(Add_task, m)),
         ], panel_state.draft, "Add a task or effect experiment..."),
         button([class_attr("button button-primary")], [dispatch_todo_click(Add_task)], "Add"),
         button([class_attr("button")], [dispatch_todo_click(Clear_completed)], "Clear done"),

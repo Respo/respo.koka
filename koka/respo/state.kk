@@ -5,13 +5,13 @@ import respo/core
 pub effect fun use_named_state<a>(entry_slot : state_slot, codec : state_codec<a>, fallback : a) : a
 pub effect fun set_named_state<a>(entry_slot : state_slot, codec : state_codec<a>, value : a) : ()
 pub effect fun clear_local_state(path : string) : ()
-pub effect fun use_named_effect(effect_slot : state_slot, deps : list<string>, action : (string) -> io ()) : ()
+pub effect fun use_named_effect(effect_slot : state_slot, deps : list<string>, action : () -> io ()) : ()
 pub effect fun push_hook_scope(scope_name : string) : ()
 pub effect fun pop_hook_scope() : ()
 pub effect fun current_hook_scope_name() : string
 pub effect fun use_state<a>(codec : state_codec<a>, fallback : a) : a
 pub effect fun use_state_pair<a>(codec : state_codec<a>, fallback : a) : (a, (a) -> <set_named_state,div> ())
-pub effect fun use_effect(deps : list<string>, action : (string) -> io ()) : ()
+pub effect fun use_effect(deps : list<string>, action : () -> io ()) : ()
 pub effect<s,e::E> fun register_listener(entry_slot : state_slot, registration : listener_registration<s,e>) : listener
 
 pub type listener_registration<s,e::E>
@@ -25,7 +25,7 @@ pub struct state_codec<a>(kind : string, read : (state_entry) -> a, write : (str
 
 pub struct state_entry(path : string, kind : string, text_value : string, flag_value : bool)
 
-pub struct scheduled_effect(path : string, run : (string) -> io ())
+pub struct scheduled_effect(path : string, run : () -> io ())
 pub struct registered_click<s,e::E>(id : string, semantic_name : string, run : (s) -> <div|e> s)
 pub struct registered_input<s>(id : string, semantic_name : string, run : (string, s) -> <div> s)
 pub struct event_registry<s,e::E>(clicks : list<registered_click<s,e>>, inputs : list<registered_input<s>>, warnings : list<string>)
@@ -92,9 +92,12 @@ pub fun run_registered_input<s>(item : registered_input<s>, value : string, owne
 pub fun empty_event_registry<s,e::E>() : event_registry<s,e>
   Event_registry(Nil, Nil, Nil)
 
-pub fun run_scheduled_effect(item : scheduled_effect, root_id : string) : io ()
+pub fun pure_component_run<s,e::E,a>(owner : s, result : a) : <div> (s, a, list<scheduled_effect>, event_registry<s,e>)
+  (owner, result, Nil, empty_event_registry())
+
+pub fun run_scheduled_effect(item : scheduled_effect) : io ()
   match item
-    Scheduled_effect(_, run) -> run(root_id)
+    Scheduled_effect(_, run) -> run()
 
 fun append_registered_click<s,e::E>(items : list<registered_click<s,e>>, item : registered_click<s,e>) : <div> list<registered_click<s,e>>
   match items
@@ -286,7 +289,7 @@ pub fun use_local_named_state<a>(name : string, codec : state_codec<a>, fallback
 pub fun use_local_named_state_pair<a>(name : string, codec : state_codec<a>, fallback : a) : <current_hook_scope_name,use_named_state,set_named_state,div> (a, (a) -> <set_named_state,div> ())
   use_named_state_pair(local_named_state_slot(name), codec, fallback)
 
-pub fun use_local_named_effect(name : string, deps : list<string>, action : (string) -> io ()) : <current_hook_scope_name,use_named_effect,div> ()
+pub fun use_local_named_effect(name : string, deps : list<string>, action : () -> io ()) : <current_hook_scope_name,use_named_effect,div> ()
   use_named_effect(local_named_effect_slot(name), deps, action)
 
 pub fun read_component_named_state<a>(tree : list<state_entry>, group_name : string, key_name : string, state_name : string, codec : state_codec<a>, fallback : a) : <div> a
@@ -469,6 +472,26 @@ pub fun clear_state(tree : list<state_entry>, path : string) : <div> list<state_
     Nil -> Nil
     Cons(item, rest) -> if state_entry/path(item) == path then rest else Cons(item, clear_state(rest, path))
 
+fun chars_have_prefix(text : list<char>, prefix_chars : list<char>) : bool
+  match prefix_chars
+    Nil -> True
+    Cons(prefix_head, prefix_rest) ->
+      match text
+        Cons(text_head, text_rest) -> text_head == prefix_head && chars_have_prefix(text_rest, prefix_rest)
+        Nil -> False
+
+fun path_in_branch(path : string, branch_path : string) : bool
+  path == branch_path || chars_have_prefix(list(path), list(branch_path ++ "/"))
+
+pub fun clear_state_branch(tree : list<state_entry>, branch_path : string) : <div> list<state_entry>
+  match tree
+    Nil -> Nil
+    Cons(item, rest) ->
+      if path_in_branch(state_entry/path(item), branch_path) then
+        clear_state_branch(rest, branch_path)
+      else
+        Cons(item, clear_state_branch(rest, branch_path))
+
 fun append_scheduled_effect(items : list<scheduled_effect>, item : scheduled_effect) : <div> list<scheduled_effect>
   match items
     Nil -> [item]
@@ -478,6 +501,28 @@ pub fun append_scheduled_effects(left : list<scheduled_effect>, right : list<sch
   match left
     Nil -> right
     Cons(head, rest) -> Cons(head, append_scheduled_effects(rest, right))
+
+pub fun compose_component_runs<s,e::E,a,b>(
+  left : (s, a, list<scheduled_effect>, event_registry<s,e>),
+  right : (s) -> <div> (s, b, list<scheduled_effect>, event_registry<s,e>)
+) : <div> (s, (a, b), list<scheduled_effect>, event_registry<s,e>)
+  val (next_owner, left_result, left_effects, left_handlers) = left
+  val (final_owner, right_result, right_effects, right_handlers) = right(next_owner)
+  (final_owner, (left_result, right_result), append_scheduled_effects(left_effects, right_effects), append_event_registries(left_handlers, right_handlers))
+
+pub fun map_component_run<s,e::E,a,b,f::E>(
+  item : (s, a, list<scheduled_effect>, event_registry<s,e>),
+  transform : (s, a) -> <div|f> b
+) : <div|f> (s, b, list<scheduled_effect>, event_registry<s,e>)
+  val (owner, result, effects, handlers) = item
+  (owner, transform(owner, result), effects, handlers)
+
+pub fun flatten_component_run<s,e::E,a>(
+  item : (s, (s, a, list<scheduled_effect>, event_registry<s,e>), list<scheduled_effect>, event_registry<s,e>)
+) : <div> (s, a, list<scheduled_effect>, event_registry<s,e>)
+  val (_outer_owner, inner, outer_effects, outer_handlers) = item
+  val (owner, result, inner_effects, inner_handlers) = inner
+  (owner, result, append_scheduled_effects(inner_effects, outer_effects), append_event_registries(outer_handlers, inner_handlers))
 
 fun effect_signature(deps : list<string>) : <div> string
   match deps
