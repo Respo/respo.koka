@@ -11,18 +11,6 @@ pub type todo_action
   Set_filter(filter_name : string)
   Clear_completed
 
-pub fun todo_action_payload(action : todo_action) : string
-  match action
-    Add_task -> "add-task"
-    Set_filter(filter_name) -> "set-filter-" ++ filter_name
-    Clear_completed -> "clear-completed"
-
-pub fun dispatch_todo_click(action : todo_action) : listener
-  click_listener(todo_action_payload(action))
-
-pub fun dispatch_todo_enter(action : todo_action) : listener
-  enter_listener(todo_action_payload(action))
-
 fun append_tasks(tasks : list<task>, item : task) : <div> list<task>
   tasks ++ [item]
 
@@ -60,26 +48,3 @@ pub fun dispatch_todo_action(action : todo_action, owner : model) : <confirm_act
     Add_task -> commit_task_hooks(owner, fn() todo_add_task(owner))
     Set_filter(filter_name) -> owner(filter_name = filter_name, notice = "Primary list switched to `" ++ filter_name ++ "`.")
     Clear_completed -> commit_task_hooks(owner, fn() todo_handle_clear_completed(owner))
-
-fun decode_todo_action(payload : string, owner : model) : <div> maybe<todo_action>
-  if payload == "add-task" then
-    Just(Add_task)
-  else if payload == "set-filter-all" then
-    Just(Set_filter("all"))
-  else if payload == "set-filter-active" then
-    Just(Set_filter("active"))
-  else if payload == "set-filter-done" then
-    Just(Set_filter("done"))
-  else if payload == "clear-completed" then
-    Just(Clear_completed)
-  else
-    Nothing
-
-pub fun route_todo_click(payload : string, owner : model) : <confirm_action,audit,div> maybe<model>
-  decode_todo_action(payload, owner).map(fn(action) dispatch_todo_action(action, owner))
-
-pub fun route_todo_input(channel : string, value : string, owner : model) : <div> maybe<model>
-  if channel == "draft" then
-    Just(owner(draft = value))
-  else
-    Nothing

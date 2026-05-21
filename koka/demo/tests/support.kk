@@ -249,12 +249,11 @@ pub fun harness_fire_click_payload(
     Just(found) -> render_fn(run_registered_click(found, h.owner))
     Nothing -> h
 
-// Fire a todo click payload the same way the browser does: prefer a local
-// registered handler when present, otherwise route through the todo click entry.
+// Fire a todo click payload the same way the browser does: look up in the local registry.
 pub fun todo_harness_click_payload(
   h : component_harness,
   payload : string
 ) : <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms,div> component_harness
   match find_registered_click(h.registry, payload)
     Just(found) -> todo_harness(run_registered_click(found, h.owner))
-    Nothing -> maybe(handle_todo_click(payload, h.owner), h, todo_harness)
+    Nothing -> h

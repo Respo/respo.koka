@@ -17,9 +17,3 @@ pub fun run_todo_panel(item : model) : <div> (model, vnode, list<scheduled_effec
 pub fun todo_panel(item : model) : <div> vnode
   val (_next_item, panel_node, _pending_effects, _handlers) = run_todo_panel(item)
   panel_node
-
-pub fun handle_todo_click(payload : string, owner : model) : <confirm_action,audit,div> maybe<model>
-  route_todo_click(payload, owner)
-
-pub fun handle_todo_input(channel : string, value : string, owner : model) : <div> maybe<model>
-  route_todo_input(channel, value, owner)

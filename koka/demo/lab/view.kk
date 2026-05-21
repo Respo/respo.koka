@@ -56,7 +56,7 @@ fun incident_card(item : incident) : lab_view_effect vnode
         on_local_input("draft-input", fn(value, owner : model) commit_lab_tree(owner, fn() set_local_lab_draft(owner, iid, value))),
         on_local_enter("send-reply", fn(owner : model) dispatch_lab_action(Send_reply(iid), owner)),
       ], draft, "Local reply draft, per card..."),
-      button([class_attr("button button-primary")], [dispatch_lab_click(Send_reply(iid))], "Send reply"),
+      button([class_attr("button button-primary")], [on_local_click("send-reply", fn(m : model) dispatch_lab_action(Send_reply(iid), m))], "Send reply"),
     ]),
     detail_node,
   ])
@@ -83,15 +83,17 @@ fun lab_panel_note(route_name : string) : string
   else "Board keeps the incident workflow, local drafts, activity log, and staged sync actions together without the search and bridge demos crowding the same page."
 
 fun lab_panel_sections(route_name : string, lab : workflow_lab) : lab_view_effect list<vnode>
-  if route_name == "lab-search" then
-    [render_search_panel(lab.search_demo, summary_chip, dispatch_lab_enter(Submit_search), fn(query) dispatch_lab_click(Search_for(query)), render_bridge_fallback)]
+  if route_name == "lab-search" then {
+    val submit_listener = on_local_enter("submit-search", fn(m : model) dispatch_lab_action(Submit_search, m))
+    [render_search_panel(lab.search_demo, summary_chip, submit_listener, fn(query) dispatch_lab_click(Search_for(query)), render_bridge_fallback)]
+  }
   else if route_name == "lab-bridge" then
     [render_bridge_panel(lab.bridge_demo, summary_chip, fn(case_name) dispatch_lab_click(Load_bridge_case(case_name)))]
   else
     [
       div([class_attr("button-row")], [
-        button([class_attr("button")], [dispatch_lab_click(Load_board)], "Load mock board"),
-        button([class_attr("button button-primary")], [dispatch_lab_click(Run_sync)], "Run staged sync"),
+        button([class_attr("button")], [on_local_click("load-board", fn(m : model) dispatch_lab_action(Load_board, m))], "Load mock board"),
+        button([class_attr("button button-primary")], [on_local_click("run-sync", fn(m : model) dispatch_lab_action(Run_sync, m))], "Run staged sync"),
         span([class_attr("mono")], "status: " ++ lab.sync_status),
       ]),
       div([class_attr("lab-body-grid")], [

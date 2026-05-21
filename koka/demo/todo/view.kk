@@ -118,9 +118,9 @@ fun render_task_items_view(tasks : list<task>) : todo_view_effect list<vnode>
 fun task_list(key : string, tasks : list<task>) : todo_view_effect vnode
   if is-empty(tasks) then p([class_attr("empty")], "No tasks in this view.") else ul_key(key, [class_attr("task-list")], render_task_items_view(tasks))
 
-fun filter_button(label : string, value : string, active : bool) : <register_listener<model,browser_event_effect>,div> vnode
+fun filter_button(label : string, value : string, active : bool) : <current_hook_scope_name,register_listener<model,browser_event_effect>,div> vnode
   val class_name = if active then "button button-active" else "button"
-  button([class_attr(class_name)], [dispatch_todo_click(Set_filter(value))], label)
+  button([class_attr(class_name)], [on_local_click("set-filter-" ++ value, fn(m : model) dispatch_todo_action(Set_filter(value), m))], label)
 
 pub fun render_todo_panel(owner : model, panel_state : todo_panel_state) : todo_view_effect vnode
   {
@@ -144,8 +144,8 @@ pub fun render_todo_panel(owner : model, panel_state : todo_panel_state) : todo_
           on_local_input("draft-input", fn(value, next_owner : model) next_owner(draft = value)),
           on_local_enter("add-task", fn(m : model) dispatch_todo_action(Add_task, m)),
         ], panel_state.draft, "Add a task or effect experiment..."),
-        button([class_attr("button button-primary")], [dispatch_todo_click(Add_task)], "Add"),
-        button([class_attr("button")], [dispatch_todo_click(Clear_completed)], "Clear done"),
+        button([class_attr("button button-primary")], [on_local_click("add-task", fn(m : model) dispatch_todo_action(Add_task, m))], "Add"),
+        button([class_attr("button")], [on_local_click("clear-completed", fn(m : model) dispatch_todo_action(Clear_completed, m))], "Clear done"),
       ]),
       div([class_attr("button-row")], [
         filter_button("All", "all", panel_state.filter_name == "all"),

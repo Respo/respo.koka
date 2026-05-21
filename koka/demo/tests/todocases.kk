@@ -64,11 +64,18 @@ pub fun todo_edit_diff_test() : <div> test_result
 pub fun add_task_focus_test() : <div> test_result
   with fun confirm_action(_message) False
   with fun audit(_message) ()
+  with val current_operator = "test-operator"
+  with fun fetch_lab_snapshot() mock_lab_snapshot()
+  with fun now_label() "T+0"
+  with fun post_lab_reply(_incident_id, message) message
+  with fun request_bridge_resource(_payload, _delay) ()
+  with fun wait_ms(_delay) ()
   val seeded = initial_model()(draft = "Queue a fresh task")
-  val next = match handle_todo_click("add-task", seeded)
-    Just(result) -> result
-    Nothing -> seeded
-  val (rendered, panel_node, effects, _handlers) = run_todo_panel(next)
+  val base_harness = todo_harness(seeded)
+  val next_harness = harness_fire_named_click(base_harness, "add-task", todo_harness)
+  val rendered = next_harness.owner
+  val panel_node = next_harness.tree
+  val effects = next_harness.effects
   val focused_draft = any(effects, fn(item) scheduled_effect/path(item) == root_hook_effect_path(0))
   val pulsed_notice = any(effects, fn(item) scheduled_effect/path(item) == root_hook_effect_path(1))
   val has_focus_marker = vnode_has_attr_value(panel_node, "data-k-effect", "draft")
