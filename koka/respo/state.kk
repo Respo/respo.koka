@@ -8,6 +8,7 @@ pub effect fun clear_local_state(path : string) : ()
 pub effect fun use_named_effect(effect_slot : state_slot, deps : list<string>, action : (string) -> io ()) : ()
 pub effect fun push_hook_scope(scope_name : string) : ()
 pub effect fun pop_hook_scope() : ()
+pub effect fun current_hook_scope_name() : string
 pub effect fun use_state<a>(codec : state_codec<a>, fallback : a) : a
 pub effect fun use_state_pair<a>(codec : state_codec<a>, fallback : a) : (a, (a) -> <set_named_state,div> ())
 pub effect fun use_effect(deps : list<string>, action : (string) -> io ()) : ()
@@ -55,6 +56,9 @@ pub fun hook_state_slot(scope_base : string, index : int) : state_slot
 
 pub fun hook_effect_slot(scope_base : string, index : int) : state_slot
   State_slot(join_slot_path(join_slot_path(scope_base, "effect"), index.show))
+
+pub fun child_scope(scope_base : string, group_name : string, key_name : string) : string
+  join_slot_path(join_slot_path(scope_base, normalize_slot_name(group_name)), normalize_slot_name(key_name))
 
 // For code that needs to inspect or mutate hook-managed state outside the component body,
 // prefer semantic hook slot names over manual indices. Runtime hook ordering still stays internal.
@@ -264,6 +268,63 @@ pub fun with_hook_scope(scope_name : string, action : () -> <push_hook_scope,pop
 pub fun component(scope_name : string, render : () -> <push_hook_scope,pop_hook_scope|e> a) : <push_hook_scope,pop_hook_scope|e> a
   with_hook_scope(scope_name, render)
 
+pub fun component_in(group_name : string, key_name : string, render : () -> <current_hook_scope_name,push_hook_scope,pop_hook_scope|e> a) : <current_hook_scope_name,push_hook_scope,pop_hook_scope|e> a
+  component(child_scope(current_hook_scope_name(), group_name, key_name), render)
+
+pub fun component_local_path(group_name : string, key_name : string) : string
+  child_scope("", group_name, key_name)
+
+pub fun local_named_state_slot(name : string) : <current_hook_scope_name,div> state_slot
+  hook_named_state_slot(current_hook_scope_name(), name)
+
+pub fun local_named_effect_slot(name : string) : <current_hook_scope_name,div> state_slot
+  hook_named_effect_slot(current_hook_scope_name(), name)
+
+pub fun use_local_named_state<a>(name : string, codec : state_codec<a>, fallback : a) : <current_hook_scope_name,use_named_state,div> a
+  use_named_state(local_named_state_slot(name), codec, fallback)
+
+pub fun use_local_named_state_pair<a>(name : string, codec : state_codec<a>, fallback : a) : <current_hook_scope_name,use_named_state,set_named_state,div> (a, (a) -> <set_named_state,div> ())
+  use_named_state_pair(local_named_state_slot(name), codec, fallback)
+
+pub fun use_local_named_effect(name : string, deps : list<string>, action : (string) -> io ()) : <current_hook_scope_name,use_named_effect,div> ()
+  use_named_effect(local_named_effect_slot(name), deps, action)
+
+pub fun read_component_named_state<a>(tree : list<state_entry>, group_name : string, key_name : string, state_name : string, codec : state_codec<a>, fallback : a) : <div> a
+  state_value(tree, hook_named_state_slot(component_local_path(group_name, key_name), state_name), codec, fallback)
+
+pub fun set_component_named_state<a>(group_name : string, key_name : string, state_name : string, codec : state_codec<a>, value : a) : <set_named_state,div> ()
+  set_named_state(hook_named_state_slot(component_local_path(group_name, key_name), state_name), codec, value)
+
+pub fun assoc_component_named_state<a>(tree : list<state_entry>, group_name : string, key_name : string, state_name : string, codec : state_codec<a>, value : a) : <div> list<state_entry>
+  assoc_slot_value(tree, hook_named_state_slot(component_local_path(group_name, key_name), state_name), codec, value)
+
+pub fun clear_component_named_state(group_name : string, key_name : string, state_name : string) : <clear_local_state,div> ()
+  clear_local_state(state_slot/path(hook_named_state_slot(component_local_path(group_name, key_name), state_name)))
+
+pub fun clear_component_named_state_in_tree(tree : list<state_entry>, group_name : string, key_name : string, state_name : string) : <div> list<state_entry>
+  clear_slot_state(tree, hook_named_state_slot(component_local_path(group_name, key_name), state_name))
+
+pub fun clear_component_local_state(group_name : string, key_name : string) : <clear_local_state,div> ()
+  clear_local_state(component_local_path(group_name, key_name))
+
+pub fun root_listener_path(kind : dom_event_kind, name : string) : string
+  state_slot/path(named_listener_slot("", kind, name))
+
+pub fun component_listener_path(group_name : string, key_name : string, kind : dom_event_kind, name : string) : string
+  state_slot/path(named_listener_slot(component_local_path(group_name, key_name), kind, name))
+
+pub fun root_effect_path(name : string) : string
+  state_slot/path(hook_named_effect_slot("", name))
+
+pub fun component_effect_path(group_name : string, key_name : string, name : string) : string
+  state_slot/path(hook_named_effect_slot(component_local_path(group_name, key_name), name))
+
+pub fun root_hook_effect_path(index : int) : string
+  state_slot/path(hook_effect_slot("", index))
+
+pub fun component_hook_effect_path(group_name : string, key_name : string, index : int) : string
+  state_slot/path(hook_effect_slot(component_local_path(group_name, key_name), index))
+
 pub fun use_named_state_pair_at(scope_base : string, index : int, codec : state_codec<a>, fallback : a) : <use_named_state,div> (a, (a) -> <set_named_state,div> ())
   use_named_state_pair(hook_state_slot(scope_base, index), codec, fallback)
 
@@ -287,6 +348,15 @@ pub fun on_named_input<s,e::E>(scope_base : string, name : string, action : (str
 
 pub fun on_named_enter<s,e::E>(scope_base : string, name : string, action : (s) -> <div|e> s) : <register_listener<s,e>,div> listener
   register_listener(named_listener_slot(scope_base, Enter_event, name), Enter_registration(name, action))
+
+pub fun on_local_click<s,e::E>(name : string, action : (s) -> <div|e> s) : <current_hook_scope_name,register_listener<s,e>,div> listener
+  register_listener(named_listener_slot(current_hook_scope_name(), Click_event, name), Click_registration(name, action))
+
+pub fun on_local_input<s,e::E>(name : string, action : (string, s) -> <div> s) : <current_hook_scope_name,register_listener<s,e>,div> listener
+  register_listener(named_listener_slot(current_hook_scope_name(), Input_event, name), Input_registration(name, action))
+
+pub fun on_local_enter<s,e::E>(name : string, action : (s) -> <div|e> s) : <current_hook_scope_name,register_listener<s,e>,div> listener
+  register_listener(named_listener_slot(current_hook_scope_name(), Enter_event, name), Enter_registration(name, action))
 
 fun replace_registered_click<s,e::E>(items : list<registered_click<s,e>>, next_item : registered_click<s,e>) : <div> list<registered_click<s,e>>
   match items
@@ -355,7 +425,7 @@ pub fun run_stateful_component<s,e::E,a>(
   owner : s,
   tree : list<state_entry>,
   assign_tree : (s, list<state_entry>) -> s,
-  render : (s) -> <use_named_state,set_named_state,clear_local_state,use_named_effect,push_hook_scope,pop_hook_scope,use_state,use_state_pair,use_effect,register_listener<s,e>,div> a
+  render : (s) -> <use_named_state,set_named_state,clear_local_state,use_named_effect,current_hook_scope_name,push_hook_scope,pop_hook_scope,use_state,use_state_pair,use_effect,register_listener<s,e>,div> a
 ) : <div> (s, a, list<scheduled_effect>, event_registry<s,e>)
   val ((result, next_tree, pending_effects), handlers) = run_event_registry(fn() run_local_state(tree, fn() render(owner)))
   (assign_tree(owner, next_tree), result, pending_effects, handlers)
@@ -424,9 +494,9 @@ pub fun count_entries(tree : list<state_entry>) : <div> int
     Cons(_, rest) -> 1 + count_entries(rest)
 
 fun require_hook_scope(scope_name : string, kind : string) : string
-  if scope_name == "" then "__missing_hook_scope__/" ++ kind else scope_name
+  scope_name
 
-pub fun run_local_state(tree : list<state_entry>, action : () -> <use_named_state,set_named_state,clear_local_state,use_named_effect,push_hook_scope,pop_hook_scope,use_state,use_state_pair,use_effect,div|e> a) : <div|e> (a, list<state_entry>, list<scheduled_effect>)
+pub fun run_local_state(tree : list<state_entry>, action : () -> <use_named_state,set_named_state,clear_local_state,use_named_effect,current_hook_scope_name,push_hook_scope,pop_hook_scope,use_state,use_state_pair,use_effect,div|e> a) : <div|e> (a, list<state_entry>, list<scheduled_effect>)
   var next_tree := tree
   var pending_effects := Nil
   var hook_stack : list<hook_frame> := Nil
@@ -445,6 +515,7 @@ pub fun run_local_state(tree : list<state_entry>, action : () -> <use_named_stat
     next_tree := assoc_entry(next_tree, next_entry)
     if changed then pending_effects := append_scheduled_effect(pending_effects, Scheduled_effect(state_slot/path(effect_slot), callback)) else ()
   }
+  with fun current_hook_scope_name() current_hook_scope
   with fun push_hook_scope(scope_name) {
     hook_stack := Cons(Hook_frame(current_hook_scope, next_state_hook_index, next_effect_hook_index), hook_stack)
     current_hook_scope := scope_name

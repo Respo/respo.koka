@@ -20,7 +20,7 @@
 - `koka/runtime/*`：只放 DOM 和系统边界的 FFI，不要把业务逻辑塞进来。
 - `scripts/build-koka.mjs`：从 `koka/` 目录调用 Koka，输出到 `src/generated/koka`。
 - `scripts/test-koka.mjs`：从 `koka/` 目录执行 `tests_main.kk`。
-- `src/main.ts`：Vite 主机入口，只负责挂接生成后的 Koka 导出。
+- `src/main.js`：Vite 主机入口，只负责挂接生成后的 Koka 导出。
 
 ## 日常开发命令
 
@@ -37,8 +37,8 @@ yarn test:koka
 
 - `yarn dev`：先编译 Koka，再启动 Vite。做 UI、交互、浏览器联调时优先用它。
 - `yarn build:koka`：只重编译 Koka，适合只改 `.kk` 文件时快速验证生成产物。
-- `yarn build`：Koka + TypeScript + Vite 全链路构建，改模块边界、入口导出、浏览器桥时先跑它。
-- `yarn check`：Koka 构建 + TS 类型检查，适合看宿主层是不是也被带坏了。
+- `yarn build`：Koka + Vite 全链路构建，改模块边界、入口导出、浏览器桥时先跑它。
+- `yarn check`：Koka 构建 + Vite bundling 检查，适合看宿主层是不是也被带坏了。
 - `yarn test:koka`：跑 Koka 侧快速测试，不依赖浏览器。
 
 模块缓存或生成产物异常时，优先用这个最便宜的重置：
@@ -67,14 +67,14 @@ koka --target=jsweb --library --builddir=../.koka-build --outputdir=../src/gener
 ## Yarn 与 Vite 工作流
 
 - 仓库使用 Yarn Berry，日常命令统一走 `yarn`，不要切回 npm。
-- Vite 默认端口配置在 `vite.config.ts`；要固定本地地址时可用：
+- Vite 默认端口配置在 `vite.config.js`；要固定本地地址时可用：
 
 ```bash
 yarn dev --host 127.0.0.1 --port 4173
 ```
 
 - 如果端口被占用，Vite 会自动换端口，后续 `chrome-devtools` 要跟着实际端口走。
-- 页面起来了但交互失效时，先检查 `src/generated/koka-entry.mjs` 与 `src/main.ts`、`koka/runtime/inline/dom.js` 的桥接变量名是否一致。
+- 页面起来了但交互失效时，先检查 `src/generated/koka-entry.mjs` 与 `src/main.js`、`koka/runtime/inline/dom.js` 的桥接变量名是否一致。
 
 ## Chrome DevTools 命令流程
 

@@ -3,19 +3,22 @@ module demo/routebar
 import demo/model
 import library/route
 import respo/core
+import respo/state
 
-fun route_button(label : string, route_name : string, active : bool) : vnode
+alias route_bar_effect = <current_hook_scope_name,register_listener<model,browser_event_effect>,div>
+
+fun route_button(label : string, route_name : string, active : bool) : route_bar_effect vnode
   val class_name = if active then "button route-tab route-tab-active" else "button route-tab"
-  button([class_attr(class_name)], [click_listener(route_action_payload(Navigate(route_name)))], label)
+  button([class_attr(class_name)], [on_local_click("nav-" ++ route_name, fn(owner : model) owner(route_name = normalize_route(route_name)))], label)
 
-fun lab_subroutes(active_route : string) : vnode
+fun lab_subroutes(active_route : string) : route_bar_effect vnode
   div([class_attr("route-bar route-sub-bar")], [
     route_button("Board", "lab-board", active_route == "lab-board"),
     route_button("Search", "lab-search", active_route == "lab-search"),
     route_button("Bridge", "lab-bridge", active_route == "lab-bridge"),
   ])
 
-fun effects_subroutes(active_route : string) : vnode
+fun effects_subroutes(active_route : string) : route_bar_effect vnode
   div([class_attr("route-bar route-sub-bar")], [
     route_button("Core", "effects-core", active_route == "effects-core"),
     route_button("Dialogs", "effects-dialogs", active_route == "effects-dialogs"),
@@ -24,7 +27,7 @@ fun effects_subroutes(active_route : string) : vnode
     route_button("Timer", "effects-timer", active_route == "effects-timer"),
   ])
 
-pub fun route_bar(item : model) : vnode
+pub fun route_bar(item : model) : route_bar_effect vnode
   val active_route = item.route_name
   val active_section = route_section(active_route)
   val secondary_bar =

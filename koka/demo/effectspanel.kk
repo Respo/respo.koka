@@ -5,6 +5,9 @@ import demo/model
 import demo/tests/support
 import demo/shared
 import respo/core
+import respo/state
+
+alias effects_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,register_listener<model,browser_event_effect>,div>
 
 fun render_tiny_items(tasks : list<task>) : <div> list<vnode>
   map(tasks, fn(item) li_text_key("tiny-" ++ task/id(item).show, Nil, item.title))
@@ -41,9 +44,9 @@ fun core_effect_cases(item : model) : <div> list<vnode>
     ])),
   ]
 
-fun route_effect_cases(item : model, results : list<test_result>) : <div> list<vnode>
+fun route_effect_cases(item : model, results : list<test_result>) : effects_view_effect list<vnode>
   if item.route_name == "effects-dialogs" then
-    [effect_case("Dialog overlays", "Inspired by the MoonBit and Rust Respo demos: trigger controlled alert, prompt, dialog, and drawer surfaces without leaving the app tree.", dialog_demo_case(item))]
+    [effect_case("Dialog overlays", "Inspired by the MoonBit and Rust Respo demos: trigger controlled alert, prompt, dialog, and drawer surfaces without leaving the app tree.", component(component_local_path("effects", "dialog-demo"), fn() dialog_demo_case(item)))]
   else if item.route_name == "effects-workflow" then
     [effect_case("Workflow lab", "The richer demo composes `wait_ms`, mocked server fetch/send, and an ambient operator identity into one deterministic workflow.", case_detail("Workflow sync captures waits", "workflow-empty", "workflow-detail", "Workflow case unavailable.", results))]
   else if item.route_name == "effects-state" then
@@ -60,8 +63,11 @@ fun effects_panel_note(route_name : string) : string
   else if route_name == "effects-timer" then "Timer behavior stays deterministic because tests intercept `wait_ms` instead of waiting on wall-clock time."
   else "This route now shows the smaller effect cases that explain the core mechanics before the richer workflow and dialog demos branch off into their own subroutes."
 
-pub fun effects_panel(item : model, results : list<test_result>) : <div> vnode
+pub fun effects_panel(item : model, results : list<test_result>) : effects_view_effect vnode
   val cases = route_effect_cases(item, results)
   panel("Effects", effects_panel_note(item.route_name), "effects", "effects-panel", [
     div([class_attr("case-grid")], cases),
   ])
+
+pub fun run_effects_panel(item : model, results : list<test_result>) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
+  run_stateful_component(item, Nil, fn(owner, _next_tree) owner, fn(owner) effects_panel(owner, results))

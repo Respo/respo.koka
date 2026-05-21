@@ -1,8 +1,6 @@
 module library/dialog
 
-import runtime/dom
 import respo/core
-import respo/state
 
 pub type dialog_kind
   Dialog_none
@@ -45,6 +43,11 @@ pub struct dialog_overlay_spec
   body_children : list<vnode>
   footer : dialog_footer
 
+pub struct dialog_overlay_controls
+  close_listener : listener
+  primary_listener : listener
+  submit_listener : listener
+
 pub fun initial_dialog_demo(result_note : string) : dialog_demo
   Dialog_demo(Dialog_none, "", "", "", "", result_note, Nil)
 
@@ -56,18 +59,6 @@ pub fun dialog_is_open(item : dialog_demo) : <div> bool
 pub fun dialog_open_payload(kind : string) : string
   "dialog-open-" ++ kind
 
-pub fun dialog_close_payload() : string
-  "dialog-close"
-
-pub fun dialog_primary_payload() : string
-  "dialog-primary"
-
-pub fun dialog_submit_payload() : string
-  "dialog-submit"
-
-pub fun dialog_prompt_channel() : string
-  "dialog-prompt"
-
 fun append_dialog_attrs(left : list<attr>, right : list<attr>) : <div> list<attr>
   match left
     Nil -> right
@@ -76,11 +67,11 @@ fun append_dialog_attrs(left : list<attr>, right : list<attr>) : <div> list<attr
 fun dialog_dismiss_attr() : attr
   text_attr("data-k-dialog-dismiss", "true")
 
-fun dialog_shell_attrs(current : dialog_demo) : list<attr>
+fun dialog_shell_attrs(current : dialog_demo, close_listener : listener) : list<attr>
   [
     text_attr("data-k-dialog-shell", "true"),
     text_attr("data-k-dialog-surface", match current.kind { Dialog_drawer -> "drawer"; _ -> "modal" }),
-    text_attr("data-k-dialog-close", dialog_close_payload()),
+    text_attr("data-k-dialog-close", listener/payload(close_listener)),
   ]
 
 pub fun dialog_primary_focus_marker() : string
@@ -93,11 +84,6 @@ pub fun dialog_focus_marker(current : dialog_demo) : string
   match current.kind
     Dialog_prompt -> dialog_prompt_focus_marker()
     _ -> dialog_primary_focus_marker()
-
-pub fun dialog_pending_effects(current : dialog_demo) : <div> list<scheduled_effect>
-  if dialog_is_open(current) then
-    [Scheduled_effect("dialog/focus/" ++ current.kind.show_kind, fn(root_id) browser_focus(root_id, dialog_focus_marker(current)))]
-  else Nil
 
 fun append_dialog_log(lines : list<string>, value : string) : <div> list<string>
   lines ++ [value]
@@ -149,50 +135,50 @@ pub fun submit_dialog_prompt(current : dialog_demo, success_notice : string) : <
 pub fun resolve_dialog_primary(current : dialog_demo, result_note : string, notice : string, log_line : string, audit_message : string) : <div> dialog_update
   Dialog_update(close_dialog(current, result_note, notice, log_line).dialog, notice, Just(audit_message))
 
-fun dismiss_button(key : string, class_name : string, marker : maybe<string>, payload : string, label : string) : vnode
+fun dismiss_button(key : string, class_name : string, marker : maybe<string>, action_listener : listener, label : string) : vnode
   val attrs = match marker
     Just(found) -> [class_attr(class_name), text_attr("data-k-effect", found), dialog_dismiss_attr()]
     Nothing -> [class_attr(class_name), dialog_dismiss_attr()]
-  button_key(key, attrs, [click_listener(payload)], label)
+  button_key(key, attrs, [action_listener], label)
 
-fun dialog_header(current : dialog_demo) : <div> vnode
+fun dialog_header(current : dialog_demo, close_listener : listener) : <div> vnode
   div([class_attr("dialog-header")], [
     div([class_attr("stack")], [
       strong([class_attr("section-title")], current.title),
       p([class_attr("case-detail")], current.message),
     ]),
-    dismiss_button("dialog-close-top", "button", Nothing, dialog_close_payload(), "Close"),
+    dismiss_button("dialog-close-top", "button", Nothing, close_listener, "Close"),
   ])
 
-fun dialog_actions(footer : dialog_footer) : <div> vnode
+fun dialog_actions(footer : dialog_footer, controls : dialog_overlay_controls) : <div> vnode
   match footer
     Footer_submit(submit_label) ->
       div([class_attr("button-row dialog-actions")], [
-        dismiss_button("dialog-cancel", "button", Nothing, dialog_close_payload(), "Cancel"),
-        button([class_attr("button button-primary")], [click_listener(dialog_submit_payload())], submit_label),
+        dismiss_button("dialog-cancel", "button", Nothing, controls.close_listener, "Cancel"),
+        button([class_attr("button button-primary")], [controls.submit_listener], submit_label),
       ])
     Footer_primary_only(primary_label) ->
       div([class_attr("button-row dialog-actions")], [
-        dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), dialog_primary_payload(), primary_label),
+        dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), controls.primary_listener, primary_label),
       ])
     Footer_primary_with_cancel(primary_label) ->
       div([class_attr("button-row dialog-actions")], [
-        dismiss_button("dialog-cancel", "button", Nothing, dialog_close_payload(), "Cancel"),
-        dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), dialog_primary_payload(), primary_label),
+        dismiss_button("dialog-cancel", "button", Nothing, controls.close_listener, "Cancel"),
+        dismiss_button("dialog-primary", "button button-primary dialog-primary-button", Just(dialog_primary_focus_marker()), controls.primary_listener, primary_label),
       ])
 
-fun dismiss_backdrop() : <div> vnode
-  el("div", "dialog-backdrop", append_dialog_attrs([class_attr("dialog-backdrop")], [dialog_dismiss_attr()]), [click_listener(dialog_close_payload())], "", Nil)
+fun dismiss_backdrop(close_listener : listener) : <div> vnode
+  el("div", "dialog-backdrop", append_dialog_attrs([class_attr("dialog-backdrop")], [dialog_dismiss_attr()]), [close_listener], "", Nil)
 
-fun overlay_card(current : dialog_demo, spec : dialog_overlay_spec) : <div> vnode
+fun overlay_card(current : dialog_demo, spec : dialog_overlay_spec, controls : dialog_overlay_controls) : <div> vnode
   article_key(spec.card_key, [class_attr(spec.card_class)], [
-    dialog_header(current),
+    dialog_header(current, controls.close_listener),
     div([class_attr("dialog-panel-body")], spec.body_children),
-    dialog_actions(spec.footer),
+    dialog_actions(spec.footer, controls),
   ])
 
-pub fun render_dialog_overlay(current : dialog_demo, spec : dialog_overlay_spec) : <div> vnode
-  section_key(spec.card_key ++ "-shell", append_dialog_attrs([class_attr(spec.shell_class)], dialog_shell_attrs(current)), [
-    dismiss_backdrop(),
-    overlay_card(current, spec),
+pub fun render_dialog_overlay(current : dialog_demo, spec : dialog_overlay_spec, controls : dialog_overlay_controls) : <div> vnode
+  section_key(spec.card_key ++ "-shell", append_dialog_attrs([class_attr(spec.shell_class)], dialog_shell_attrs(current, controls.close_listener)), [
+    dismiss_backdrop(controls.close_listener),
+    overlay_card(current, spec, controls),
   ])

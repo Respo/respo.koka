@@ -17,6 +17,7 @@ const sourcePath = "app.kk";
 
 rmSync(outputDir, { force: true, recursive: true });
 mkdirSync(outputDir, { recursive: true });
+rmSync(wrapperTypesPath, { force: true });
 
 const result = spawnSync(
   "koka",
@@ -57,18 +58,6 @@ writeFileSync(
   wrapperPath,
   [
     `export { boot, dispatch__click__bridge as dispatchClick, dispatch__input__bridge as dispatchInput, dispatch__route__bridge as dispatchRoute } from './koka/${entryFile}';`,
-    "",
-  ].join("\n"),
-  "utf8",
-);
-
-writeFileSync(
-  wrapperTypesPath,
-  [
-    "export function boot(id: string): void;",
-    "export function dispatchClick(payload: string): void;",
-    "export function dispatchInput(channel: string, value: string): void;",
-    "export function dispatchRoute(routeName: string): void;",
     "",
   ].join("\n"),
   "utf8",

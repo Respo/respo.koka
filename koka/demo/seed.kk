@@ -41,4 +41,5 @@ pub fun initial_model() : model
     "overview",
     Nil,
     initial_lab(),
+    Nil,
     initial_dialog_demo("No overlay interaction yet."))

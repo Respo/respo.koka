@@ -23,9 +23,7 @@ pub fun dispatch_click(payload : string, item : model) : <confirm_action,audit,c
 
 fun resolve_input(channel : string, value : string, item : model) : <request_bridge_resource,div> maybe<model>
   handle_todo_input(channel, value, item).or-else {
-    handle_lab_input(channel, value, item).or-else {
-      handle_dialog_input(channel, value, item)
-    }
+    handle_lab_input(channel, value, item)
   }
 
 pub fun dispatch_input(channel : string, value : string, item : model) : <request_bridge_resource,div> model

@@ -4,6 +4,7 @@ import library/bridge
 import library/route
 import demo/model
 import demo/seed
+import demo/tests/appharness
 import demo/tests/support
 import demo/todo/events
 import demo/todo/state
@@ -26,17 +27,29 @@ pub fun component_render_test() : <div> test_result
 pub fun confirm_decline_test() : <div> test_result
   with fun confirm_action(_message) False
   with fun audit(_message) ()
-  val next = match handle_todo_click("remove-1", initial_model())
-    Just(result) -> result
-    Nothing -> initial_model()
+  with val current_operator = "test-operator"
+  with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
+  with fun now_label() "T+0"
+  with fun post_lab_reply(_id, msg) msg
+  with fun request_bridge_resource(_p, _d) ()
+  with fun wait_ms(_d) ()
+  val h0 = todo_harness(initial_model())
+  val remove_payload = keyed_button_payload(h0.tree, "1", "Remove")
+  val next = todo_harness_click_payload(h0, remove_payload).owner
   Test_result("Confirm decline keeps state", next.notice, length(next.tasks) == 3)
 
 pub fun confirm_accept_test() : <div> test_result
   with fun confirm_action(_message) True
   with fun audit(_message) ()
-  val next = match handle_todo_click("remove-1", initial_model())
-    Just(result) -> result
-    Nothing -> initial_model()
+  with val current_operator = "test-operator"
+  with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
+  with fun now_label() "T+0"
+  with fun post_lab_reply(_id, msg) msg
+  with fun request_bridge_resource(_p, _d) ()
+  with fun wait_ms(_d) ()
+  val h0 = todo_harness(initial_model())
+  val remove_payload = keyed_button_payload(h0.tree, "1", "Remove")
+  val next = todo_harness_click_payload(h0, remove_payload).owner
   Test_result("Confirm accept removes task", "Remaining tasks: " ++ length(next.tasks).show, length(next.tasks) == 2)
 
 pub fun ambient_filter_test() : <div> test_result
@@ -46,7 +59,7 @@ pub fun ambient_filter_test() : <div> test_result
   Test_result("Ambient filter previews", "active=" ++ active_count.show ++ ", done=" ++ done_count.show, active_count == 2 && done_count == 1)
 
 pub fun registered_input_handler_test() : <div> test_result
-  val target_id = state_slot/path(named_listener_slot(todo_effect_scope(), Input_event, "draft-input"))
+  val target_id = root_listener_path(Input_event, "draft-input")
   val (next_item, _panel_node, _effects, handlers) = run_todo_panel(initial_model())
   match find_registered_input(handlers, target_id)
     Just(found_input) -> {
@@ -64,16 +77,14 @@ pub fun registered_click_handler_test() : <div> test_result
   with fun post_lab_reply(_incident_id, message) message
   with fun request_bridge_resource(_payload, _delay) ()
   with fun wait_ms(_delay) ()
-  val started = match handle_todo_click("edit-2", initial_model())
-    Just(result) -> result
-    Nothing -> initial_model()
-  val (_, panel_node, _effects, handlers) = run_todo_panel(started)
-  val cancel_payload = match vnode_find_text(panel_node, "Cancel")
-    Just(node) -> vnode_click_payload(node)
-    Nothing -> ""
-  val updated = match handle_todo_click(cancel_payload, started)
-    Just(result) -> result
-    Nothing -> started
+  val initial_harness = todo_harness(initial_model())
+  val edit_payload = keyed_button_payload(initial_harness.tree, "2", "Edit")
+  val started_harness = todo_harness_click_payload(initial_harness, edit_payload)
+  val started = started_harness.owner
+  val panel_node = started_harness.tree
+  val handlers = started_harness.registry
+  val cancel_payload = keyed_button_payload(panel_node, "2", "Cancel")
+  val updated = todo_harness_click_payload(started_harness, cancel_payload).owner
   val updated_task = match find(updated.tasks, fn(task_item) 2 == task/id(task_item))
     Just(found) -> found
     Nothing -> Task(2, "missing", False)
@@ -82,9 +93,9 @@ pub fun registered_click_handler_test() : <div> test_result
     Just(_) -> True
     Nothing -> False
   Test_result(
-    "Rendered cancel payload routes through todo click handler",
+    "Rendered cancel payload stays local",
     "payload=" ++ cancel_payload ++ ", local=" ++ in_registry.show ++ ", notice=" ++ updated.notice,
-    cancel_payload == todo_action_payload(Cancel_task_edit(2)) && not(in_registry) && not(task_editor_state/editing(editor_state)) && updated.notice == "Cancelled local task edit.")
+    cancel_payload == component_listener_path("tasks", task/id(updated_task).show, Click_event, "cancel-edit") && in_registry && not(task_editor_state/editing(editor_state)) && updated.notice == "Cancelled local task edit.")
 
 pub fun timer_simulation_test() : <div> test_result
   val (label, waits) = capture_waits(fn() timer_logic())
@@ -114,13 +125,32 @@ pub fun route_subroute_normalization_test() : <div> test_result
     "lab=" ++ lab_route ++ ", effects=" ++ effects_route ++ ", legacy=" ++ legacy_lab ++ "/" ++ legacy_effects,
     lab_route == "lab-search" && effects_route == "effects-dialogs" && legacy_lab == "lab-board" && legacy_effects == "effects-core")
 
+pub fun route_bar_click_is_local_test() : <div> test_result
+  with fun confirm_action(_message) False
+  with fun audit(_message) ()
+  with val current_operator = "test-operator"
+  with fun fetch_lab_snapshot() mock_lab_snapshot()
+  with fun now_label() "T+0"
+  with fun post_lab_reply(_incident_id, message) message
+  with fun request_bridge_resource(_payload, _delay) ()
+  with fun wait_ms(_delay) ()
+  val h0 = app_harness(initial_model())
+  val checks_payload = button_payload_by_text(h0.tree, "Checks")
+  val in_registry = match find_registered_click(h0.registry, checks_payload)
+    Just(_) -> True
+    Nothing -> False
+  val h1 = app_harness_click_payload(h0, checks_payload)
+  Test_result(
+    "Route bar uses local listener",
+    "payload=" ++ checks_payload ++ ", route=" ++ h1.owner.route_name ++ ", local=" ++ in_registry.show,
+    checks_payload == component_listener_path("app", "root", Click_event, "nav-checks") && in_registry && h1.owner.route_name == "checks")
+
 // --- Component harness tests ---
 // These tests exercise components by navigating the vnode tree, reading event
 // attributes, and firing handlers through the registry - mirroring how the browser
 // delegates DOM events, without needing a real DOM.
 
-// Verify that a button's data-k-click value is enough to route the todo action,
-// even when the handler is not stored in the local registry.
+// Verify that a button's data-k-click value is enough to resolve a local todo handler.
 pub fun vnode_click_payload_matches_route_test() : <div> test_result
   with fun confirm_action(_) False
   with fun audit(_) ()
@@ -130,29 +160,29 @@ pub fun vnode_click_payload_matches_route_test() : <div> test_result
   with fun post_lab_reply(_id, msg) msg
   with fun request_bridge_resource(_p, _d) ()
   with fun wait_ms(_d) ()
-  val editing = match handle_todo_click("edit-2", initial_model())
-    Just(r) -> r
-    Nothing -> initial_model()
-  val (_, tree, _, registry) = run_todo_panel(editing)
-  val cancel_node_payload = match vnode_find_text(tree, "Cancel")
-    Just(node) -> vnode_click_payload(node)
-    Nothing -> ""
-  val routed = match handle_todo_click(cancel_node_payload, editing)
-    Just(result) -> result
-    Nothing -> editing
+  val initial_harness = todo_harness(initial_model())
+  val edit_payload = keyed_button_payload(initial_harness.tree, "2", "Edit")
+  val editing_harness = todo_harness_click_payload(initial_harness, edit_payload)
+  val editing = editing_harness.owner
+  val tree = editing_harness.tree
+  val registry = editing_harness.registry
+  val cancel_node_payload = keyed_button_payload(tree, "2", "Cancel")
+  val routed = todo_harness_click_payload(editing_harness, cancel_node_payload).owner
   val editor_state = match find(routed.tasks, fn(item) 2 == task/id(item))
     Just(item) -> snapshot_task_editor(routed, item)
     Nothing -> Task_editor_state(False, "")
   val in_registry = match find_registered_click(registry, cancel_node_payload)
     Just(_) -> True
     Nothing -> False
+  val target_task = match find(routed.tasks, fn(item) 2 == task/id(item))
+    Just(found) -> found
+    Nothing -> Task(2, "missing", False)
   Test_result(
     "Vnode click payload matches route",
     "payload=" ++ cancel_node_payload ++ ", local=" ++ in_registry.show ++ ", notice=" ++ routed.notice,
-    cancel_node_payload == todo_action_payload(Cancel_task_edit(2)) && not(in_registry) && routed.notice == "Cancelled local task edit." && not(task_editor_state/editing(editor_state)))
+    cancel_node_payload == component_listener_path("tasks", task/id(target_task).show, Click_event, "cancel-edit") && in_registry && routed.notice == "Cancelled local task edit." && not(task_editor_state/editing(editor_state)))
 
-// Verify that firing the cancel payload via harness produces the same outcome
-// as routing that payload through the todo click entry.
+// Verify that firing the local cancel semantic through the harness updates the owner.
 pub fun harness_cancel_edit_test() : <div> test_result
   with fun confirm_action(_) False
   with fun audit(_) ()
@@ -162,11 +192,11 @@ pub fun harness_cancel_edit_test() : <div> test_result
   with fun post_lab_reply(_id, msg) msg
   with fun request_bridge_resource(_p, _d) ()
   with fun wait_ms(_d) ()
-  val editing = match handle_todo_click("edit-2", initial_model())
-    Just(r) -> r
-    Nothing -> initial_model()
-  val h0 = todo_harness(editing)
-  val h1 = todo_harness_click_payload(h0, todo_action_payload(Cancel_task_edit(2)))
+  val h0 = todo_harness(initial_model())
+  val start_payload = keyed_button_payload(h0.tree, "2", "Edit")
+  val editing_harness = todo_harness_click_payload(h0, start_payload)
+  val cancel_payload = keyed_button_payload(editing_harness.tree, "2", "Cancel")
+  val h1 = todo_harness_click_payload(editing_harness, cancel_payload)
   val editor_state = match find(h1.owner.tasks, fn(item) 2 == task/id(item))
     Just(item) -> snapshot_task_editor(h1.owner, item)
     Nothing -> Task_editor_state(False, "")
@@ -199,14 +229,12 @@ pub fun harness_multi_step_test() : <div> test_result
   with fun post_lab_reply(_id, msg) msg
   with fun request_bridge_resource(_p, _d) ()
   with fun wait_ms(_d) ()
-  val editing = match handle_todo_click("edit-2", initial_model())
-    Just(r) -> r
-    Nothing -> initial_model()
-  val h0 = todo_harness(editing)
+  val base_harness = todo_harness(initial_model())
+  val h0 = todo_harness_click_payload(base_harness, keyed_button_payload(base_harness.tree, "2", "Edit"))
   // Step 1: type into the panel draft field
   val h1 = harness_fire_named_input(h0, "draft-input", "step1 draft", todo_harness)
   // Step 2: cancel the task edit via click payload
-  val h2 = todo_harness_click_payload(h1, todo_action_payload(Cancel_task_edit(2)))
+  val h2 = todo_harness_click_payload(h1, keyed_button_payload(h1.tree, "2", "Cancel"))
   val editor_state = match find(h2.owner.tasks, fn(item) 2 == task/id(item))
     Just(item) -> snapshot_task_editor(h2.owner, item)
     Nothing -> Task_editor_state(False, "")

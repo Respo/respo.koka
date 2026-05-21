@@ -178,6 +178,20 @@ fun children_have_attr_value(nodes : list<vnode>, target_name : string, target_v
 pub fun vnode_has_attr_value(node : vnode, target_name : string, target_value : string) : <div> bool
   attrs_have_value(vnode/attrs(node), target_name, target_value) || children_have_attr_value(vnode/children(node), target_name, target_value)
 
+pub fun keyed_button_payload(tree : vnode, key_name : string, label : string) : <div> string
+  match vnode_find_key(tree, key_name)
+    Just(branch) -> match vnode_find_text(branch, label)
+      Just(node) -> vnode_click_payload(node)
+      Nothing -> ""
+    Nothing -> ""
+
+pub fun keyed_input_channel(tree : vnode, key_name : string, effect_marker : string) : <div> string
+  match vnode_find_key(tree, key_name)
+    Just(branch) -> match vnode_find_attr_value(branch, "data-k-effect", effect_marker)
+      Just(node) -> vnode_input_channel(node)
+      Nothing -> ""
+    Nothing -> ""
+
 // --- Component harness ---
 // Wraps one rendered frame (model + vnode + effects + registry) so tests can fire
 // events and re-render in a composable way without manually threading the 4-tuple.
@@ -211,6 +225,16 @@ pub fun harness_fire_named_input(
   render_fn : (model) -> <div> component_harness
 ) : <div> component_harness
   match find_registered_input_by_semantic(h.registry, semantic_name)
+    Nothing -> h
+    Just(found) -> render_fn(run_registered_input(found, value, h.owner))
+
+pub fun harness_fire_input_channel(
+  h : component_harness,
+  channel : string,
+  value : string,
+  render_fn : (model) -> <div> component_harness
+) : <div> component_harness
+  match find_registered_input(h.registry, channel)
     Nothing -> h
     Just(found) -> render_fn(run_registered_input(found, value, h.owner))
 

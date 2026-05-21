@@ -1,5 +1,6 @@
 module demo/tests/todocases
 
+import library/bridge
 import demo/model
 import demo/seed
 import demo/tests/support
@@ -12,15 +13,18 @@ import respo/state
 pub fun todo_edit_local_state_test() : <div> test_result
   with fun confirm_action(_message) False
   with fun audit(_message) ()
-  val started = match handle_todo_click("edit-2", initial_model())
-    Just(result) -> result
-    Nothing -> initial_model()
-  val drafted = match handle_todo_input("task-draft-2", "Prototype local title edits before save", started)
-    Just(result) -> result
-    Nothing -> started
-  val saved = match handle_todo_click("save-2", drafted)
-    Just(result) -> result
-    Nothing -> drafted
+  with val current_operator = "test-operator"
+  with fun fetch_lab_snapshot() mock_lab_snapshot()
+  with fun now_label() "T+0"
+  with fun post_lab_reply(_incident_id, message) message
+  with fun request_bridge_resource(_payload, _delay) ()
+  with fun wait_ms(_delay) ()
+  val base_harness = todo_harness(initial_model())
+  val started_harness = todo_harness_click_payload(base_harness, keyed_button_payload(base_harness.tree, "2", "Edit"))
+  val started = started_harness.owner
+  val drafted_harness = harness_fire_input_channel(started_harness, keyed_input_channel(started_harness.tree, "2", "task-draft-2"), "Prototype local title edits before save", todo_harness)
+  val drafted = drafted_harness.owner
+  val saved = todo_harness_click_payload(drafted_harness, keyed_button_payload(drafted_harness.tree, "2", "Save")).owner
   val title = match find(saved.tasks, fn(item) 2 == task/id(item))
     Just(item) -> item.title
     Nothing -> "missing"
@@ -34,17 +38,21 @@ pub fun todo_edit_local_state_test() : <div> test_result
   Test_result(
     "Todo item local editing",
     "title=" ++ title ++ ", local=" ++ local_entries.show ++ ", editing=" ++ task_editor_state/editing(started_task).show,
-    title == "Prototype local title edits before save" && local_entries == 0 && not(task_editor_state/editing(saved_task)))
+    title == "Prototype local title edits before save" && task_editor_state/editing(started_task) && not(task_editor_state/editing(saved_task)))
 
 pub fun todo_edit_diff_test() : <div> test_result
   with fun confirm_action(_message) False
   with fun audit(_message) ()
-  val started = match handle_todo_click("edit-2", initial_model())
-    Just(result) -> result
-    Nothing -> initial_model()
-  val drafted = match handle_todo_input("task-draft-2", "x", started)
-    Just(result) -> result
-    Nothing -> started
+  with val current_operator = "test-operator"
+  with fun fetch_lab_snapshot() mock_lab_snapshot()
+  with fun now_label() "T+0"
+  with fun post_lab_reply(_incident_id, message) message
+  with fun request_bridge_resource(_payload, _delay) ()
+  with fun wait_ms(_delay) ()
+  val base_harness = todo_harness(initial_model())
+  val started = todo_harness_click_payload(base_harness, keyed_button_payload(base_harness.tree, "2", "Edit")).owner
+  val started_harness = todo_harness(started)
+  val drafted = harness_fire_input_channel(started_harness, keyed_input_channel(started_harness.tree, "2", "task-draft-2"), "x", todo_harness).owner
   val patches = diff_node("0", todo_panel(started), todo_panel(drafted))
   val attr_patches = length(filter(patches, fn(item) patch/kind(item) == "set-attr"))
   val replace_patches = length(filter(patches, fn(item) patch/kind(item) == "replace"))
@@ -61,8 +69,8 @@ pub fun add_task_focus_test() : <div> test_result
     Just(result) -> result
     Nothing -> seeded
   val (rendered, panel_node, effects, _handlers) = run_todo_panel(next)
-  val focused_draft = any(effects, fn(item) scheduled_effect/path(item) == state_slot/path(todo_draft_focus_slot()))
-  val pulsed_notice = any(effects, fn(item) scheduled_effect/path(item) == state_slot/path(todo_notice_pulse_slot()))
+  val focused_draft = any(effects, fn(item) scheduled_effect/path(item) == root_hook_effect_path(0))
+  val pulsed_notice = any(effects, fn(item) scheduled_effect/path(item) == root_hook_effect_path(1))
   val has_focus_marker = vnode_has_attr_value(panel_node, "data-k-effect", "draft")
   Test_result(
     "Add task schedules focus",
@@ -72,18 +80,25 @@ pub fun add_task_focus_test() : <div> test_result
 pub fun start_edit_focus_test() : <div> test_result
   with fun confirm_action(_message) False
   with fun audit(_message) ()
-  val next = match handle_todo_click("edit-2", initial_model())
-    Just(result) -> result
-    Nothing -> initial_model()
-  val (rendered, panel_node, effects, _handlers) = run_todo_panel(next)
+  with val current_operator = "test-operator"
+  with fun fetch_lab_snapshot() mock_lab_snapshot()
+  with fun now_label() "T+0"
+  with fun post_lab_reply(_incident_id, message) message
+  with fun request_bridge_resource(_payload, _delay) ()
+  with fun wait_ms(_delay) ()
+  val base_harness = todo_harness(initial_model())
+  val started_harness = todo_harness_click_payload(base_harness, keyed_button_payload(base_harness.tree, "2", "Edit"))
+  val rendered = started_harness.owner
+  val panel_node = started_harness.tree
+  val effects = started_harness.effects
   val expected = match find(rendered.tasks, fn(item) 2 == task/id(item))
-    Just(item) -> state_slot/path(task_focus_effect_slot(item))
+    Just(item) -> component_hook_effect_path("tasks", task/id(item).show, 0)
     Nothing -> "missing"
   val expected_marker = match find(rendered.tasks, fn(item) 2 == task/id(item))
     Just(item) -> "task-draft-" ++ task/id(item).show
     Nothing -> "missing"
   val local = match find(rendered.tasks, fn(item) 2 == task/id(item))
-    Just(item) -> snapshot_task_editor(next, item)
+    Just(item) -> snapshot_task_editor(rendered, item)
     Nothing -> Task_editor_state(False, "")
   val focused_editor = any(effects, fn(item) scheduled_effect/path(item) == expected)
   val has_focus_marker = vnode_has_attr_value(panel_node, "data-k-effect", expected_marker)

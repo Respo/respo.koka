@@ -75,6 +75,7 @@ pub struct model
   route_name : string
   todo_local_tree : list<state_entry>
   lab : workflow_lab
+  dialog_local_tree : list<state_entry>
   dialog : dialog_demo
 
 fun task_visible(item : task) : current_filter bool

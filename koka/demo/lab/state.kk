@@ -4,48 +4,39 @@ import demo/model
 import respo/state
 
 pub struct incident_local_state(expanded : bool, draft : string)
-pub alias lab_local_effect = <use_named_state,set_named_state,clear_local_state,use_named_effect,div>
+pub alias lab_local_effect = <set_named_state,clear_local_state,use_state,use_state_pair,use_effect,div>
 
-pub fun incident_hook_scope(incident_id : int) : string
-  "lab/incidents/" ++ incident_id.show
-
-pub fun incident_expanded_slot(incident_id : int) : state_slot
-  hook_named_state_slot(incident_hook_scope(incident_id), "expanded")
-
-pub fun incident_draft_slot(incident_id : int) : state_slot
-  hook_named_state_slot(incident_hook_scope(incident_id), "draft")
+fun incident_component_key(incident_id : int) : string
+  incident_id.show
 
 pub fun lab_incident_expanded(item : workflow_lab, incident_id : int) : <div> bool
-  slot_flag(item.local_tree, incident_expanded_slot(incident_id), False)
+  read_component_named_state(item.local_tree, "incidents", incident_component_key(incident_id), "expanded", flag_state_codec, False)
 
 pub fun lab_incident_draft(item : workflow_lab, incident_id : int) : <div> string
-  slot_text(item.local_tree, incident_draft_slot(incident_id), "")
-
-pub fun use_incident_local_state(incident_id : int) : <use_named_state,div> incident_local_state
-  Incident_local_state(
-    use_named_state(incident_expanded_slot(incident_id), flag_state_codec, False),
-    use_named_state(incident_draft_slot(incident_id), text_state_codec, ""))
+  read_component_named_state(item.local_tree, "incidents", incident_component_key(incident_id), "draft", text_state_codec, "")
 
 pub fun finalize_incident_reply_tree(tree : list<state_entry>, incident_id : int) : <div> list<state_entry>
-  clear_slot_state(assoc_slot_flag(tree, incident_expanded_slot(incident_id), True), incident_draft_slot(incident_id))
+  clear_component_named_state_in_tree(
+    assoc_component_named_state(tree, "incidents", incident_component_key(incident_id), "expanded", flag_state_codec, True),
+    "incidents",
+    incident_component_key(incident_id),
+    "draft")
 
 pub fun set_lab_local_tree(owner : model, next_tree : list<state_entry>) : model
   val lab = owner.lab
   owner(lab = lab(local_tree = next_tree))
 
-pub fun commit_lab_tree(owner : model, action : () -> <lab_local_effect,push_hook_scope,pop_hook_scope,use_state,use_state_pair,use_effect|e> model) : <div|e> model
+pub fun commit_lab_tree(owner : model, action : () -> <lab_local_effect,use_named_state,use_named_effect,current_hook_scope_name,push_hook_scope,pop_hook_scope|e> model) : <div|e> model
   val (next_model, next_tree, _pending_effect) = run_local_state(owner.lab.local_tree, action)
   set_lab_local_tree(next_model, next_tree)
 
 pub fun set_local_lab_draft(owner : model, incident_id : int, draft : string) : <lab_local_effect> model
-  val (_current_draft, set_draft) = use_named_state_pair(incident_draft_slot(incident_id), text_state_codec, "")
   if draft == "" then
-    clear_slot(incident_draft_slot(incident_id))
+    clear_component_named_state("incidents", incident_component_key(incident_id), "draft")
   else
-    set_draft(draft)
+    set_component_named_state("incidents", incident_component_key(incident_id), "draft", text_state_codec, draft)
   owner
 
 pub fun toggle_local_lab_expanded(owner : model, incident_id : int) : <lab_local_effect> model
-  val (expanded, set_expanded) = use_named_state_pair(incident_expanded_slot(incident_id), flag_state_codec, False)
-  set_expanded(not(expanded))
+  set_component_named_state("incidents", incident_component_key(incident_id), "expanded", flag_state_codec, not(lab_incident_expanded(owner.lab, incident_id)))
   owner

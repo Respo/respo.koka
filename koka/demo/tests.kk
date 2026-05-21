@@ -18,6 +18,7 @@ pub fun demo_test_results() : <div> list<test_result>
     registered_click_handler_test(),
     timer_simulation_test(),
     route_subroute_normalization_test(),
+    route_bar_click_is_local_test(),
     state_tree_test(),
     generic_state_codec_test(),
     auto_hook_scope_test(),

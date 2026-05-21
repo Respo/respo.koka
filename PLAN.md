@@ -1,88 +1,172 @@
 # Koka Respo Plan
 
-## Current Status
+## Goal
 
-The exploration phase is complete. This repo now has a working `jsweb`-target Koka UI runtime with:
+The target is not "React compatibility" as branding. The target is a clearer React-style component model:
 
-- VDOM render, diff, and patch in Koka
-- thin browser handlers in `koka/app.kk` and `koka/runtime/*`
-- slot-based generic local UI state in `koka/respo/state.kk`
-- a unified listener registration effect with semantic listener ids
-- framework-side warnings for duplicate listener registration and semantic drift
-- higher-level node helpers in `koka/respo/core.kk` to reduce business-component boilerplate
-- split feature modules for todo and workflow lab
-- deterministic in-process tests and a production build pipeline
-- CI/deploy support for the static site build
+- business code should describe components and local interactions, not manual scope plumbing
+- app structure should look like one component tree, not several hand-wired state islands
+- global model should keep domain data; component runtime state should move toward framework-owned storage
+- app-level events should use the same component listener path as feature-level events whenever practical
 
-## What Is Done
+## Directory View
 
-### Runtime and host
+### `koka/respo/*`
 
-- `yarn dev`, `yarn build`, and `yarn test:koka` are the normal entry points
-- browser integration is intentionally thin: DOM patching, event delegation, route hash, confirm, timestamps, and runtime warning logs
-- build output is deployed as a static app with relative asset paths
+Framework core. This directory should keep moving toward the real component runtime boundary.
 
-### State and listener model
+- `core.kk`: vnode constructors and small DOM-facing helpers
+- `state.kk`: hook scopes, local state cells, effect scheduling, listener registry, component runners
+- `renderer.kk`: render, diff, and patch planning
 
-- global application data remains in `demo/model.kk`
-- seeded boot data and mock lab responses live in `demo/seed.kk`
-- component-local state uses generic `use_state` / `use_state_pair` with codecs
-- hooks use stable component scope plus index semantics
-- listeners use semantic identity instead of hook index semantics
-- the view layer depends on one generic listener effect: `register_listener<...>`
-- named local listeners are collected into an event registry and routed through delegated DOM events
-- registry warnings cover duplicate listener ids and semantic drift across render/merge boundaries
+Current status:
 
-### Framework helpers
+- local hook APIs and named local listeners are in place
+- `component_in(...)`, `on_local_*`, and named state helpers already hide most slot details from business code
+- listener registries can detect duplicate ids and semantic drift
 
-- `koka/respo/core.kk` now provides higher-level helpers such as `node_class`, `text_class`, `button_class`, and `text_input`
-- business components no longer need to repeat low-level `props([class_attr(...)], ...)` patterns everywhere
-- the framework is intentionally a bit thicker so feature components stay smaller and easier to read
+Main problems still open here:
 
-### Feature structure
+- root app rendering is still thinner than child component rendering
+- `use_effect(...)` still leaks host-specific `root_id` and has no cleanup contract
+- Enter is still modeled through click-oriented storage/dispatch internals
+- local state still lives in feature-owned trees stored on the app model
 
-- todo is split into `demo/todo/state.kk`, `view.kk`, and `events.kk`
-- workflow lab is split into `demo/lab/state.kk`, `view.kk`, `events.kk`, and `workflow.kk`
-- `demo/todopanel.kk` and `demo/labpanel.kk` are thin facades so outer call sites stay stable
-- `demo/model.kk` is closer to a domain shell plus shared selectors and effect declarations, instead of also owning feature reducers
-- feature views now use the framework helpers rather than defining repeated local view helpers per module
+### `koka/demo/*`
 
-### Tests
+Feature and shell layer. This directory should become a thin composition layer around the framework runtime.
 
-- tests are split into `demo/tests/support.kk`, `basics.kk`, `statecases.kk`, `todocases.kk`, and `labcases.kk`
-- the test suite validates render snapshots, local state, effect handling, workflow behavior, and listener registry guard behavior
-- listener collisions and semantic drift now have explicit regression coverage
+- `model.kk`: shared domain data and cross-feature effect declarations only
+- `layout.kk`, `view.kk`, `routebar.kk`: app shell and top-level composition
+- `todo/*`: todo feature
+- `lab/*`: workflow/search/bridge feature
+- `dialogs.kk`, `effectspanel.kk`: overlay/effect demos
 
-## Current Module Map
+Current status:
 
-- `koka/app.kk`: browser boot, handler installation, and runtime warning logging
-- `koka/demo/model.kk`: shared types, selectors, routes, and effect declarations
-- `koka/demo/seed.kk`: initial model and deterministic lab mocks
-- `koka/demo/todo/*`: todo local state, events, and rendering
-- `koka/demo/lab/*`: workflow lab local state, events, workflow actions, and rendering
-- `koka/demo/tests/*`: support helpers and focused case files
-- `koka/respo/core.kk`: VDOM core plus higher-level view constructors
-- `koka/respo/state.kk`: local state runtime, hook scope management, listener registration, and registry guards
-- `koka/respo/renderer.kk`: VDOM rendering, diff, and patch planning
+- todo item actions are already mostly local-listener driven
+- dialog open/close/submit flows are already local-listener driven
+- lab incident card interactions use component-local listeners and local state helpers
 
-## Next Cuts
+Main problems still open here:
 
-### Near term
+- app shell still manually orchestrates several stateful slices and then merges handlers/effects
+- route bar still needs to follow the same component-local event model as feature views
+- `demo/model.kk` still stores feature local trees, so feature runtime state still leaks into app data shape
 
-- add auto-scoped listener helpers so business components no longer have to thread `item_scope` / `panel_scope` manually
-- unify the repeated `run_local_state(...) + run_event_registry(...)` orchestration behind a framework helper
-- decide whether listener warnings should stay as logs only or optionally fail in dev/test mode
-- keep shrinking `demo/model.kk` so it stays focused on shared domain data and cross-feature selectors only
+### `koka/boilerplate/*` and `koka/runtime/*`
 
-### Optional follow-up
+Host boundary only.
 
-- normalize the internal listener registry naming so Enter is no longer modeled through the click-oriented storage path
-- add another demo feature that exercises the same slot-state and effect-handler runtime without copying todo/lab structure
-- keep moving reusable view patterns from `demo/*` into `respo/core.kk` only when they clearly reduce feature-code cost
+- browser boot
+- delegated DOM events
+- hash sync
+- DOM patch application
+- confirm/time/bridge host wiring
+
+Rule:
+
+- keep this thin
+- do not move feature behavior here
+- only host-specific mechanics belong here
+
+### `koka/library/*`
+
+Shared domain helpers and effect-oriented utilities.
+
+- route, dialog, maybe, search, bridge
+
+Rule:
+
+- keep reusable data contracts and helper logic here
+- do not let this directory become a second controller layer
+
+### `koka/demo/tests/*`
+
+Regression surface for the React-style component runtime.
+
+Required coverage direction:
+
+- vnode payloads should match registered local listeners
+- component-local state should survive rerender and reset only on real identity changes
+- shell-level interactions should use the same registry path model as feature-level interactions
+- runtime warnings and event dispatch edge cases should stay deterministic
+
+## Task Breakdown
+
+### Phase 1: Make the app shell behave like a component tree
+
+Target:
+
+- app root gets an explicit component/runtime entry
+- route bar and other shell interactions stop using raw global click payloads when they can use local listeners
+- tests assert shell listener paths the same way they already assert todo/dialog paths
+
+Tasks:
+
+- add a root app component runner in `koka/demo/view.kk`
+- move `koka/demo/routebar.kk` to local component listeners
+- route app-level harness/tests through the same runtime entry
+
+### Phase 2: Reduce manual orchestration in the shell
+
+Target:
+
+- `layout.kk` should stop looking like a hand-merged collection of islands
+
+Tasks:
+
+- factor repeated child runner merge patterns behind framework helpers
+- decide whether stateful child composition belongs in `respo/state.kk` or a thin app-shell helper layer
+- keep effect/registry merging explicit only where ownership boundaries are real
+
+### Phase 3: Move local runtime state out of domain model shape
+
+Target:
+
+- `demo/model.kk` should carry domain state, not per-feature runtime storage details
+
+Tasks:
+
+- identify one root-owned local state tree shape in framework/runtime code
+- migrate `todo_local_tree`, `lab.local_tree`, and `dialog_local_tree` toward framework-owned storage
+- keep feature code reading local state through component helpers, not tree fields
+
+### Phase 4: Tighten hook and effect semantics
+
+Target:
+
+- make hook APIs look more like component runtime primitives and less like host plumbing
+
+Tasks:
+
+- redesign `use_effect(...)` so host-specific root lookup is not the public component contract
+- add cleanup support if Koka effect handling can express it cleanly enough
+- normalize Enter handling so it is not stored and dispatched through click-oriented paths
+
+### Phase 5: Trim global fallback routing
+
+Target:
+
+- global reducer/controller fallback should be the exception, not the normal feature path
+
+Tasks:
+
+- keep route/hash and true app-level fallbacks global only where necessary
+- continue shrinking raw payload decoding in `demo/todo/events.kk` and `demo/lab/events.kk`
+- prefer component-local registry dispatch over string decoding when the interaction originates inside a rendered component
+
+## Current Working Set
+
+The next implementation slice is Phase 1.
+
+- rewrite the app root so shell interactions can register local listeners
+- move route bar clicks onto the same local listener path model as dialogs and todo items
+- lock this with an app-level regression test
 
 ## Non-Goals
 
 - SSR or hydration
-- React hook parity as a goal by itself
-- a 1:1 reimplementation of React’s event internals
-- premature DOM optimization beyond what the current diff/patch runtime already supports
+- a 1:1 port of React internals
+- hook parity for its own sake
+- premature DOM optimization before the component/runtime ownership model is cleaner

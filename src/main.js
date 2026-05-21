@@ -6,15 +6,7 @@ import {
   dispatchRoute,
 } from "./generated/koka-entry";
 
-declare global {
-  interface Window {
-    __kokaDispatchClick?: (payload: string) => void;
-    __kokaDispatchInput?: (channel: string, value: string) => void;
-    __kokaDispatchRoute?: (routeName: string) => void;
-  }
-}
-
-const root = document.querySelector<HTMLDivElement>("#app");
+const root = document.querySelector("#app");
 
 if (root === null) {
   throw new Error("Missing #app root element.");

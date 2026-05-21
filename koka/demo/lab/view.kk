@@ -10,7 +10,7 @@ import library/search
 import respo/core
 import respo/state
 
-alias lab_view_effect = <push_hook_scope,pop_hook_scope,lab_local_effect,register_listener<model,browser_event_effect>>
+alias lab_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,lab_local_effect,use_named_state,register_listener<model,browser_event_effect>>
 
 fun severity_class(item : incident) : string
   match item.severity
@@ -26,47 +26,43 @@ fun status_class(item : incident) : string
 
 fun incident_card(item : incident) : lab_view_effect vnode
   val iid = incident/id(item)
-  component(incident_hook_scope(iid), fn() {
-    val item_scope = incident_hook_scope(iid)
-    val local = use_incident_local_state(iid)
-    val expanded = incident_local_state/expanded(local)
-    val draft = incident_local_state/draft(local)
-    val toggle_label = if expanded then "Collapse" else "Expand"
-    val preview_text = if draft == "" then "local draft: <empty>" else "local draft: " ++ draft
-    val collapsed_text = if draft == "" then "Draft is local and still empty." else "Draft saved locally for this card."
-    val detail_node = if expanded then
-      div([class_attr("incident-detail-grid")], [
-        p([class_attr("mono")], "server: " ++ item.server_note),
-        p([class_attr("mono")], "updated by: " ++ item.updated_by),
-        p([class_attr("mono")], preview_text),
-      ])
-    else
-      p([class_attr("mono")], collapsed_text)
-    article_key("incident-" ++ iid.show, [class_attr("incident-card")], [
-      div([class_attr("incident-head")], [
-        div([class_attr("incident-title-wrap")], [
-          strong([class_attr("incident-title")], item.title),
-          span([class_attr("case-detail")], item.summary),
-        ]),
-        div([class_attr("incident-badges")], [
-          span([class_attr(severity_class(item))], item.severity.show_severity),
-          span([class_attr(status_class(item))], item.status.show_status),
-        ]),
-      ]),
-      div([class_attr("incident-controls")], [
-        button([class_attr("button")], [on_named_click(item_scope, "toggle-expanded", fn(owner) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, iid)))], toggle_label),
-        input_text_key("lab-draft-" ++ iid.show, [class_attr("input incident-input")], [
-          on_named_input(item_scope, "draft-input", fn(value, owner) commit_lab_tree(owner, fn() set_local_lab_draft(owner, iid, value))),
-          dispatch_lab_enter(Send_reply(iid)),
-        ], draft, "Local reply draft, per card..."),
-        button([class_attr("button button-primary")], [dispatch_lab_click(Send_reply(iid))], "Send reply"),
-      ]),
-      detail_node,
+  val (expanded, _set_expanded) = use_local_named_state_pair("expanded", flag_state_codec, False)
+  val (draft, _set_draft) = use_local_named_state_pair("draft", text_state_codec, "")
+  val toggle_label = if expanded then "Collapse" else "Expand"
+  val preview_text = if draft == "" then "local draft: <empty>" else "local draft: " ++ draft
+  val collapsed_text = if draft == "" then "Draft is local and still empty." else "Draft saved locally for this card."
+  val detail_node = if expanded then
+    div([class_attr("incident-detail-grid")], [
+      p([class_attr("mono")], "server: " ++ item.server_note),
+      p([class_attr("mono")], "updated by: " ++ item.updated_by),
+      p([class_attr("mono")], preview_text),
     ])
-  })
+  else
+    p([class_attr("mono")], collapsed_text)
+  article_key("incident-" ++ iid.show, [class_attr("incident-card")], [
+    div([class_attr("incident-head")], [
+      div([class_attr("incident-title-wrap")], [
+        strong([class_attr("incident-title")], item.title),
+        span([class_attr("case-detail")], item.summary),
+      ]),
+      div([class_attr("incident-badges")], [
+        span([class_attr(severity_class(item))], item.severity.show_severity),
+        span([class_attr(status_class(item))], item.status.show_status),
+      ]),
+    ]),
+    div([class_attr("incident-controls")], [
+      button([class_attr("button")], [on_local_click("toggle-expanded", fn(owner : model) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, iid)))], toggle_label),
+      input_text_key("lab-draft-" ++ iid.show, [class_attr("input incident-input")], [
+        on_local_input("draft-input", fn(value, owner : model) commit_lab_tree(owner, fn() set_local_lab_draft(owner, iid, value))),
+        dispatch_lab_enter(Send_reply(iid)),
+      ], draft, "Local reply draft, per card..."),
+      button([class_attr("button button-primary")], [dispatch_lab_click(Send_reply(iid))], "Send reply"),
+    ]),
+    detail_node,
+  ])
 
 fun render_incident_cards(items : list<incident>) : lab_view_effect list<vnode>
-  map(items, incident_card)
+  map(items, fn(item) component_in("incidents", incident/id(item).show, fn() incident_card(item)))
 
 fun incident_grid(lab : workflow_lab) : lab_view_effect vnode
   div([class_attr("incident-grid")], render_incident_cards(lab.incidents))

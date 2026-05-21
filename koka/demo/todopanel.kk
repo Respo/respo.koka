@@ -2,7 +2,6 @@ module demo/todopanel
 
 import demo/model
 import demo/todo/events
-import demo/todo/state
 import demo/todo/view
 import demo/todo/viewmodel
 import respo/core
