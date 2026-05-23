@@ -10,7 +10,7 @@ import library/search
 import explore/react/core
 import explore/react/state
 
-alias lab_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,lab_local_effect,register_listener<model,browser_event_effect>>
+alias lab_view_effect = <hook_scope,lab_local_effect,listener_registry<model,browser_event_effect>>
 
 fun severity_class(item : incident) : string
   match item.severity

@@ -9,7 +9,7 @@ import runtime/dom
 import explore/react/core
 import explore/react/state
 
-alias todo_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,todo_local_effect,register_listener<model,browser_event_effect>>
+alias todo_view_effect = <hook_scope,todo_local_effect,listener_registry<model,browser_event_effect>>
 
 fun status_text(done : bool) : string
   if done then "done" else "open"
@@ -118,7 +118,7 @@ fun render_task_items_view(tasks : list<task>) : todo_view_effect list<vnode>
 fun task_list(key : string, tasks : list<task>) : todo_view_effect vnode
   if is-empty(tasks) then p([class_attr("empty")], "No tasks in this view.") else ul_key(key, [class_attr("task-list")], render_task_items_view(tasks))
 
-fun filter_button(label : string, value : string, active : bool) : <current_hook_scope_name,register_listener<model,browser_event_effect>,div> vnode
+fun filter_button(label : string, value : string, active : bool) : <hook_scope,listener_registry<model,browser_event_effect>,div> vnode
   val class_name = if active then "button button-active" else "button"
   button([class_attr(class_name)], [on_local_click("set-filter-" ++ value, fn(m : model) dispatch_todo_action(Set_filter(value), m))], label)
 

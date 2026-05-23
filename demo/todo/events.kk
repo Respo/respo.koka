@@ -17,10 +17,10 @@ fun append_tasks(tasks : list<task>, item : task) : <div> list<task>
 fun clear_completed_tasks(tasks : list<task>) : <div> list<task>
   filter(tasks, fn(item) not(item.done))
 
-fun clear_done_local_state(tasks : list<task>) : <clear_local_state,div> ()
+fun clear_done_local_state(tasks : list<task>) : <local_state_write,div> ()
   clear_done_task_editors(tasks)
 
-fun todo_add_task(owner : model) : <audit,div> model
+fun todo_add_task(owner : model) : <browser_host,div> model
   if owner.draft == "" then
     owner(notice = "Draft is empty. Type something before adding.")
   else {
@@ -32,7 +32,7 @@ fun todo_add_task(owner : model) : <audit,div> model
     with_next_id(notice = "Added a new task from the Koka store.")
   }
 
-fun todo_handle_clear_completed(owner : model) : <confirm_action,audit,clear_local_state,div> model
+fun todo_handle_clear_completed(owner : model) : <browser_host,local_state_write,div> model
   if not(any(owner.tasks, fn(item) item.done)) then
     owner(notice = "There are no completed tasks to clear.")
   else if confirm_action("Clear every completed task?") then {
@@ -43,7 +43,7 @@ fun todo_handle_clear_completed(owner : model) : <confirm_action,audit,clear_loc
   } else
     owner(notice = "Clear completed cancelled.")
 
-pub fun dispatch_todo_action(action : todo_action, owner : model) : <confirm_action,audit,div> model
+pub fun dispatch_todo_action(action : todo_action, owner : model) : <browser_host,div> model
   match action
     Add_task -> commit_task_hooks(owner, fn() todo_add_task(owner))
     Set_filter(filter_name) -> owner(filter_name = filter_name, notice = "Primary list switched to `" ++ filter_name ++ "`.")

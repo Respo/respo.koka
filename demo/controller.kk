@@ -6,22 +6,22 @@ import demo/model
 import library/bridge
 import library/maybe
 
-fun resolve_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> maybe<model>
+fun resolve_click(payload : string, item : model) : <browser_event_effect,div> maybe<model>
   handle_lab_click(payload, item).or-else {
     handle_dialog_click(payload, item).or-else {
       handle_route_click(payload, item)
     }
   }
 
-pub fun dispatch_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,request_bridge_resource,div> model
+pub fun dispatch_click(payload : string, item : model) : <browser_event_effect,div> model
   resolve_click(payload, item).unwrap-or-else {
     reduce_click(payload, item)
   }
 
-fun resolve_input(channel : string, value : string, item : model) : <request_bridge_resource,div> maybe<model>
+fun resolve_input(channel : string, value : string, item : model) : <bridge_request_effect,div> maybe<model>
   handle_lab_input(channel, value, item)
 
-pub fun dispatch_input(channel : string, value : string, item : model) : <request_bridge_resource,div> model
+pub fun dispatch_input(channel : string, value : string, item : model) : <bridge_request_effect,div> model
   resolve_input(channel, value, item).unwrap-or-else {
     reduce_input(channel, value, item)
   }

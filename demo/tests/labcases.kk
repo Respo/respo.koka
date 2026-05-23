@@ -10,13 +10,7 @@ import demo/labpanel
 import demo/tests/support
 
 pub fun lab_local_routing_test() : <div> test_result
-  with val current_operator = "test-operator"
-  with fun wait_ms(_delay) ()
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun post_lab_reply(incident_id, message) mock_lab_reply(incident_id, message)
-  with fun now_label() "T+120"
-  with fun audit(_message) ()
-  with fun request_bridge_resource(_payload, _delay) ()
+  with with_test_browser(False, "T+120")
   val base = initial_model()(route_name = normalize_route("lab"))
   val drafted = match handle_lab_input("lab-draft-101", "Shift traffic to backup POP.", base)
     Just(result) -> result

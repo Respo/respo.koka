@@ -7,7 +7,7 @@ import demo/shared
 import explore/react/core
 import explore/react/state
 
-alias effects_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,register_listener<model,browser_event_effect>,div>
+alias effects_view_effect = <hook_scope,listener_registry<model,browser_event_effect>,div>
 
 fun render_tiny_items(tasks : list<task>) : <div> list<vnode>
   map(tasks, fn(item) li_text_key("tiny-" ++ task/id(item).show, Nil, item.title))

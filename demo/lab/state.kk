@@ -4,7 +4,7 @@ import demo/model
 import explore/react/state
 
 pub struct incident_local_state(expanded : bool, draft : string)
-pub alias lab_local_effect = <set_named_state,clear_local_state,use_state,use_state_pair,use_effect,div>
+pub alias lab_local_effect = <local_state_write,hook_state,hook_effects,div>
 
 fun incident_component_key(incident_id : int) : string
   incident_id.show
@@ -22,7 +22,7 @@ pub fun finalize_incident_reply_tree(tree : list<state_entry>, incident_id : int
     incident_component_key(incident_id),
     1)
 
-pub fun commit_lab_tree(owner : model, action : () -> <lab_local_effect,use_named_state,use_named_effect,current_hook_scope_name,push_hook_scope,pop_hook_scope|e> model) : <div|e> model
+pub fun commit_lab_tree(owner : model, action : () -> <lab_local_effect,local_state_read,hook_scope|e> model) : <div|e> model
   val (next_model, next_tree, _pending_effect) = run_local_state(owner.app_local_tree, action)
   next_model(app_local_tree = next_tree)
 

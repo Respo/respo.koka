@@ -15,7 +15,7 @@ pub fun app_harness(owner : model) : <div> component_harness
 pub fun app_harness_click_payload(
   h : component_harness,
   payload : string
-) : <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms,div> component_harness
+) : <browser_event_effect,div> component_harness
   match find_registered_click(h.registry, payload)
     Just(found) -> app_harness(run_registered_click(found, h.owner))
     Nothing -> app_harness(controller/dispatch_click(payload, h.owner))

@@ -58,7 +58,7 @@ fun route_stage(item : model, results : list<test_result>) : <div> (model, vnode
   else
     overview_stage(item, results)
 
-pub fun render_layout(item : model, results : list<test_result>) : <current_hook_scope_name,register_listener<model,browser_event_effect>,div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
+pub fun render_layout(item : model, results : list<test_result>) : <hook_scope,listener_registry<model,browser_event_effect>,div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
   val stage_run = route_stage(item, results)
   val (next_item, _stage_view, _pending_effects, _handlers) = stage_run
   if dialog_is_open(next_item.dialog) then

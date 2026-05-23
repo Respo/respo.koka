@@ -11,7 +11,7 @@ fun search_idle_note() : string
 fun append_search_activity(lab : workflow_lab, line : string) : <div> workflow_lab
   lab(activity_log = lab.activity_log ++ [line])
 
-pub fun set_search_query(owner : model, value : string) : <request_bridge_resource,div> model
+pub fun set_search_query(owner : model, value : string) : <bridge_request_effect,div> model
   val lab = owner.lab
   val demo = lab.search_demo
   val trimmed = trim(value)
@@ -28,7 +28,7 @@ pub fun set_search_query(owner : model, value : string) : <request_bridge_resour
   else
     owner(lab = lab(search_demo = next_demo))
 
-fun start_search_query(owner : model, query : string) : <request_bridge_resource,audit,div> model
+fun start_search_query(owner : model, query : string) : <bridge_demo_effect,div> model
   val trimmed = trim(query)
   if trimmed == "" then
     owner(notice = "Search query is empty. Type a keyword before running the suspense-lite search demo.")
@@ -47,16 +47,16 @@ fun start_search_query(owner : model, query : string) : <request_bridge_resource
     owner(lab = next_lab, notice = if has_visible then "Search is refreshing while keeping stale results visible." else "Search entered a suspense-lite fallback state.")
   }
 
-pub fun start_search(owner : model) : <request_bridge_resource,audit,div> model
+pub fun start_search(owner : model) : <bridge_demo_effect,div> model
   start_search_query(owner, owner.lab.search_demo.query_input)
 
-pub fun pick_search_case(owner : model, query : string) : <request_bridge_resource,audit,div> model
+pub fun pick_search_case(owner : model, query : string) : <bridge_demo_effect,div> model
   val lab = owner.lab
   val demo = lab.search_demo
   val next_owner = owner(lab = lab(search_demo = demo(query_input = query)))
   start_search_query(next_owner, query)
 
-pub fun resolve_search_result(owner : model, payload : string) : <request_bridge_resource,audit,div> maybe<model>
+pub fun resolve_search_result(owner : model, payload : string) : <bridge_demo_effect,div> maybe<model>
   match decode_bridge_result_payload(payload)
     Just(Bridge_signal(resource_tag, query, sig_id)) -> {
       if resource_tag != "bridge-search" && resource_tag != "bridge-search-timeout" && resource_tag != "bridge-search-auto" then

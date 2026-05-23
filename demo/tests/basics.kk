@@ -13,7 +13,7 @@ import explore/react/core
 import explore/react/renderer
 import explore/react/state
 
-fun timer_logic() : <wait_ms> string
+fun timer_logic() : <browser_host> string
   wait_ms(20)
   wait_ms(20)
   wait_ms(40)
@@ -25,28 +25,14 @@ pub fun component_render_test() : <div> test_result
   Test_result("Component render snapshot", if html == expected then "Stable HTML output for a small component." else html, html == expected)
 
 pub fun confirm_decline_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_id, msg) msg
-  with fun request_bridge_resource(_p, _d) ()
-  with fun wait_ms(_d) ()
+  with with_test_browser(False, "T+0")
   val h0 = todo_harness(initial_model())
   val remove_payload = keyed_button_payload(h0.tree, "1", "Remove")
   val next = todo_harness_click_payload(h0, remove_payload).owner
   Test_result("Confirm decline keeps state", next.notice, length(next.tasks) == 3)
 
 pub fun confirm_accept_test() : <div> test_result
-  with fun confirm_action(_message) True
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_id, msg) msg
-  with fun request_bridge_resource(_p, _d) ()
-  with fun wait_ms(_d) ()
+  with with_test_browser(True, "T+0")
   val h0 = todo_harness(initial_model())
   val remove_payload = keyed_button_payload(h0.tree, "1", "Remove")
   val next = todo_harness_click_payload(h0, remove_payload).owner
@@ -69,14 +55,7 @@ pub fun registered_input_handler_test() : <div> test_result
     Nothing -> Test_result("Registered input handler updates draft", target_id ++ " missing", False)
 
 pub fun registered_click_handler_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
-  with fun now_label() "10:00:00"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "10:00:00")
   val initial_harness = todo_harness(initial_model())
   val edit_payload = keyed_button_payload(initial_harness.tree, "2", "Edit")
   val started_harness = todo_harness_click_payload(initial_harness, edit_payload)
@@ -104,14 +83,7 @@ pub fun timer_simulation_test() : <div> test_result
   Test_result("Timer simulation", steps.show ++ " waits / " ++ total.show ++ "ms / result=" ++ label, label == "timer-ready" && steps == 3 && total == 80)
 
 pub fun route_subroute_normalization_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "10:00:00"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "10:00:00")
   val lab_route = match handle_route_click(route_action_payload(Navigate("lab-search")), initial_model())
     Just(result) -> result.route_name
     Nothing -> "missing"
@@ -126,14 +98,7 @@ pub fun route_subroute_normalization_test() : <div> test_result
     lab_route == "lab-search" && effects_route == "effects-dialogs" && legacy_lab == "lab-board" && legacy_effects == "effects-core")
 
 pub fun route_bar_click_is_local_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "T+0")
   val h0 = app_harness(initial_model())
   val checks_payload = button_payload_by_text(h0.tree, "Checks")
   val in_registry = match find_registered_click(h0.registry, checks_payload)
@@ -152,14 +117,7 @@ pub fun route_bar_click_is_local_test() : <div> test_result
 
 // Verify that a button's data-k-click value is enough to resolve a local todo handler.
 pub fun vnode_click_payload_matches_route_test() : <div> test_result
-  with fun confirm_action(_) False
-  with fun audit(_) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_id, msg) msg
-  with fun request_bridge_resource(_p, _d) ()
-  with fun wait_ms(_d) ()
+  with with_test_browser(False, "T+0")
   val initial_harness = todo_harness(initial_model())
   val edit_payload = keyed_button_payload(initial_harness.tree, "2", "Edit")
   val editing_harness = todo_harness_click_payload(initial_harness, edit_payload)
@@ -184,14 +142,7 @@ pub fun vnode_click_payload_matches_route_test() : <div> test_result
 
 // Verify that firing the local cancel semantic through the harness updates the owner.
 pub fun harness_cancel_edit_test() : <div> test_result
-  with fun confirm_action(_) False
-  with fun audit(_) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_id, msg) msg
-  with fun request_bridge_resource(_p, _d) ()
-  with fun wait_ms(_d) ()
+  with with_test_browser(False, "T+0")
   val h0 = todo_harness(initial_model())
   val start_payload = keyed_button_payload(h0.tree, "2", "Edit")
   val editing_harness = todo_harness_click_payload(h0, start_payload)
@@ -221,14 +172,7 @@ pub fun harness_draft_input_test() : <div> test_result
 // Multi-step: type into draft, then fire cancel on a task being edited.
 // Verifies that two sequential harness steps compose correctly.
 pub fun harness_multi_step_test() : <div> test_result
-  with fun confirm_action(_) False
-  with fun audit(_) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() Lab_snapshot(Nil, "empty")
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_id, msg) msg
-  with fun request_bridge_resource(_p, _d) ()
-  with fun wait_ms(_d) ()
+  with with_test_browser(False, "T+0")
   val base_harness = todo_harness(initial_model())
   val h0 = todo_harness_click_payload(base_harness, keyed_button_payload(base_harness.tree, "2", "Edit"))
   // Step 1: type into the panel draft field

@@ -5,7 +5,7 @@ import library/route
 import explore/react/core
 import explore/react/state
 
-alias route_bar_effect = <current_hook_scope_name,register_listener<model,browser_event_effect>,div>
+alias route_bar_effect = <hook_scope,listener_registry<model,browser_event_effect>,div>
 
 fun route_button(label : string, route_name : string, active : bool) : route_bar_effect vnode
   val class_name = if active then "button route-tab route-tab-active" else "button route-tab"

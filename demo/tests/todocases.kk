@@ -11,14 +11,7 @@ import explore/react/renderer
 import explore/react/state
 
 pub fun todo_edit_local_state_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "T+0")
   val base_harness = todo_harness(initial_model())
   val started_harness = todo_harness_click_payload(base_harness, keyed_button_payload(base_harness.tree, "2", "Edit"))
   val started = started_harness.owner
@@ -41,14 +34,7 @@ pub fun todo_edit_local_state_test() : <div> test_result
     title == "Prototype local title edits before save" && task_editor_state/editing(started_task) && not(task_editor_state/editing(saved_task)))
 
 pub fun todo_edit_diff_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "T+0")
   val base_harness = todo_harness(initial_model())
   val started = todo_harness_click_payload(base_harness, keyed_button_payload(base_harness.tree, "2", "Edit")).owner
   val started_harness = todo_harness(started)
@@ -62,14 +48,7 @@ pub fun todo_edit_diff_test() : <div> test_result
     attr_patches == 1 && replace_patches == 0)
 
 pub fun add_task_focus_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "T+0")
   val seeded = initial_model()(draft = "Queue a fresh task")
   val base_harness = todo_harness(seeded)
   val next_harness = harness_fire_named_click(base_harness, "add-task", todo_harness)
@@ -85,14 +64,7 @@ pub fun add_task_focus_test() : <div> test_result
     rendered.draft == "" && focused_draft && pulsed_notice && has_focus_marker)
 
 pub fun start_edit_focus_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "T+0")
   val base_harness = todo_harness(initial_model())
   val started_harness = todo_harness_click_payload(base_harness, keyed_button_payload(base_harness.tree, "2", "Edit"))
   val rendered = started_harness.owner

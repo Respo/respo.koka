@@ -13,7 +13,7 @@ fun append_lines(lines : list<string>, value : string) : <div> list<string>
 fun append_lab_activity(lab : workflow_lab, line : string) : <div> workflow_lab
   lab(activity_log = append_lines(lab.activity_log, line))
 
-fun start_bridge_shell(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
+fun start_bridge_shell(owner : model, case_name : string) : <bridge_demo_effect,div> model
   match bridge_case_by_name(case_name)
     Nothing -> owner(notice = "Unknown bridge demo case: " ++ case_name)
     Just(_case_item) -> {
@@ -25,7 +25,7 @@ fun start_bridge_shell(owner : model, case_name : string) : <request_bridge_reso
       owner(lab = next_lab, notice = if has_visible_case then "Bridge demo is refreshing while keeping stale content visible." else "Bridge demo entered the outer fallback state.")
     }
 
-fun start_bridge_detail(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
+fun start_bridge_detail(owner : model, case_name : string) : <bridge_demo_effect,div> model
   val lab = owner.lab
   val next_demo = start_bridge_detail_demo(lab.bridge_demo)
   request_bridge_result("detail", case_name, next_demo.detail_request_id, bridge_detail_delay(case_name))
@@ -33,7 +33,7 @@ fun start_bridge_detail(owner : model, case_name : string) : <request_bridge_res
   val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] nested detail pending for " ++ case_name)
   owner(lab = next_lab, notice = "Outer shell resolved; nested diagnostics are still loading.")
 
-pub fun resolve_bridge_result(owner : model, payload : string) : <request_bridge_resource,audit,div> maybe<model>
+pub fun resolve_bridge_result(owner : model, payload : string) : <bridge_demo_effect,div> maybe<model>
   maybe(decode_bridge_result_payload(payload), Nothing, fn(signal) {
     match signal
       Bridge_signal(resource_tag, case_name, request_id) -> {
@@ -67,7 +67,7 @@ fun update_incident_reply(items : list<incident>, target_id : int, message : str
       else
         Cons(item, next_rest)
 
-pub fun load_snapshot(item : model) : <fetch_lab_snapshot,now_label,audit,div> model
+pub fun load_snapshot(item : model) : <snapshot_host_effect,div> model
   audit("Loaded workflow lab snapshot from a mocked server handler.")
   val snapshot = fetch_lab_snapshot()
   val stamp = now_label()
@@ -79,7 +79,7 @@ pub fun load_snapshot(item : model) : <fetch_lab_snapshot,now_label,audit,div> m
     last_sync_label = stamp)
   item(lab = next_lab, notice = "Workflow lab loaded mock server data.")
 
-pub fun perform_sync(item : model) : <wait_ms,fetch_lab_snapshot,now_label,audit,div> model
+pub fun perform_sync(item : model) : <sync_host_effect,div> model
   audit("Started staged sync for workflow lab.")
   wait_ms(30)
   val snapshot = fetch_lab_snapshot()
@@ -93,7 +93,7 @@ pub fun perform_sync(item : model) : <wait_ms,fetch_lab_snapshot,now_label,audit
     last_sync_label = stamp)
   item(lab = next_lab, notice = "Workflow lab sync finished through algebraic effects.")
 
-pub fun send_reply(item : model, incident_id : int) : <wait_ms,post_lab_reply,now_label,audit,current_operator,div> model
+pub fun send_reply(item : model, incident_id : int) : <reply_host_effect,div> model
   val lab = item.lab
   val draft = lab_incident_draft(item.app_local_tree, incident_id)
   if draft == "" then
@@ -115,11 +115,11 @@ pub fun send_reply(item : model, incident_id : int) : <wait_ms,post_lab_reply,no
         item(lab = next_lab, app_local_tree = next_tree, notice = "Workflow lab reply sent with mocked server effect.")
       }
 
-pub fun resolve_bridge_shell(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
+pub fun resolve_bridge_shell(owner : model, case_name : string) : <bridge_demo_effect,div> model
   val lab = owner.lab
   val next_demo = resolve_bridge_shell_demo(lab.bridge_demo, case_name)
   val next_lab = append_lab_activity(lab(bridge_demo = next_demo), "[bridge] shell ready for " ++ case_name)
   start_bridge_detail(owner(lab = next_lab), case_name)
 
-pub fun start_bridge_case(owner : model, case_name : string) : <request_bridge_resource,audit,div> model
+pub fun start_bridge_case(owner : model, case_name : string) : <bridge_demo_effect,div> model
   start_bridge_shell(owner, case_name)

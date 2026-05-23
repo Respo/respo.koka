@@ -32,47 +32,80 @@ pub fun first_text(items : list<string>) : string
     Cons(first, _rest) -> first
     Nil -> "<none>"
 
-pub fun capture_waits(action : () -> <wait_ms|e> string) : e (string, list<int>)
-  var waits := Nil
-  with return(result) (result, waits)
-  with fun wait_ms(delay) waits := Cons(delay, waits)
+pub fun with_test_browser_host<a,e>(confirm_result : bool, stamp : string, action : () -> <browser_host|e> a) : e a
+  with handler
+    fun confirm_action(_message) confirm_result
+    fun audit(_message) ()
+    val current_operator = "test-operator"
+    fun fetch_lab_snapshot() mock_lab_snapshot()
+    fun now_label() stamp
+    fun post_lab_reply(_incident_id, message) message
+    fun wait_ms(_delay) ()
   action()
 
-pub fun capture_workflow(action : () -> <wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,audit,current_operator|e> model) : e (model, list<int>, list<string>)
+pub fun with_test_browser<a,e>(confirm_result : bool, stamp : string, action : () -> <browser_host,request_bridge_resource|e> a) : e a
+  with fun request_bridge_resource(_payload, _delay) ()
+  with_test_browser_host(confirm_result, stamp, action)
+
+pub fun capture_waits(action : () -> <browser_host|e> string) : e (string, list<int>)
+  var waits := Nil
+  with return(result) (result, waits)
+  with handler
+    fun confirm_action(_message) False
+    fun audit(_message) ()
+    val current_operator = "test-operator"
+    fun fetch_lab_snapshot() mock_lab_snapshot()
+    fun now_label() "T+0"
+    fun post_lab_reply(_incident_id, message) message
+    fun wait_ms(delay) waits := Cons(delay, waits)
+  action()
+
+pub fun capture_workflow(action : () -> <browser_host|e> model) : e (model, list<int>, list<string>)
   var waits := Nil
   var audits := Nil
   with return(result) (result, waits, audits)
-  with val current_operator = "test-operator"
-  with fun wait_ms(delay) waits := Cons(delay, waits)
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun post_lab_reply(incident_id, message) mock_lab_reply(incident_id, message)
-  with fun now_label() "T+120"
-  with fun audit(message) audits := Cons(message, audits)
+  with handler
+    fun confirm_action(_message) False
+    fun audit(message) audits := Cons(message, audits)
+    val current_operator = "test-operator"
+    fun wait_ms(delay) waits := Cons(delay, waits)
+    fun fetch_lab_snapshot() mock_lab_snapshot()
+    fun post_lab_reply(incident_id, message) mock_lab_reply(incident_id, message)
+    fun now_label() "T+120"
   action()
 
-pub fun capture_audits(action : () -> <audit|e> model) : e (model, list<string>)
+pub fun capture_audits(action : () -> <browser_host|e> model) : e (model, list<string>)
   var audits := Nil
   with return(result) (result, audits)
-  with fun audit(message) audits := Cons(message, audits)
+  with handler
+    fun confirm_action(_message) False
+    fun audit(message) audits := Cons(message, audits)
+    val current_operator = "test-operator"
+    fun wait_ms(_delay) ()
+    fun fetch_lab_snapshot() mock_lab_snapshot()
+    fun post_lab_reply(_incident_id, message) message
+    fun now_label() "T+0"
   action()
 
-pub fun capture_bridge(action : () -> <request_bridge_resource,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,audit,current_operator|e> model) : e (model, list<string>, list<string>)
+pub fun capture_bridge(action : () -> <browser_host,request_bridge_resource|e> model) : e (model, list<string>, list<string>)
   var requests := Nil
   var audits := Nil
   with return(result) (result, requests, audits)
-  with val current_operator = "test-operator"
-  with fun wait_ms(_delay) ()
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun post_lab_reply(incident_id, message) mock_lab_reply(incident_id, message)
-  with fun now_label() "T+120"
-  with fun audit(message) audits := Cons(message, audits)
+  with handler
+    fun confirm_action(_message) False
+    fun audit(message) audits := Cons(message, audits)
+    val current_operator = "test-operator"
+    fun wait_ms(_delay) ()
+    fun fetch_lab_snapshot() mock_lab_snapshot()
+    fun post_lab_reply(incident_id, message) mock_lab_reply(incident_id, message)
+    fun now_label() "T+120"
   with fun request_bridge_resource(payload, delay) requests := Cons(payload ++ "@" ++ delay.show, requests)
   action()
 
 pub fun bridge_base_model() : model
   initial_model()(route_name = normalize_route("lab"))
 
-pub fun bridge_click(owner : model, payload : string) : <request_bridge_resource,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,audit,current_operator,div> model
+pub fun bridge_click(owner : model, payload : string) : <browser_host,request_bridge_resource,div> model
   match handle_lab_click(payload, owner)
     Just(result) -> result
     Nothing -> owner
@@ -127,7 +160,7 @@ pub fun capture_search_auto(owner : model, query : string, auto_request_id : int
 pub fun dialog_base_model() : model
   initial_model()(route_name = normalize_route("effects"))
 
-pub fun dialog_click(owner : model, payload : string) : <audit,div> model
+pub fun dialog_click(owner : model, payload : string) : <browser_host,div> model
   match handle_dialog_click(payload, owner)
     Just(result) -> result
     Nothing -> owner
@@ -212,7 +245,7 @@ pub fun harness_fire_named_click(
   h : component_harness,
   semantic_name : string,
   render_fn : (model) -> <div> component_harness
-) : <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms,div> component_harness
+) : <browser_event_effect,div> component_harness
   match find_registered_click_by_semantic(h.registry, semantic_name)
     Nothing -> h
     Just(found) -> render_fn(run_registered_click(found, h.owner))
@@ -244,7 +277,7 @@ pub fun harness_fire_click_payload(
   h : component_harness,
   payload : string,
   render_fn : (model) -> <div> component_harness
-) : <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms,div> component_harness
+) : <browser_event_effect,div> component_harness
   match find_registered_click(h.registry, payload)
     Just(found) -> render_fn(run_registered_click(found, h.owner))
     Nothing -> h
@@ -253,7 +286,7 @@ pub fun harness_fire_click_payload(
 pub fun todo_harness_click_payload(
   h : component_harness,
   payload : string
-) : <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms,div> component_harness
+) : <browser_event_effect,div> component_harness
   match find_registered_click(h.registry, payload)
     Just(found) -> todo_harness(run_registered_click(found, h.owner))
     Nothing -> h

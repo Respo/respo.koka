@@ -6,8 +6,8 @@ import runtime/dom
 import explore/react/core
 import explore/react/state
 
-alias dialog_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,use_effect,register_listener<model,browser_event_effect>,div>
-alias dialog_demo_effect = <current_hook_scope_name,register_listener<model,browser_event_effect>,div>
+alias dialog_view_effect = <hook_scope,hook_effects,listener_registry<model,browser_event_effect>,div>
+alias dialog_demo_effect = <hook_scope,listener_registry<model,browser_event_effect>,div>
 
 fun apply_dialog_update(owner : model, next_update : dialog_update) : <div> model
   val next_owner = owner(dialog = next_update.dialog, notice = next_update.notice)
@@ -16,7 +16,7 @@ fun apply_dialog_update(owner : model, next_update : dialog_update) : <div> mode
 fun open_dialog_demo(owner : model, kind : dialog_kind, title : string, message : string, prompt_value : string, notice : string) : <div> model
   apply_dialog_update(owner, open_dialog(owner.dialog, kind, title, message, prompt_value, notice))
 
-fun apply_audited_update(owner : model, next_update : dialog_update) : <audit,div> model
+fun apply_audited_update(owner : model, next_update : dialog_update) : <browser_host,div> model
   match next_update.audit_message
     Just(message) -> {
       audit(message)
@@ -24,10 +24,10 @@ fun apply_audited_update(owner : model, next_update : dialog_update) : <audit,di
     }
     Nothing -> apply_dialog_update(owner, next_update)
 
-fun prompt_submit(owner : model) : <audit,div> model
+fun prompt_submit(owner : model) : <browser_host,div> model
   apply_audited_update(owner, submit_dialog_prompt(owner.dialog, "Prompt dialog submitted through the overlay demo."))
 
-fun dialog_primary_action(owner : model) : <audit,div> model
+fun dialog_primary_action(owner : model) : <browser_host,div> model
   val current = owner.dialog
   match current.kind
     Dialog_alert -> apply_audited_update(owner, resolve_dialog_primary(current, "Alert acknowledged.", "Alert overlay acknowledged.", "[ack] alert overlay", "Alert acknowledged."))
@@ -35,7 +35,7 @@ fun dialog_primary_action(owner : model) : <audit,div> model
     Dialog_drawer -> apply_audited_update(owner, resolve_dialog_primary(current, "Drawer action completed.", "Drawer overlay primary action completed.", "[accept] drawer overlay", "Drawer action completed."))
     _ -> owner
 
-pub fun handle_dialog_click(payload : string, owner : model) : <audit,div> maybe<model>
+pub fun handle_dialog_click(payload : string, owner : model) : <browser_host,div> maybe<model>
   if payload == dialog_open_payload("alert") then
     Just(open_dialog_demo(owner, Dialog_alert, "Alert demo", "A controlled alert surface rendered inside the app tree, similar to the explore-react demos in the MoonBit and Rust implementations.", "", "Opened alert overlay demo."))
   else if payload == dialog_open_payload("prompt") then

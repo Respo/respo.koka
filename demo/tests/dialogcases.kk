@@ -13,14 +13,7 @@ import explore/react/core
 import explore/react/state
 
 pub fun dialog_alert_open_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "T+0")
   val h0 = app_harness(initial_model()(route_name = normalize_route("effects-dialogs")))
   val alert_payload = button_payload_by_text(h0.tree, "Try Alert")
   val in_registry = match find_registered_click(h0.registry, alert_payload)
@@ -33,14 +26,7 @@ pub fun dialog_alert_open_test() : <div> test_result
     (match current.kind { Dialog_alert -> True; _ -> False }) && current.title == "Alert demo" && in_registry && alert_payload == component_listener_path("effects", "dialog-demo", Click_event, "open-alert"))
 
 pub fun dialog_prompt_validation_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "T+0")
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("prompt"))
   val h0 = app_harness(opened)
   val prompt_channel = input_channel_by_effect_marker(h0.tree, dialog_prompt_focus_marker())
@@ -59,14 +45,7 @@ pub fun dialog_prompt_validation_test() : <div> test_result
     (match current.kind { Dialog_prompt -> True; _ -> False }) && current.prompt_error == "Use 3-8 characters." && in_input_registry && in_click_registry && prompt_channel == component_listener_path("overlays", "dialog", Input_event, "prompt-input") && submit_payload == component_listener_path("overlays", "dialog", Click_event, "submit-action"))
 
 pub fun dialog_prompt_submit_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "T+0")
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("prompt"))
   val h0 = app_harness(opened)
   val prompt_channel = input_channel_by_effect_marker(h0.tree, dialog_prompt_focus_marker())
@@ -96,14 +75,7 @@ pub fun dialog_overlay_uses_app_local_tree_test() : <div> test_result
     in_app_tree)
 
 pub fun dialog_drawer_action_test() : <div> test_result
-  with fun confirm_action(_message) False
-  with fun audit(_message) ()
-  with val current_operator = "test-operator"
-  with fun fetch_lab_snapshot() mock_lab_snapshot()
-  with fun now_label() "T+0"
-  with fun post_lab_reply(_incident_id, message) message
-  with fun request_bridge_resource(_payload, _delay) ()
-  with fun wait_ms(_delay) ()
+  with with_test_browser(False, "T+0")
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("drawer"))
   val h0 = app_harness(opened)
   val primary_payload = button_payload_by_text(h0.tree, "Commit drawer")

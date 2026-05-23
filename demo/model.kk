@@ -28,16 +28,26 @@ pub fun show_status(s : incident_status) : string
     Status_investigating -> "investigating"
     Status_acked -> "acked"
 
-pub effect fun confirm_action(message : string) : bool
-pub effect fun audit(message : string) : ()
-pub effect val current_filter : string
-pub effect val current_operator : string
-pub effect fun wait_ms(delay : int) : ()
-pub effect fun fetch_lab_snapshot() : lab_snapshot
-pub effect fun post_lab_reply(incident_id : int, message : string) : string
-pub effect fun now_label() : string
+pub effect browser_host
+  fun confirm_action(message : string) : bool
+  fun audit(message : string) : ()
+  val current_operator : string
+  fun wait_ms(delay : int) : ()
+  fun fetch_lab_snapshot() : lab_snapshot
+  fun post_lab_reply(incident_id : int, message : string) : string
+  fun now_label() : string
 
-pub alias browser_event_effect = <audit,confirm_action,current_operator,fetch_lab_snapshot,now_label,post_lab_reply,request_bridge_resource,wait_ms>
+pub effect val current_filter : string
+
+pub alias filter_context_effect = <current_filter>
+pub alias dialog_host_effect = <browser_host>
+pub alias bridge_request_effect = <request_bridge_resource>
+pub alias bridge_demo_effect = <browser_host,request_bridge_resource>
+pub alias snapshot_host_effect = <browser_host>
+pub alias sync_host_effect = <browser_host>
+pub alias reply_host_effect = <browser_host>
+pub alias lab_action_effect = <browser_host,request_bridge_resource>
+pub alias browser_event_effect = <browser_host,request_bridge_resource>
 
 pub struct task
   id : int
@@ -76,12 +86,12 @@ pub struct model
   lab : workflow_lab
   dialog : dialog_demo
 
-fun task_visible(item : task) : current_filter bool
+fun task_visible(item : task) : filter_context_effect bool
   if current_filter == "active" then not(item.done)
   else if current_filter == "done" then item.done
   else True
 
-pub fun visible_tasks(tasks : list<task>) : <current_filter,div> list<task>
+pub fun visible_tasks(tasks : list<task>) : <filter_context_effect,div> list<task>
   filter(tasks, task_visible)
 
 pub fun tasks_for(filter_name : string, tasks : list<task>) : <div> list<task>
@@ -92,7 +102,7 @@ pub fun handle_route_click(payload : string, item : model) : <div> maybe<model>
   route_click_target(payload).map(fn(route_name) item(route_name = route_name))
 
 // Route changes remain data-only; render-time hooks now decide whether to execute browser effects.
-pub fun reduce_click(payload : string, item : model) : <confirm_action,audit,current_operator,wait_ms,fetch_lab_snapshot,post_lab_reply,now_label,div> model
+pub fun reduce_click(payload : string, item : model) : <browser_host,div> model
   match handle_route_click(payload, item)
     Just(next_item) -> next_item
     Nothing -> item(notice = "Unknown action: " ++ payload)
