@@ -286,13 +286,13 @@ Recommended mindset:
 
 Useful reading order:
 
-1. `koka/app.kk`
-2. `koka/respo/core.kk`
-3. `koka/respo/state.kk`
-4. `koka/demo/todo/view.kk`
-5. `koka/demo/lab/view.kk`
-6. `koka/demo/lab/workflow.kk`
-7. `koka/demo/tests/support.kk`
+1. `app.kk`
+2. `respo/core.kk`
+3. `respo/state.kk`
+4. `demo/todo/view.kk`
+5. `demo/lab/view.kk`
+6. `demo/lab/workflow.kk`
+7. `demo/tests/support.kk`
 
 Run locally with:
 

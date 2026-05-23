@@ -85,7 +85,7 @@ fun lab_panel_note(route_name : string) : string
 fun lab_panel_sections(route_name : string, lab : workflow_lab) : lab_view_effect list<vnode>
   if route_name == "lab-search" then {
     val submit_listener = on_local_enter("submit-search", fn(m : model) dispatch_lab_action(Submit_search, m))
-    [render_search_panel(lab.search_demo, summary_chip, submit_listener, fn(query) dispatch_lab_click(Search_for(query)), render_bridge_fallback)]
+    [render_search_panel(lab.search_demo, submit_listener, fn(query) dispatch_lab_click(Search_for(query)))]
   }
   else if route_name == "lab-bridge" then
     [render_bridge_panel(lab.bridge_demo, summary_chip, fn(case_name) dispatch_lab_click(Load_bridge_case(case_name)))]

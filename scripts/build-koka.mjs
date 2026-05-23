@@ -9,7 +9,7 @@ import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 
 const rootDir = resolve(new URL("..", import.meta.url).pathname);
-const sourceDir = resolve(rootDir, "koka");
+const sourceDir = rootDir;
 const outputDir = resolve(rootDir, "src/generated/koka");
 const wrapperPath = resolve(rootDir, "src/generated/koka-entry.mjs");
 const wrapperTypesPath = resolve(rootDir, "src/generated/koka-entry.d.ts");
@@ -24,7 +24,7 @@ const result = spawnSync(
   [
     "--target=jsweb",
     "--library",
-    "--builddir=../.koka-build",
+    "--builddir=.koka-build",
     `--outputdir=${outputDir}`,
     "--output=koka-app",
     sourcePath,

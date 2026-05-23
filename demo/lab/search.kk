@@ -51,7 +51,10 @@ pub fun start_search(owner : model) : <request_bridge_resource,audit,div> model
   start_search_query(owner, owner.lab.search_demo.query_input)
 
 pub fun pick_search_case(owner : model, query : string) : <request_bridge_resource,audit,div> model
-  start_search_query(owner, query)
+  val lab = owner.lab
+  val demo = lab.search_demo
+  val next_owner = owner(lab = lab(search_demo = demo(query_input = query)))
+  start_search_query(next_owner, query)
 
 pub fun resolve_search_result(owner : model, payload : string) : <request_bridge_resource,audit,div> maybe<model>
   match decode_bridge_result_payload(payload)

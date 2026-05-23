@@ -10,7 +10,7 @@ pub fun search_auto_timer_armed_test() : <div> test_result
   Test_result(
     "Search input arms auto timer",
     "auto=" ++ demo.auto_status ++ ", requests=" ++ length(requests).show ++ ", query=" ++ demo.query_input,
-    length(requests) == 1 && first_text(requests) == "bridge-search-auto|queue|1@240" && length(audits) == 0 && demo.auto_status == "armed" && demo.status == "idle")
+    length(requests) == 1 && first_text(requests) == "bridge-search-auto|queue|1@300" && length(audits) == 0 && demo.auto_status == "armed" && demo.status == "idle")
 
 pub fun search_auto_timer_starts_pending_test() : <div> test_result
   val (typed, _input_requests, _input_audits) = capture_search_input(search_base_model(), "queue")
@@ -20,8 +20,8 @@ pub fun search_auto_timer_starts_pending_test() : <div> test_result
   val has_timeout_request = any(requests, fn(item) item == "bridge-search-timeout|queue|1@320")
   Test_result(
     "Search auto timer starts pending request",
-    "status=" ++ demo.status ++ ", auto=" ++ demo.auto_status ++ ", requests=" ++ length(requests).show,
-    length(requests) == 2 && length(audits) == 1 && has_result_request && has_timeout_request && demo.status == "pending" && demo.auto_status == "idle")
+    "status=" ++ demo.status ++ ", auto=" ++ demo.auto_status ++ ", requests=" ++ length(requests).show ++ ", query=" ++ demo.query_input,
+    length(requests) == 2 && length(audits) == 1 && has_result_request && has_timeout_request && demo.status == "pending" && demo.auto_status == "idle" && demo.query_input == "queue")
 
 pub fun search_stale_auto_ignored_test() : <div> test_result
   val (typed, _requests_1, _audits_1) = capture_search_input(search_base_model(), "queue")
@@ -51,6 +51,17 @@ pub fun search_resolve_before_timeout_test() : <div> test_result
     "Search resolves before timeout",
     "visible=" ++ demo.visible_query ++ ", status=" ++ demo.status ++ ", first=" ++ first_text(demo.results),
     demo.visible_query == "edge" && demo.status == "ready" && demo.timeout_status == "idle" && length(demo.results) == 2 && first_text(demo.results) == "Edge auth bundle -> #lab-bridge | Staged shell/detail bridge around auth drift at the edge POPs." && length(stale_requests) == 0 && length(audits) == 1)
+
+pub fun search_result_keeps_newer_input_test() : <div> test_result
+  val typed = search_input(search_base_model(), "queue")
+  val (started, _requests, _audits) = capture_search_submit(typed)
+  val retargeted = search_input(started, "queuex")
+  val (resolved, stale_requests, audits) = capture_search_result(retargeted, "queue", 1)
+  val demo = resolved.lab.search_demo
+  Test_result(
+    "Search result keeps newer input draft",
+    "visible=" ++ demo.visible_query ++ ", input=" ++ demo.query_input ++ ", requests=" ++ length(stale_requests).show,
+    demo.visible_query == "queue" && demo.query_input == "queuex" && demo.status == "ready" && length(stale_requests) == 0 && length(audits) == 1)
 
 pub fun search_timeout_then_recover_test() : <div> test_result
   val typed = search_input(search_base_model(), "queue")
@@ -152,5 +163,5 @@ pub fun search_pick_starts_pending_test() : <div> test_result
   val has_timeout_request = any(requests, fn(item) item == "bridge-search-timeout|queue|1@320")
   Test_result(
     "Search pick starts pending for selected query",
-    "status=" ++ demo.status ++ ", requested=" ++ demo.requested_query ++ ", requests=" ++ length(requests).show,
-    length(requests) == 2 && length(audits) == 1 && has_result_request && has_timeout_request && demo.status == "pending" && demo.requested_query == "queue" && demo.auto_status == "idle")
+    "status=" ++ demo.status ++ ", requested=" ++ demo.requested_query ++ ", input=" ++ demo.query_input ++ ", requests=" ++ length(requests).show,
+    length(requests) == 2 && length(audits) == 1 && has_result_request && has_timeout_request && demo.status == "pending" && demo.requested_query == "queue" && demo.query_input == "queue" && demo.auto_status == "idle")

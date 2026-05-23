@@ -51,6 +51,7 @@ pub fun demo_test_results() : <div> list<test_result>
     search_stale_auto_ignored_test(),
     search_pending_test(),
     search_resolve_before_timeout_test(),
+    search_result_keeps_newer_input_test(),
     search_timeout_then_recover_test(),
     search_refresh_keeps_visible_test(),
     search_stale_timeout_ignored_test(),

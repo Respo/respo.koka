@@ -11,7 +11,7 @@ The target is not "React compatibility" as branding. The target is a clearer Rea
 
 ## Directory View
 
-### `koka/respo/*`
+### `respo/*`
 
 Framework core. This directory should keep moving toward the real component runtime boundary.
 
@@ -32,7 +32,7 @@ Main problems still open here:
 - Enter is still modeled through click-oriented storage/dispatch internals
 - local state still lives in feature-owned trees stored on the app model
 
-### `koka/demo/*`
+### `demo/*`
 
 Feature and shell layer. This directory should become a thin composition layer around the framework runtime.
 
@@ -54,7 +54,7 @@ Main problems still open here:
 - route bar still needs to follow the same component-local event model as feature views
 - `demo/model.kk` still stores feature local trees, so feature runtime state still leaks into app data shape
 
-### `koka/boilerplate/*` and `koka/runtime/*`
+### `boilerplate/*` and `runtime/*`
 
 Host boundary only.
 
@@ -70,7 +70,7 @@ Rule:
 - do not move feature behavior here
 - only host-specific mechanics belong here
 
-### `koka/library/*`
+### `library/*`
 
 Shared domain helpers and effect-oriented utilities.
 
@@ -81,7 +81,7 @@ Rule:
 - keep reusable data contracts and helper logic here
 - do not let this directory become a second controller layer
 
-### `koka/demo/tests/*`
+### `demo/tests/*`
 
 Regression surface for the React-style component runtime.
 
@@ -104,8 +104,8 @@ Target:
 
 Tasks:
 
-- add a root app component runner in `koka/demo/view.kk`
-- move `koka/demo/routebar.kk` to local component listeners
+- add a root app component runner in `demo/view.kk`
+- move `demo/routebar.kk` to local component listeners
 - route app-level harness/tests through the same runtime entry
 
 ### Phase 2: Reduce manual orchestration in the shell
