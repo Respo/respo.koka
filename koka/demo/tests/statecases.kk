@@ -17,17 +17,15 @@ pub fun state_tree_test() : <div> test_result
   Test_result("State tree local state", "draft=" ++ draft ++ ", expanded=" ++ expanded.show ++ ", named=" ++ normalized_name ++ ", hook-state=" ++ named_hook_state ++ ", hook-effect=" ++ named_hook_effect, draft == "Shift traffic to backup POP." && expanded && normalized_name == "todo/tasks/2/_7draft" && named_hook_state == "todo/tasks/2/state/draft" && named_hook_effect == "todo/effects/effect/notice-pulse")
 
 pub fun generic_state_codec_test() : <div> test_result
-  val draft_slot = named_slot("generic-test", "draft")
-  val open_slot = named_slot("generic-test", "open")
   val ((draft, open_before), next_tree, _pending_effects) = run_local_state(Nil, fn() {
-    val draft0 = use_named_state(draft_slot, text_state_codec, "hello")
-    val open0 = use_named_state(open_slot, flag_state_codec, False)
-    set_named_state(draft_slot, text_state_codec, draft0 ++ " world")
-    set_named_state(open_slot, flag_state_codec, not(open0))
+    val (draft0, set_draft) = use_state_pair(text_state_codec, "hello")
+    val (open0, set_open) = use_state_pair(flag_state_codec, False)
+    set_draft(draft0 ++ " world")
+    set_open(not(open0))
     (draft0, open0)
   })
-  val draft_after = slot_text(next_tree, draft_slot, "")
-  val open_after = slot_flag(next_tree, open_slot, False)
+  val draft_after = slot_text(next_tree, hook_state_slot("", 0), "")
+  val open_after = slot_flag(next_tree, hook_state_slot("", 1), False)
   Test_result("Generic use_state codec", "draft=" ++ draft ++ ", open-before=" ++ open_before.show ++ ", open-after=" ++ open_after.show, draft == "hello" && not(open_before) && draft_after == "hello world" && open_after)
 
 pub fun auto_hook_scope_test() : <div> test_result
