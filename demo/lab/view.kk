@@ -32,31 +32,30 @@ fun incident_card(item : incident) : lab_view_effect vnode
   val preview_text = if draft == "" then "local draft: <empty>" else "local draft: " ++ draft
   val collapsed_text = if draft == "" then "Draft is local and still empty." else "Draft saved locally for this card."
   val detail_node = if expanded then
-    div([class_attr("incident-detail-grid")], [
-      p([class_attr("mono")], "server: " ++ item.server_note),
-      p([class_attr("mono")], "updated by: " ++ item.updated_by),
-      p([class_attr("mono")], preview_text),
+    div(props(class = "incident-detail-grid"), [
+      p(props(class = "mono"), "server: " ++ item.server_note),
+      p(props(class = "mono"), "updated by: " ++ item.updated_by),
+      p(props(class = "mono"), preview_text),
     ])
   else
-    p([class_attr("mono")], collapsed_text)
-  article_key("incident-" ++ iid.show, [class_attr("incident-card")], [
-    div([class_attr("incident-head")], [
-      div([class_attr("incident-title-wrap")], [
-        strong([class_attr("incident-title")], item.title),
-        span([class_attr("case-detail")], item.summary),
+    p(props(class = "mono"), collapsed_text)
+  article_key("incident-" ++ iid.show, props(class = "incident-card"), [
+    div(props(class = "incident-head"), [
+      div(props(class = "incident-title-wrap"), [
+        strong(props(class = "incident-title"), item.title),
+        span(props(class = "case-detail"), item.summary),
       ]),
-      div([class_attr("incident-badges")], [
-        span([class_attr(severity_class(item))], item.severity.show_severity),
-        span([class_attr(status_class(item))], item.status.show_status),
+      div(props(class = "incident-badges"), [
+        span(props(class = severity_class(item)), item.severity.show_severity),
+        span(props(class = status_class(item)), item.status.show_status),
       ]),
     ]),
-    div([class_attr("incident-controls")], [
-      button([class_attr("button")], [on_local_click("toggle-expanded", fn(owner : model) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, iid)))], toggle_label),
-      input_text_key("lab-draft-" ++ iid.show, [class_attr("input incident-input")], [
-        on_local_input("draft-input", fn(value, owner : model) commit_lab_tree(owner, fn() set_local_lab_draft(owner, iid, value))),
-        on_local_enter("send-reply", fn(owner : model) dispatch_lab_action(Send_reply(iid), owner)),
-      ], draft, "Local reply draft, per card..."),
-      button([class_attr("button button-primary")], [on_local_click("send-reply", fn(m : model) dispatch_lab_action(Send_reply(iid), m))], "Send reply"),
+    div(props(class = "incident-controls"), [
+      button(props(class = "button"), on(click = on_local_click("toggle-expanded", fn(owner : model) commit_lab_tree(owner, fn() toggle_local_lab_expanded(owner, iid)))), toggle_label),
+      input_text_key("lab-draft-" ++ iid.show, props(class = "input incident-input"), on(
+        input = on_local_input("draft-input", fn(value, owner : model) commit_lab_tree(owner, fn() set_local_lab_draft(owner, iid, value))),
+        enter = on_local_enter("send-reply", fn(owner : model) dispatch_lab_action(Send_reply(iid), owner))), draft, "Local reply draft, per card..."),
+      button(props(class = "button button-primary"), on(click = on_local_click("send-reply", fn(m : model) dispatch_lab_action(Send_reply(iid), m))), "Send reply"),
     ]),
     detail_node,
   ])
@@ -65,16 +64,16 @@ fun render_incident_cards(items : list<incident>) : lab_view_effect list<vnode>
   map(items, fn(item) component_in("incidents", incident/id(item).show, fn() incident_card(item)))
 
 fun incident_grid(lab : workflow_lab) : lab_view_effect vnode
-  div([class_attr("incident-grid")], render_incident_cards(lab.incidents))
+  div(props(class = "incident-grid"), render_incident_cards(lab.incidents))
 
 fun render_activity_items(lines : list<string>) : <div> list<vnode>
-  map-indexed(lines, fn(index, line) li_text_key("activity-" ++ index.show, [class_attr("activity-item")], line))
+  map-indexed(lines, fn(index, line) li_text_key("activity-" ++ index.show, props(class = "activity-item"), line))
 
 fun activity_panel(lab : workflow_lab) : <div> vnode
-  aside([class_attr("mini-panel activity-panel")], [
-    strong(Nil, "Workflow activity"),
-    p([class_attr("case-detail")], "Each sync or reply appends a line that can be asserted in tests."),
-    ul([class_attr("activity-list")], render_activity_items(lab.activity_log)),
+  aside(props(class = "mini-panel activity-panel"), [
+    strong(props, "Workflow activity"),
+    p(props(class = "case-detail"), "Each sync or reply appends a line that can be asserted in tests."),
+    ul(props(class = "activity-list"), render_activity_items(lab.activity_log)),
   ])
 
 fun lab_panel_note(route_name : string) : string
@@ -91,12 +90,12 @@ fun lab_panel_sections(route_name : string, lab : workflow_lab) : lab_view_effec
     [render_bridge_panel(lab.bridge_demo, summary_chip, fn(case_name) dispatch_lab_click(Load_bridge_case(case_name)))]
   else
     [
-      div([class_attr("button-row")], [
-        button([class_attr("button")], [on_local_click("load-board", fn(m : model) dispatch_lab_action(Load_board, m))], "Load mock board"),
-        button([class_attr("button button-primary")], [on_local_click("run-sync", fn(m : model) dispatch_lab_action(Run_sync, m))], "Run staged sync"),
-        span([class_attr("mono")], "status: " ++ lab.sync_status),
+      div(props(class = "button-row"), [
+        button(props(class = "button"), on(click = on_local_click("load-board", fn(m : model) dispatch_lab_action(Load_board, m))), "Load mock board"),
+        button(props(class = "button button-primary"), on(click = on_local_click("run-sync", fn(m : model) dispatch_lab_action(Run_sync, m))), "Run staged sync"),
+        span(props(class = "mono"), "status: " ++ lab.sync_status),
       ]),
-      div([class_attr("lab-body-grid")], [
+      div(props(class = "lab-body-grid"), [
         incident_grid(lab),
         activity_panel(lab),
       ]),
@@ -105,7 +104,7 @@ fun lab_panel_sections(route_name : string, lab : workflow_lab) : lab_view_effec
 pub fun render_lab_panel(item : model) : lab_view_effect vnode
   val lab = item.lab
   val children = [
-    div([class_attr("summary-row")], [
+    div(props(class = "summary-row"), [
       summary_chip("Incidents", length(lab.incidents).show),
       summary_chip("Open", length(filter(lab.incidents, fn(incident_item) match incident_item.status { Status_acked -> False; _ -> True })).show),
       summary_chip("Drafts", length(filter(lab.incidents, fn(incident_item) lab_incident_draft(item.app_local_tree, incident/id(incident_item)) != "")).show),

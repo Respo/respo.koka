@@ -181,9 +181,9 @@ pub fun search_menu_matches_query(item : search_menu_item, query : string) : <di
   item_prefix_matches(item, query)
 
 fun search_dropdown_item(item : search_menu_item, index : int, dispatch_search : string -> listener) : <div> vnode
-  div_key("search-drop-" ++ index.show, [class_attr("search-dropdown-item")], [
-    button([class_attr("search-item-btn")], [dispatch_search(search_menu_item/query_hint(item))], search_menu_item/title(item)),
-    span([class_attr("search-item-hint")], search_menu_item/route_hint(item)),
+  div_key("search-drop-" ++ index.show, props(class = "search-dropdown-item"), [
+    button(props(class = "search-item-btn"), on(click = dispatch_search(search_menu_item/query_hint(item))), search_menu_item/title(item)),
+    span(props(class = "search-item-hint"), search_menu_item/route_hint(item)),
   ])
 
 fun render_search_dropdown(items : list<search_menu_item>, dispatch_search : string -> listener) : <div> list<vnode>
@@ -193,13 +193,13 @@ pub fun render_search_panel(demo : search_demo, dispatch_submit : listener, disp
   val items = if demo.visible_query == "" then menu_catalog() else matched_menu_items(menu_catalog(), demo.visible_query)
   val dropdown =
     if is-nil(items) then
-      div([class_attr("search-dropdown-hidden")], Nil)
+      div(props(class = "search-dropdown-hidden"), Nil)
     else
-      div([class_attr("search-dropdown")], render_search_dropdown(items, dispatch_search))
-  section_key("lab-search", [class_attr("search-panel")], [
-    div([class_attr("search-input-wrap")], [
-      div([class_attr("composer-row")], [
-        input_text_key(search_query_channel(), [class_attr("input search-input")], [input_listener(search_query_channel()), dispatch_submit], demo.query_input, "Search by keyword..."),
+      div(props(class = "search-dropdown"), render_search_dropdown(items, dispatch_search))
+  section_key("lab-search", props(class = "search-panel"), [
+    div(props(class = "search-input-wrap"), [
+      div(props(class = "composer-row"), [
+        input_text_key(search_query_channel(), props(class = "input search-input"), on(input = input_listener(search_query_channel()), enter = dispatch_submit), demo.query_input, "Search by keyword..."),
       ]),
       dropdown,
     ]),

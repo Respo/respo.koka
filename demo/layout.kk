@@ -14,16 +14,16 @@ import explore/react/core
 import explore/react/state
 
 fun intro_panel(item : model) : <div> vnode
-  header([class_attr("panel intro-panel")], [
-    div([class_attr("intro-top")], [
-      h1([class_attr("page-title")], "explore-react core + dense debug demo"),
-      span([class_attr("route-indicator")], "route: #" ++ item.route_name),
+  header(props(class = "panel intro-panel"), [
+    div(props(class = "intro-top"), [
+      h1(props(class = "page-title"), "explore-react core + dense debug demo"),
+      span(props(class = "route-indicator"), "route: #" ++ item.route_name),
     ]),
-    p([class_attr("section-note")], "`explore/react/*` holds VDOM helpers; `demo/*` now exposes finer subroutes so search, bridge, dialogs, workflow, and timing demos are easier to inspect in isolation."),
+    p(props(class = "section-note"), "`explore/react/*` holds VDOM helpers; `demo/*` now exposes finer subroutes so search, bridge, dialogs, workflow, and timing demos are easier to inspect in isolation."),
   ])
 
 fun wrap_single_stage(node : vnode) : vnode
-  div([class_attr("single-stage")], [node])
+  div(props(class = "single-stage"), [node])
 
 fun overview_stage(item : model, results : list<test_result>) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
   val (effects_item, ((todo_node, lab_node), effects_node), effects, handlers) = compose_component_runs(
@@ -31,17 +31,17 @@ fun overview_stage(item : model, results : list<test_result>) : <div> (model, vn
       run_todo_panel(item),
       run_lab_panel),
     fn(next_item) run_effects_panel(next_item, results))
-  (effects_item, div([class_attr("overview-grid")], [
-    div([class_attr("overview-main")], [
+  (effects_item, div(props(class = "overview-grid"), [
+    div(props(class = "overview-main"), [
       todo_node,
     ]),
-    aside([class_attr("overview-side")], [
+    aside(props(class = "overview-side"), [
       tests_panel(results),
     ]),
-    div([class_attr("overview-wide")], [
+    div(props(class = "overview-wide"), [
       lab_node,
     ]),
-    div([class_attr("overview-wide")], [
+    div(props(class = "overview-wide"), [
       effects_node,
     ]),
   ]), effects, handlers)
@@ -66,7 +66,7 @@ pub fun render_layout(item : model, results : list<test_result>) : <hook_scope,l
       compose_component_runs(stage_run, run_dialog_overlay),
       fn(dialog_item, stage_and_dialog) {
         val (next_stage_node, dialog_node) = stage_and_dialog
-        section_key("app", [class_attr("shell app-shell")], [
+        section_key("app", props(class = "shell app-shell"), [
           intro_panel(dialog_item),
           route_bar(dialog_item),
           next_stage_node,
@@ -74,7 +74,7 @@ pub fun render_layout(item : model, results : list<test_result>) : <hook_scope,l
         ])
       })
   else
-    map_component_run(stage_run, fn(owner, current_stage) section_key("app", [class_attr("shell app-shell")], [
+    map_component_run(stage_run, fn(owner, current_stage) section_key("app", props(class = "shell app-shell"), [
       intro_panel(owner),
       route_bar(owner),
       current_stage,

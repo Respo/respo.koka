@@ -139,13 +139,13 @@ pub fun request_bridge_result(resource_kind : string, resource_key : string, req
   request_bridge_resource(bridge_result_payload(resource_kind, resource_key, request_id), delay)
 
 pub fun render_bridge_fallback(key : string, title : string, note : string, class_name : string) : <div> vnode
-  div_key(key, [class_attr("bridge-fallback " ++ class_name)], [
-    strong([class_attr("bridge-fallback-title")], title),
-    p([class_attr("case-detail")], note),
-    div([class_attr("bridge-fallback-bars")], [
-      span([class_attr("bridge-bar bridge-bar-wide")], ""),
-      span([class_attr("bridge-bar bridge-bar-mid")], ""),
-      span([class_attr("bridge-bar bridge-bar-short")], ""),
+  div_key(key, props(class = "bridge-fallback " ++ class_name), [
+    strong(props(class = "bridge-fallback-title"), title),
+    p(props(class = "case-detail"), note),
+    div(props(class = "bridge-fallback-bars"), [
+      span(props(class = "bridge-bar bridge-bar-wide"), ""),
+      span(props(class = "bridge-bar bridge-bar-mid"), ""),
+      span(props(class = "bridge-bar bridge-bar-short"), ""),
     ]),
   ])
 
@@ -155,34 +155,34 @@ fun bridge_case_button(item : bridge_case, requested_case : string, visible_case
     if case_name == visible_case then "button button-active"
     else if case_name == requested_case then "button button-primary bridge-button-pending"
     else "button"
-  button([class_attr(class_name)], [dispatch_case(case_name)], bridge_case/label(item))
+  button(props(class = class_name), on(click = dispatch_case(case_name)), bridge_case/label(item))
 
 pub fun render_bridge_case_buttons(items : list<bridge_case>, requested_case : string, visible_case : string, dispatch_case : string -> listener) : <div> list<vnode>
   map(items, fn(item) bridge_case_button(item, requested_case, visible_case, dispatch_case))
 
 fun render_bridge_detail_lines(lines : list<string>) : <div> list<vnode>
-  map-indexed(lines, fn(index, line) li_text_key("bridge-detail-" ++ index.show, [class_attr("activity-item")], line))
+  map-indexed(lines, fn(index, line) li_text_key("bridge-detail-" ++ index.show, props(class = "activity-item"), line))
 
 fun bridge_transition_banner(requested_case : string, visible_case : string) : vnode
-  div([class_attr("bridge-transition-banner")], [
-    div([class_attr("bridge-transition-head")], [
-      strong([class_attr("bridge-fallback-title")], "Transition keeps stale content visible"),
-      span([class_attr("incident-status incident-status-investigating")], "refreshing"),
+  div(props(class = "bridge-transition-banner"), [
+    div(props(class = "bridge-transition-head"), [
+      strong(props(class = "bridge-fallback-title"), "Transition keeps stale content visible"),
+      span(props(class = "incident-status incident-status-investigating"), "refreshing"),
     ]),
-    p([class_attr("case-detail")], "Currently showing `" ++ visible_case ++ "` while the browser bridge resolves `" ++ requested_case ++ "` in the background."),
-    div([class_attr("bridge-transition-rail")], [
-      span([class_attr("bridge-token bridge-token-current")], "visible: " ++ visible_case),
-      span([class_attr("bridge-arrow-token")], "->"),
-      span([class_attr("bridge-token bridge-token-next")], "next: " ++ requested_case),
+    p(props(class = "case-detail"), "Currently showing `" ++ visible_case ++ "` while the browser bridge resolves `" ++ requested_case ++ "` in the background."),
+    div(props(class = "bridge-transition-rail"), [
+      span(props(class = "bridge-token bridge-token-current"), "visible: " ++ visible_case),
+      span(props(class = "bridge-arrow-token"), "->"),
+      span(props(class = "bridge-token bridge-token-next"), "next: " ++ requested_case),
     ]),
   ])
 
 fun bridge_detail_node(case_item : bridge_case, detail_status : string) : <div> vnode
   if detail_status == "ready" then
-    div([class_attr("bridge-detail-card")], [
-      strong([class_attr("section-title")], bridge_case/detail_title(case_item)),
-      p([class_attr("case-detail")], "Nested boundary resolved after the outer shell became visible."),
-      ul([class_attr("activity-list")], render_bridge_detail_lines(bridge_case/detail_lines(case_item))),
+    div(props(class = "bridge-detail-card"), [
+      strong(props(class = "section-title"), bridge_case/detail_title(case_item)),
+      p(props(class = "case-detail"), "Nested boundary resolved after the outer shell became visible."),
+      ul(props(class = "activity-list"), render_bridge_detail_lines(bridge_case/detail_lines(case_item))),
     ])
   else
     render_bridge_fallback("bridge-detail-fallback", "Nested fallback", "Shell is visible, but the diagnostic trace is still suspended through the browser callback bridge.", "bridge-detail-fallback")
@@ -193,34 +193,34 @@ fun bridge_shell_node(case_item : bridge_case, requested_case : string, visible_
   val status_text = if is_refreshing then "showing stale shell while requesting `" ++ requested_case ++ "`" else "outer boundary resolved"
   val body_children = if is_refreshing then
     [
-      div([class_attr("bridge-shell-head")], [
-        div([class_attr("stack")], [
-          strong([class_attr("section-title")], bridge_case/shell_title(case_item)),
-          p([class_attr("case-detail")], bridge_case/shell_summary(case_item)),
+      div(props(class = "bridge-shell-head"), [
+        div(props(class = "stack"), [
+          strong(props(class = "section-title"), bridge_case/shell_title(case_item)),
+          p(props(class = "case-detail"), bridge_case/shell_summary(case_item)),
         ]),
-        div([class_attr("bridge-shell-badges")], [
-          span([class_attr("incident-status incident-status-investigating")], status_text),
+        div(props(class = "bridge-shell-badges"), [
+          span(props(class = "incident-status incident-status-investigating"), status_text),
         ]),
       ]),
       bridge_transition_banner(requested_case, visible_case),
-      p([class_attr("bridge-state-note")], bridge_case/stage_note(case_item)),
+      p(props(class = "bridge-state-note"), bridge_case/stage_note(case_item)),
       bridge_detail_node(case_item, detail_status),
     ]
   else
     [
-      div([class_attr("bridge-shell-head")], [
-        div([class_attr("stack")], [
-          strong([class_attr("section-title")], bridge_case/shell_title(case_item)),
-          p([class_attr("case-detail")], bridge_case/shell_summary(case_item)),
+      div(props(class = "bridge-shell-head"), [
+        div(props(class = "stack"), [
+          strong(props(class = "section-title"), bridge_case/shell_title(case_item)),
+          p(props(class = "case-detail"), bridge_case/shell_summary(case_item)),
         ]),
-        div([class_attr("bridge-shell-badges")], [
-          span([class_attr("incident-status incident-status-investigating")], status_text),
+        div(props(class = "bridge-shell-badges"), [
+          span(props(class = "incident-status incident-status-investigating"), status_text),
         ]),
       ]),
-      p([class_attr("bridge-state-note")], bridge_case/stage_note(case_item)),
+      p(props(class = "bridge-state-note"), bridge_case/stage_note(case_item)),
       bridge_detail_node(case_item, detail_status),
     ]
-  article([class_attr(shell_class)], body_children)
+  article(props(class = shell_class), body_children)
 
 pub fun render_bridge_stage(selected_case : maybe<bridge_case>, requested_note : string, requested_case : string, visible_case : string, shell_status : string, detail_status : string) : <div> vnode
   match selected_case
@@ -228,9 +228,9 @@ pub fun render_bridge_stage(selected_case : maybe<bridge_case>, requested_note :
       render_bridge_fallback("bridge-shell-fallback", "Outer fallback", requested_note, "bridge-shell-fallback")
     else
       bridge_shell_node(case_item, requested_case, visible_case, shell_status, detail_status)
-    Nothing -> div([class_attr("bridge-empty")], [
-      strong([class_attr("section-title")], "Suspense-like bridge demo"),
-      p([class_attr("case-detail")], "Select a case to trigger a browser callback that resolves the shell and nested diagnostics in two stages."),
+    Nothing -> div(props(class = "bridge-empty"), [
+      strong(props(class = "section-title"), "Suspense-like bridge demo"),
+      p(props(class = "case-detail"), "Select a case to trigger a browser callback that resolves the shell and nested diagnostics in two stages."),
     ])
 
 pub fun render_bridge_panel(demo : suspense_bridge_demo, render_summary_chip : (string, string) -> vnode, dispatch_case : string -> listener) : <div> vnode
@@ -240,19 +240,19 @@ pub fun render_bridge_panel(demo : suspense_bridge_demo, render_summary_chip : (
   val requested_note = match bridge_case_by_name(requested_case)
     Just(case_item) -> bridge_case/stage_note(case_item)
     Nothing -> "Select a bridge case to start the suspense-like demo."
-  section_key("lab-bridge", [class_attr("bridge-panel")], [
-    div([class_attr("bridge-panel-head")], [
-      div([class_attr("stack")], [
-        strong([class_attr("section-title")], "Suspense-like bridge demo"),
-        p([class_attr("case-detail")], "This keeps stale shell content visible while a browser callback resolves the next case, then reveals nested detail through a second fallback."),
+  section_key("lab-bridge", props(class = "bridge-panel"), [
+    div(props(class = "bridge-panel-head"), [
+      div(props(class = "stack"), [
+        strong(props(class = "section-title"), "Suspense-like bridge demo"),
+        p(props(class = "case-detail"), "This keeps stale shell content visible while a browser callback resolves the next case, then reveals nested detail through a second fallback."),
       ]),
-      div([class_attr("summary-row bridge-meta")], [
+      div(props(class = "summary-row bridge-meta"), [
         render_summary_chip("Requested", requested_case),
         render_summary_chip("Visible", if visible_case == "" then "<fallback>" else visible_case),
         render_summary_chip("Shell", demo.shell_status),
         render_summary_chip("Detail", demo.detail_status),
       ]),
     ]),
-    div([class_attr("button-row bridge-case-row")], render_bridge_case_buttons(bridge_demo_cases(), requested_case, visible_case, dispatch_case)),
+    div(props(class = "button-row bridge-case-row"), render_bridge_case_buttons(bridge_demo_cases(), requested_case, visible_case, dispatch_case)),
     render_bridge_stage(bridge_case_by_name(selected_case), requested_note, requested_case, visible_case, demo.shell_status, demo.detail_status),
   ])

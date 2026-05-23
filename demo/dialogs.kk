@@ -47,7 +47,7 @@ pub fun handle_dialog_click(payload : string, owner : model) : <browser_host,div
   else Nothing
 
 fun render_log_items(lines : list<string>) : <div> list<vnode>
-  map-indexed(lines, fn(index, line) li_text_key("dialog-log-" ++ index.show, [class_attr("activity-item")], line))
+  map-indexed(lines, fn(index, line) li_text_key("dialog-log-" ++ index.show, props(class = "activity-item"), line))
 
 pub fun dialog_demo_case(owner : model) : dialog_demo_effect vnode
   val current = owner.dialog
@@ -55,43 +55,43 @@ pub fun dialog_demo_case(owner : model) : dialog_demo_effect vnode
   val open_prompt = on_local_click("open-prompt", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_prompt, "Prompt demo", "Type 3-8 characters. This mimics a controlled prompt instead of delegating to a native browser API.", "explore-react", "Opened prompt overlay demo."))
   val open_dialog_listener = on_local_click("open-dialog", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_dialog, "Dialog demo", "This is a centered custom dialog body, closer to an explore-react modal component than a native browser API.", "", "Opened dialog overlay demo."))
   val open_drawer = on_local_click("open-drawer", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_drawer, "Drawer demo", "This side sheet keeps the background visible while secondary actions happen in a dedicated panel.", "", "Opened drawer overlay demo."))
-  div([class_attr("stack")], [
-    div([class_attr("button-row")], [
-      button([class_attr("button")], [open_alert], "Try Alert"),
-      button([class_attr("button")], [open_prompt], "Try Prompt"),
-      button([class_attr("button button-primary")], [open_dialog_listener], "Try Dialog"),
-      button([class_attr("button button-danger")], [open_drawer], "Try Drawer"),
+  div(props(class = "stack"), [
+    div(props(class = "button-row"), [
+      button(props(class = "button"), on(click = open_alert), "Try Alert"),
+      button(props(class = "button"), on(click = open_prompt), "Try Prompt"),
+      button(props(class = "button button-primary"), on(click = open_dialog_listener), "Try Dialog"),
+      button(props(class = "button button-danger"), on(click = open_drawer), "Try Drawer"),
     ]),
-    div([class_attr("preview-grid")], [
-      div([class_attr("mini-panel stack")], [
-        strong(Nil, "Overlay state"),
-        p([class_attr("mono")], "kind: " ++ (if dialog_is_open(current) then current.kind.show_kind else "<none>")),
-        p([class_attr("mono")], "result: " ++ current.result_note),
+    div(props(class = "preview-grid"), [
+      div(props(class = "mini-panel stack"), [
+        strong(props, "Overlay state"),
+        p(props(class = "mono"), "kind: " ++ (if dialog_is_open(current) then current.kind.show_kind else "<none>")),
+        p(props(class = "mono"), "result: " ++ current.result_note),
       ]),
-      div([class_attr("mini-panel stack")], [
-        strong(Nil, "Dialog activity"),
-        if is-empty(current.activity_log) then p([class_attr("empty")], "No overlay interactions yet.") else ul([class_attr("activity-list dialog-log-list")], render_log_items(current.activity_log)),
+      div(props(class = "mini-panel stack"), [
+        strong(props, "Dialog activity"),
+        if is-empty(current.activity_log) then p(props(class = "empty"), "No overlay interactions yet.") else ul(props(class = "activity-list dialog-log-list"), render_log_items(current.activity_log)),
       ]),
     ]),
   ])
 
 fun prompt_body(current : dialog_demo, prompt_input_listener : listener, submit_enter_listener : listener) : <div> list<vnode>
   [
-    input_text_key("dialog-prompt-input", [class_attr("input"), text_attr("data-k-effect", dialog_prompt_focus_marker())], [prompt_input_listener, submit_enter_listener], current.prompt_value, "3-8 chars"),
-    if current.prompt_error == "" then p([class_attr("case-detail")], "Validation runs on submit, similar to the other explore-react prompt demos.") else p([class_attr("dialog-error")], current.prompt_error),
+    input_text_key("dialog-prompt-input", props(class = "input", data_effect = dialog_prompt_focus_marker()), on(input = prompt_input_listener, enter = submit_enter_listener), current.prompt_value, "3-8 chars"),
+    if current.prompt_error == "" then p(props(class = "case-detail"), "Validation runs on submit, similar to the other explore-react prompt demos.") else p(props(class = "dialog-error"), current.prompt_error),
   ]
 
 fun dialog_custom_body(label : string, current : dialog_demo) : <div> list<vnode>
   [
-    p([class_attr("case-detail")], current.message),
-    div([class_attr("preview-grid")], [
-      div([class_attr("mini-panel stack")], [
-        strong(Nil, "Intentional layout"),
-        p([class_attr("mono")], "The dialog demo keeps open and overlay actions inside local listeners, even though the overlay still renders globally in the app tree."),
+    p(props(class = "case-detail"), current.message),
+    div(props(class = "preview-grid"), [
+      div(props(class = "mini-panel stack"), [
+        strong(props, "Intentional layout"),
+        p(props(class = "mono"), "The dialog demo keeps open and overlay actions inside local listeners, even though the overlay still renders globally in the app tree."),
       ]),
-      div([class_attr("mini-panel stack")], [
-        strong(Nil, "Last result"),
-        p([class_attr("mono")], current.result_note),
+      div(props(class = "mini-panel stack"), [
+        strong(props, "Last result"),
+        p(props(class = "mono"), current.result_note),
       ]),
     ]),
   ]
@@ -99,7 +99,7 @@ fun dialog_custom_body(label : string, current : dialog_demo) : <div> list<vnode
 fun overlay_spec(current : dialog_demo, prompt_input_listener : listener, submit_enter_listener : listener) : <div> dialog_overlay_spec
   match current.kind
     Dialog_prompt -> Dialog_overlay_spec("dialog-overlay-shell dialog-overlay-center", "prompt-overlay", "dialog-overlay-card", prompt_body(current, prompt_input_listener, submit_enter_listener), Footer_submit("Submit"))
-    Dialog_alert -> Dialog_overlay_spec("dialog-overlay-shell dialog-overlay-center", "alert-overlay", "dialog-overlay-card", [p([class_attr("case-detail")], "This alert is state-driven and lives inside the same VDOM tree as the rest of the app.")], Footer_primary_only("I read it"))
+    Dialog_alert -> Dialog_overlay_spec("dialog-overlay-shell dialog-overlay-center", "alert-overlay", "dialog-overlay-card", [p(props(class = "case-detail"), "This alert is state-driven and lives inside the same VDOM tree as the rest of the app.")], Footer_primary_only("I read it"))
     Dialog_dialog -> Dialog_overlay_spec("dialog-overlay-shell dialog-overlay-center", "dialog-overlay", "dialog-overlay-card", dialog_custom_body("dialog-custom", current), Footer_primary_with_cancel("Run dialog action"))
     _ -> Dialog_overlay_spec("dialog-overlay-shell dialog-overlay-drawer", "drawer-overlay", "dialog-overlay-card drawer-overlay-card", dialog_custom_body("drawer-custom", current), Footer_primary_with_cancel("Commit drawer"))
 
