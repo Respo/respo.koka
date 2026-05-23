@@ -2,6 +2,7 @@ module demo/tests/dialogcases
 
 import demo/tests/appharness
 import demo/dialogs
+import demo/effectspanel
 import demo/model
 import demo/seed
 import demo/tests/support
@@ -23,14 +24,14 @@ pub fun dialog_alert_open_test() : <div> test_result
   Test_result(
     "Dialog alert opens overlay",
     "kind=" ++ current.kind.show_kind ++ ", title=" ++ current.title ++ ", local=" ++ in_registry.show,
-    (match current.kind { Dialog_alert -> True; _ -> False }) && current.title == "Alert demo" && in_registry && alert_payload == component_listener_path("effects", "dialog-demo", Click_event, "open-alert"))
+    (match current.kind { Dialog_alert -> True; _ -> False }) && current.title == "Alert demo" && in_registry && alert_payload == effects_dialog_demo_listener_path(Click_event, "open-alert"))
 
 pub fun dialog_prompt_validation_test() : <div> test_result
   with with_test_browser(False, "T+0")
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("prompt"))
   val h0 = app_harness(opened)
   val prompt_channel = input_channel_by_effect_marker(h0.tree, dialog_prompt_focus_marker())
-  val typed_h = harness_fire_input_channel(h0, prompt_channel, "xy", app_harness)
+  val typed_h = app_harness_input_channel(h0, prompt_channel, "xy")
   val submit_payload = button_payload_by_text(typed_h.tree, "Submit")
   val in_input_registry = match find_registered_input(h0.registry, prompt_channel)
     Just(_) -> True
@@ -49,7 +50,7 @@ pub fun dialog_prompt_submit_test() : <div> test_result
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("prompt"))
   val h0 = app_harness(opened)
   val prompt_channel = input_channel_by_effect_marker(h0.tree, dialog_prompt_focus_marker())
-  val typed_h = harness_fire_input_channel(h0, prompt_channel, "bridge", app_harness)
+  val typed_h = app_harness_input_channel(h0, prompt_channel, "bridge")
   val submit_payload = button_payload_by_text(typed_h.tree, "Submit")
   val current = app_harness_click_payload(typed_h, submit_payload).owner.dialog
   Test_result(
@@ -65,14 +66,14 @@ pub fun dialog_prompt_focus_effect_test() : <div> test_result
     "effects=" ++ length(effects).show ++ ", marker=" ++ vnode_has_attr_value(overlay_node, "data-k-effect", "dialog-prompt-focus").show,
     any(effects, fn(item) scheduled_effect/path(item) == dialog_overlay_effect_path()) && vnode_has_attr_value(overlay_node, "data-k-effect", "dialog-prompt-focus"))
 
-pub fun dialog_overlay_uses_app_local_tree_test() : <div> test_result
+pub fun dialog_overlay_uses_runtime_tree_test() : <div> test_result
   val (opened, _open_audits) = capture_dialog_click(dialog_base_model(), dialog_open_payload("prompt"))
   val h0 = app_harness(opened)
-  val in_app_tree = any(h0.owner.app_local_tree, fn(item) state_entry/path(item) == dialog_overlay_effect_path())
+  val in_runtime_tree = any(h0.runtime_tree, fn(item) state_entry/path(item) == dialog_overlay_effect_path())
   Test_result(
-    "Dialog overlay uses app local tree",
-    "entries=" ++ count_entries(h0.owner.app_local_tree).show ++ ", effect-in-tree=" ++ in_app_tree.show,
-    in_app_tree)
+    "Dialog overlay uses runtime tree",
+    "entries=" ++ count_entries(h0.runtime_tree).show ++ ", effect-in-tree=" ++ in_runtime_tree.show,
+    in_runtime_tree)
 
 pub fun dialog_drawer_action_test() : <div> test_result
   with with_test_browser(False, "T+0")

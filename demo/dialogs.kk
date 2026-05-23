@@ -10,8 +10,7 @@ alias dialog_view_effect = <hook_scope,hook_effects,listener_registry<model,brow
 alias dialog_demo_effect = <hook_scope,listener_registry<model,browser_event_effect>,div>
 
 fun apply_dialog_update(owner : model, next_update : dialog_update) : <div> model
-  val next_owner = owner(dialog = next_update.dialog, notice = next_update.notice)
-  if owner.dialog.kind.show_kind == next_update.dialog.kind.show_kind then next_owner else next_owner(app_local_tree = clear_state_branch(next_owner.app_local_tree, component_local_path("overlays", "dialog")))
+  owner(dialog = next_update.dialog, notice = next_update.notice)
 
 fun open_dialog_demo(owner : model, kind : dialog_kind, title : string, message : string, prompt_value : string, notice : string) : <div> model
   apply_dialog_update(owner, open_dialog(owner.dialog, kind, title, message, prompt_value, notice))
@@ -106,8 +105,19 @@ fun overlay_spec(current : dialog_demo, prompt_input_listener : listener, submit
 pub fun dialog_overlay_effect_path() : string
   component_hook_effect_path("overlays", "dialog", 0)
 
+pub fun dialog_overlay_branch_path() : string
+  component_local_path("overlays", "dialog")
+
+pub fun reconcile_dialog_runtime_tree(previous_owner : maybe<model>, next_owner : model, tree : list<state_entry>) : <div> list<state_entry>
+  if not(dialog_is_open(next_owner.dialog)) then
+    clear_state_branch(tree, dialog_overlay_branch_path())
+  else
+    match previous_owner
+      Just(previous) -> if previous.dialog.kind.show_kind == next_owner.dialog.kind.show_kind then tree else clear_state_branch(tree, dialog_overlay_branch_path())
+      Nothing -> tree
+
 pub fun render_dialog_overlay(owner : model) : dialog_view_effect vnode
-  component(component_local_path("overlays", "dialog"), fn() {
+  component_root("overlays", "dialog", fn() {
     val current = owner.dialog
     val close_overlay = on_local_click("close-overlay", fn(next_owner : model) apply_dialog_update(next_owner, close_dialog(next_owner.dialog, "Overlay dismissed.", "Closed the overlay demo.", "[close] overlay dismissed")))
     val primary_action = on_local_click("primary-action", fn(next_owner : model) dialog_primary_action(next_owner))
@@ -120,9 +130,9 @@ pub fun render_dialog_overlay(owner : model) : dialog_view_effect vnode
     dialog/render_dialog_overlay(current, overlay_spec(current, prompt_input, submit_enter), Dialog_overlay_controls(close_overlay, primary_action, submit_action))
   })
 
-pub fun run_dialog_overlay(owner : model) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
-  run_stateful_component(
+pub fun run_dialog_overlay(owner : model, tree : list<state_entry>) : <div> (model, list<state_entry>, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
+  val (next_owner, next_tree, overlay_node, pending_effects, handlers) = run_stateful_component_with_tree(
     owner,
-    owner.app_local_tree,
-    fn(next_owner, next_tree) next_owner(app_local_tree = next_tree),
-    fn(next_owner) render_dialog_overlay(next_owner))
+    tree,
+    fn(current_owner) render_dialog_overlay(current_owner))
+  (next_owner, next_tree, overlay_node, pending_effects, handlers)

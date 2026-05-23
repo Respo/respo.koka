@@ -1,9 +1,12 @@
 module demo/tests/support
 
 import demo/dialogs
+import demo/lab/state
 import demo/labpanel
 import demo/model
+import demo/runtimebridge
 import demo/seed
+import demo/todo/state
 import demo/todopanel
 import library/bridge
 import library/route
@@ -234,52 +237,68 @@ pub struct component_harness
   tree : vnode
   effects : list<scheduled_effect>
   registry : event_registry<model, browser_event_effect>
+  runtime_tree : list<state_entry>
+
+pub fun todo_harness_render(owner : model, runtime_tree : list<state_entry>) : <div> component_harness
+  val (next_model, next_runtime_tree, tree, effects, registry) = run_todo_panel(owner, runtime_tree)
+  Component_harness(next_model, tree, effects, registry, next_runtime_tree)
 
 pub fun todo_harness(owner : model) : <div> component_harness
-  val (next_model, tree, effects, registry) = run_todo_panel(owner)
-  Component_harness(next_model, tree, effects, registry)
+  todo_harness_render(owner, Nil)
 
 // Fire a locally-registered click by semantic name; re-render via render_fn.
 // The caller must have browser_event_effect in scope (same as capture_bridge tests).
 pub fun harness_fire_named_click(
   h : component_harness,
   semantic_name : string,
-  render_fn : (model) -> <div> component_harness
+  render_fn : (model, list<state_entry>) -> <div> component_harness
 ) : <browser_event_effect,div> component_harness
   match find_registered_click_by_semantic(h.registry, semantic_name)
     Nothing -> h
-    Just(found) -> render_fn(run_registered_click(found, h.owner))
+    Just(found) -> {
+      val (next_owner, next_runtime_tree) = runtimebridge/run_with_runtime_tree(registered_click/id(found), h.owner, h.runtime_tree, fn(current_owner) run_registered_click(found, current_owner))
+      render_fn(next_owner, next_runtime_tree)
+    }
 
 // Fire a locally-registered input by semantic name; re-render via render_fn.
 pub fun harness_fire_named_input(
   h : component_harness,
   semantic_name : string,
   value : string,
-  render_fn : (model) -> <div> component_harness
+  render_fn : (model, list<state_entry>) -> <div> component_harness
 ) : <div> component_harness
   match find_registered_input_by_semantic(h.registry, semantic_name)
     Nothing -> h
-    Just(found) -> render_fn(run_registered_input(found, value, h.owner))
+    Just(found) -> {
+      val (next_owner, next_runtime_tree) = runtimebridge/run_with_runtime_tree(registered_input/id(found), h.owner, h.runtime_tree, fn(current_owner) run_registered_input(found, value, current_owner))
+      render_fn(next_owner, next_runtime_tree)
+    }
 
 pub fun harness_fire_input_channel(
   h : component_harness,
   channel : string,
   value : string,
-  render_fn : (model) -> <div> component_harness
+  render_fn : (model, list<state_entry>) -> <div> component_harness
 ) : <div> component_harness
   match find_registered_input(h.registry, channel)
     Nothing -> h
-    Just(found) -> render_fn(run_registered_input(found, value, h.owner))
+    Just(found) -> {
+      val (next_owner, next_runtime_tree) = runtimebridge/run_with_runtime_tree(channel, h.owner, h.runtime_tree, fn(current_owner) run_registered_input(found, value, current_owner))
+      render_fn(next_owner, next_runtime_tree)
+    }
 
 // Fire a click using the exact payload string (the value in data-k-click).
 // Looks in the registry first; no-ops if not found (global dispatch is out of scope here).
 pub fun harness_fire_click_payload(
   h : component_harness,
   payload : string,
-  render_fn : (model) -> <div> component_harness
+  render_fn : (model, list<state_entry>) -> <div> component_harness
 ) : <browser_event_effect,div> component_harness
   match find_registered_click(h.registry, payload)
-    Just(found) -> render_fn(run_registered_click(found, h.owner))
+    Just(found) -> {
+      val (next_owner, next_runtime_tree) = runtimebridge/run_with_runtime_tree(payload, h.owner, h.runtime_tree, fn(current_owner) run_registered_click(found, current_owner))
+      render_fn(next_owner, next_runtime_tree)
+    }
     Nothing -> h
 
 // Fire a todo click payload the same way the browser does: look up in the local registry.
@@ -288,5 +307,8 @@ pub fun todo_harness_click_payload(
   payload : string
 ) : <browser_event_effect,div> component_harness
   match find_registered_click(h.registry, payload)
-    Just(found) -> todo_harness(run_registered_click(found, h.owner))
+    Just(found) -> {
+      val (next_owner, next_runtime_tree) = runtimebridge/run_with_runtime_tree(payload, h.owner, h.runtime_tree, fn(current_owner) run_registered_click(found, current_owner))
+      todo_harness_render(next_owner, next_runtime_tree)
+    }
     Nothing -> h

@@ -9,6 +9,15 @@ import explore/react/state
 
 alias effects_view_effect = <hook_scope,listener_registry<model,browser_event_effect>,div>
 
+pub fun effects_panel_scope_path() : string
+  component_local_path("effects", "panel")
+
+fun effects_dialog_demo_scope_path() : string
+  child_scope(effects_panel_scope_path(), "dialogs", "demo")
+
+pub fun effects_dialog_demo_listener_path(kind : dom_event_kind, name : string) : string
+  state_slot/path(named_listener_slot(effects_dialog_demo_scope_path(), kind, name))
+
 fun render_tiny_items(tasks : list<task>) : <div> list<vnode>
   map(tasks, fn(item) li_text_key("tiny-" ++ task/id(item).show, props, item.title))
 
@@ -46,7 +55,7 @@ fun core_effect_cases(item : model) : <div> list<vnode>
 
 fun route_effect_cases(item : model, results : list<test_result>) : effects_view_effect list<vnode>
   if item.route_name == "effects-dialogs" then
-    [effect_case("Dialog overlays", "Inspired by the MoonBit and Rust explore-react demos: trigger controlled alert, prompt, dialog, and drawer surfaces without leaving the app tree.", component(component_local_path("effects", "dialog-demo"), fn() dialog_demo_case(item)))]
+    [effect_case("Dialog overlays", "Inspired by the MoonBit and Rust explore-react demos: trigger controlled alert, prompt, dialog, and drawer surfaces without leaving the app tree.", component_in("dialogs", "demo", fn() dialog_demo_case(item)))]
   else if item.route_name == "effects-workflow" then
     [effect_case("Workflow lab", "The richer demo composes `wait_ms`, mocked server fetch/send, and an ambient operator identity into one deterministic workflow.", case_detail("Workflow sync captures waits", "workflow-empty", "workflow-detail", "Workflow case unavailable.", results))]
   else if item.route_name == "effects-state" then
@@ -70,4 +79,4 @@ pub fun effects_panel(item : model, results : list<test_result>) : effects_view_
   ])
 
 pub fun run_effects_panel(item : model, results : list<test_result>) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
-  run_stateful_component(item, Nil, fn(owner, _next_tree) owner, fn(owner) effects_panel(owner, results))
+  run_stateful_component(item, Nil, fn(owner, _next_tree) owner, fn(owner) component_root("effects", "panel", fn() effects_panel(owner, results)))

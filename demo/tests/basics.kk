@@ -3,6 +3,7 @@ module demo/tests/basics
 import library/bridge
 import library/route
 import demo/model
+import demo/runtimebridge
 import demo/seed
 import demo/tests/appharness
 import demo/tests/support
@@ -45,11 +46,11 @@ pub fun ambient_filter_test() : <div> test_result
   Test_result("Ambient filter previews", "active=" ++ active_count.show ++ ", done=" ++ done_count.show, active_count == 2 && done_count == 1)
 
 pub fun registered_input_handler_test() : <div> test_result
-  val target_id = root_listener_path(Input_event, "draft-input")
-  val (next_item, _panel_node, _effects, handlers) = run_todo_panel(initial_model())
+  val target_id = todo_panel_listener_path(Input_event, "draft-input")
+  val (next_item, next_runtime_tree, _panel_node, _effects, handlers) = run_todo_panel(initial_model(), Nil)
   match find_registered_input(handlers, target_id)
     Just(found_input) -> {
-      val updated = run_registered_input(found_input, "closure draft", next_item)
+      val (updated, _updated_runtime_tree) = run_with_runtime_tree(target_id, next_item, next_runtime_tree, fn(current_owner) run_registered_input(found_input, "closure draft", current_owner))
       Test_result("Registered input handler updates draft", "inputs=" ++ count_registered_inputs(handlers).show ++ ", draft=" ++ updated.draft, updated.draft == "closure draft")
     }
     Nothing -> Test_result("Registered input handler updates draft", target_id ++ " missing", False)
@@ -67,14 +68,14 @@ pub fun registered_click_handler_test() : <div> test_result
   val updated_task = match find(updated.tasks, fn(task_item) 2 == task/id(task_item))
     Just(found) -> found
     Nothing -> Task(2, "missing", False)
-  val editor_state = snapshot_task_editor(updated, updated_task)
+  val editor_state = snapshot_task_editor(todo_harness_click_payload(started_harness, cancel_payload).runtime_tree, updated_task)
   val in_registry = match find_registered_click(handlers, cancel_payload)
     Just(_) -> True
     Nothing -> False
   Test_result(
     "Rendered cancel payload stays local",
     "payload=" ++ cancel_payload ++ ", local=" ++ in_registry.show ++ ", notice=" ++ updated.notice,
-    cancel_payload == component_listener_path("tasks", task/id(updated_task).show, Click_event, "cancel-edit") && in_registry && not(task_editor_state/editing(editor_state)) && updated.notice == "Cancelled local task edit.")
+    cancel_payload == task_listener_path(updated_task, Click_event, "cancel-edit") && in_registry && not(task_editor_state/editing(editor_state)) && updated.notice == "Cancelled local task edit.")
 
 pub fun timer_simulation_test() : <div> test_result
   val (label, waits) = capture_waits(fn() timer_logic())
@@ -127,7 +128,7 @@ pub fun vnode_click_payload_matches_route_test() : <div> test_result
   val cancel_node_payload = keyed_button_payload(tree, "2", "Cancel")
   val routed = todo_harness_click_payload(editing_harness, cancel_node_payload).owner
   val editor_state = match find(routed.tasks, fn(item) 2 == task/id(item))
-    Just(item) -> snapshot_task_editor(routed, item)
+    Just(item) -> snapshot_task_editor(todo_harness_click_payload(editing_harness, cancel_node_payload).runtime_tree, item)
     Nothing -> Task_editor_state(False, "")
   val in_registry = match find_registered_click(registry, cancel_node_payload)
     Just(_) -> True
@@ -138,7 +139,7 @@ pub fun vnode_click_payload_matches_route_test() : <div> test_result
   Test_result(
     "Vnode click payload matches route",
     "payload=" ++ cancel_node_payload ++ ", local=" ++ in_registry.show ++ ", notice=" ++ routed.notice,
-    cancel_node_payload == component_listener_path("tasks", task/id(target_task).show, Click_event, "cancel-edit") && in_registry && routed.notice == "Cancelled local task edit." && not(task_editor_state/editing(editor_state)))
+    cancel_node_payload == task_listener_path(target_task, Click_event, "cancel-edit") && in_registry && routed.notice == "Cancelled local task edit." && not(task_editor_state/editing(editor_state)))
 
 // Verify that firing the local cancel semantic through the harness updates the owner.
 pub fun harness_cancel_edit_test() : <div> test_result
@@ -149,7 +150,7 @@ pub fun harness_cancel_edit_test() : <div> test_result
   val cancel_payload = keyed_button_payload(editing_harness.tree, "2", "Cancel")
   val h1 = todo_harness_click_payload(editing_harness, cancel_payload)
   val editor_state = match find(h1.owner.tasks, fn(item) 2 == task/id(item))
-    Just(item) -> snapshot_task_editor(h1.owner, item)
+    Just(item) -> snapshot_task_editor(h1.runtime_tree, item)
     Nothing -> Task_editor_state(False, "")
   Test_result(
     "Harness cancel via click payload",
@@ -160,7 +161,7 @@ pub fun harness_cancel_edit_test() : <div> test_result
 // in the re-rendered vnode's value attribute.
 pub fun harness_draft_input_test() : <div> test_result
   val h0 = todo_harness(initial_model())
-  val h1 = harness_fire_named_input(h0, "draft-input", "typed via harness", todo_harness)
+  val h1 = harness_fire_named_input(h0, "draft-input", "typed via harness", todo_harness_render)
   val input_value = match vnode_find_attr_value(h1.tree, "data-k-effect", "draft")
     Just(node) -> vnode_get_attr(node, "value")
     Nothing -> "node-missing"
@@ -176,11 +177,11 @@ pub fun harness_multi_step_test() : <div> test_result
   val base_harness = todo_harness(initial_model())
   val h0 = todo_harness_click_payload(base_harness, keyed_button_payload(base_harness.tree, "2", "Edit"))
   // Step 1: type into the panel draft field
-  val h1 = harness_fire_named_input(h0, "draft-input", "step1 draft", todo_harness)
+  val h1 = harness_fire_named_input(h0, "draft-input", "step1 draft", todo_harness_render)
   // Step 2: cancel the task edit via click payload
   val h2 = todo_harness_click_payload(h1, keyed_button_payload(h1.tree, "2", "Cancel"))
   val editor_state = match find(h2.owner.tasks, fn(item) 2 == task/id(item))
-    Just(item) -> snapshot_task_editor(h2.owner, item)
+    Just(item) -> snapshot_task_editor(h2.runtime_tree, item)
     Nothing -> Task_editor_state(False, "")
   Test_result(
     "Harness multi-step input then click",

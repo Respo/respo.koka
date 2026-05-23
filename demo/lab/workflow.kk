@@ -1,6 +1,7 @@
 module demo/lab/workflow
 
 import demo/model
+import demo/runtimeowner
 import demo/lab/state
 import library/bridge
 import explore/react/state
@@ -95,7 +96,7 @@ pub fun perform_sync(item : model) : <sync_host_effect,div> model
 
 pub fun send_reply(item : model, incident_id : int) : <reply_host_effect,div> model
   val lab = item.lab
-  val draft = lab_incident_draft(item.app_local_tree, incident_id)
+  val draft = lab_incident_draft(runtimeowner/attached_runtime_tree(item), incident_id)
   if draft == "" then
     item(notice = "Draft is empty for this incident card.")
   else
@@ -108,11 +109,11 @@ pub fun send_reply(item : model, incident_id : int) : <reply_host_effect,div> mo
         wait_ms(20)
         val stamp = now_label()
         val operator = current_operator
-        val next_tree = finalize_incident_reply_tree(item.app_local_tree, incident_id)
+        val next_tree = finalize_incident_reply_tree(runtimeowner/attached_runtime_tree(item), incident_id)
         val next_incidents = update_incident_reply(lab.incidents, incident_id, draft, operator ++ " @ " ++ stamp)
         val next_logs = append_lines(lab.activity_log, "[" ++ stamp ++ "] " ++ server_reply)
         val next_lab = lab(incidents = next_incidents, activity_log = next_logs, sync_status = "reply-sent", last_sync_label = stamp)
-        item(lab = next_lab, app_local_tree = next_tree, notice = "Workflow lab reply sent with mocked server effect.")
+        runtimeowner/attach_runtime_tree(item(lab = next_lab, notice = "Workflow lab reply sent with mocked server effect."), next_tree)
       }
 
 pub fun resolve_bridge_shell(owner : model, case_name : string) : <bridge_demo_effect,div> model
