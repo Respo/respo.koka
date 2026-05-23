@@ -10,7 +10,7 @@ import library/search
 import respo/core
 import respo/state
 
-alias lab_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,lab_local_effect,use_named_state,register_listener<model,browser_event_effect>>
+alias lab_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,lab_local_effect,register_listener<model,browser_event_effect>>
 
 fun severity_class(item : incident) : string
   match item.severity
@@ -26,8 +26,8 @@ fun status_class(item : incident) : string
 
 fun incident_card(item : incident) : lab_view_effect vnode
   val iid = incident/id(item)
-  val (expanded, _set_expanded) = use_local_named_state_pair("expanded", flag_state_codec, False)
-  val (draft, _set_draft) = use_local_named_state_pair("draft", text_state_codec, "")
+  val (expanded, _set_expanded) = use_state_pair(flag_state_codec, False)
+  val (draft, _set_draft) = use_state_pair(text_state_codec, "")
   val toggle_label = if expanded then "Collapse" else "Expand"
   val preview_text = if draft == "" then "local draft: <empty>" else "local draft: " ++ draft
   val collapsed_text = if draft == "" then "Draft is local and still empty." else "Draft saved locally for this card."

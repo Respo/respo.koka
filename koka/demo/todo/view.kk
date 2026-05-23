@@ -9,7 +9,7 @@ import runtime/dom
 import respo/core
 import respo/state
 
-alias todo_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,todo_local_effect,use_named_state,register_listener<model,browser_event_effect>>
+alias todo_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,todo_local_effect,register_listener<model,browser_event_effect>>
 
 fun status_text(done : bool) : string
   if done then "done" else "open"
@@ -17,8 +17,8 @@ fun status_text(done : bool) : string
 pub fun task_item_view(item : task) : todo_view_effect vnode
   {
     val tid = task/id(item)
-    val (editing, set_editing) = use_local_named_state_pair("editing", flag_state_codec, False)
-    val (draft, set_draft) = use_local_named_state_pair("draft", text_state_codec, item.title)
+    val (editing, set_editing) = use_state_pair(flag_state_codec, False)
+    val (draft, set_draft) = use_state_pair(text_state_codec, item.title)
     val start_edit = on_local_click("start-edit", fn(owner : model) commit_task_tree(owner, fn() {
       audit("Opened local edit state for task #" ++ tid.show)
       set_editing(True)

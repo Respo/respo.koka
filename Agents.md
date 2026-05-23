@@ -136,6 +136,37 @@ chrome-devtools take_screenshot --fullPage --filePath .tmp-devtools-full.png
   这类函数只是给 struct 字段起别名，拆得越多越难找逻辑。调用方直接内联 `task/title(item)` 或 `item.title`，保持代码密度。
 - 只在以下情况才抽函数：有额外逻辑（条件、组合、副作用），或者跨模块需要稳定的公开接口名称。
 
+## 组件本地状态约定（React useState 风格）
+
+组件内的本地状态统一使用 **index-based** `use_state_pair`，不使用名字参数版本：
+
+```koka
+// 正确：按调用顺序自动分配 slot index（index 0, 1, 2...）
+val (editing, set_editing) = use_state_pair(flag_state_codec, False)
+val (draft, set_draft) = use_state_pair(text_state_codec, item.title)
+
+// 不要这样写：已废弃
+val (editing, set_editing) = use_local_named_state_pair("editing", flag_state_codec, False)
+```
+
+对应的 **外部读写**（在事件处理、viewmodel、snapshot 等组件外部操作 `app_local_tree`），使用同族的 index-based 帮助函数：
+
+```koka
+// 读
+read_component_indexed_state(tree, "tasks", key, 0, flag_state_codec, False)   // editing
+read_component_indexed_state(tree, "tasks", key, 1, text_state_codec, item.title)  // draft
+
+// 写（effect 内）
+set_component_indexed_state("tasks", key, 0, flag_state_codec, True)
+clear_component_indexed_state_effect("tasks", key, 1)
+
+// 写（直接操作 tree）
+assoc_component_indexed_state(tree, "tasks", key, 0, flag_state_codec, True)
+clear_component_indexed_state(tree, "tasks", key, 1)
+```
+
+**约束**：index 顺序必须与组件内 `use_state_pair` 调用顺序完全对齐。任何改变调用顺序的重构都需要同步更新外部读写的 index。
+
 ## Koka 常见易错点
 
 - 跨模块使用的 `struct`、`effect`、公开函数要显式 `pub`，否则拆文件后很容易编到一半才报不可见。

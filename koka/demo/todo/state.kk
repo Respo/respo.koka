@@ -11,8 +11,8 @@ fun task_component_key(item : task) : string
 
 fun read_task_state(tree : list<state_entry>, item : task) : <div> task_editor_state
   Task_editor_state(
-    read_component_named_state(tree, "tasks", task_component_key(item), "editing", flag_state_codec, False),
-    read_component_named_state(tree, "tasks", task_component_key(item), "draft", text_state_codec, item.title))
+    read_component_indexed_state(tree, "tasks", task_component_key(item), 0, flag_state_codec, False),
+    read_component_indexed_state(tree, "tasks", task_component_key(item), 1, text_state_codec, item.title))
 
 pub fun clear_task_editor(item : task) : <clear_local_state,div> ()
   clear_component_local_state("tasks", task_component_key(item))

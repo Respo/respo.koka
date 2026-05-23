@@ -56,7 +56,7 @@ pub fun resolve_bridge_result(owner : model, payload : string) : <request_bridge
         else Nothing
       }
   })
-  
+
 fun update_incident_reply(items : list<incident>, target_id : int, message : string, updated_by : string) : <div> list<incident>
   match items
     Nil -> Nil

@@ -307,6 +307,23 @@ pub fun clear_component_named_state(group_name : string, key_name : string, stat
 pub fun clear_component_named_state_in_tree(tree : list<state_entry>, group_name : string, key_name : string, state_name : string) : <div> list<state_entry>
   clear_slot_state(tree, hook_named_state_slot(component_local_path(group_name, key_name), state_name))
 
+// Index-based component state helpers — mirrors React useState call-order semantics.
+// Use these alongside use_state_pair so the call site and the read site stay in sync.
+pub fun read_component_indexed_state<a>(tree : list<state_entry>, group_name : string, key_name : string, index : int, codec : state_codec<a>, fallback : a) : <div> a
+  state_value(tree, hook_state_slot(component_local_path(group_name, key_name), index), codec, fallback)
+
+pub fun set_component_indexed_state<a>(group_name : string, key_name : string, index : int, codec : state_codec<a>, value : a) : <set_named_state,div> ()
+  set_named_state(hook_state_slot(component_local_path(group_name, key_name), index), codec, value)
+
+pub fun assoc_component_indexed_state<a>(tree : list<state_entry>, group_name : string, key_name : string, index : int, codec : state_codec<a>, value : a) : <div> list<state_entry>
+  assoc_slot_value(tree, hook_state_slot(component_local_path(group_name, key_name), index), codec, value)
+
+pub fun clear_component_indexed_state(tree : list<state_entry>, group_name : string, key_name : string, index : int) : <div> list<state_entry>
+  clear_slot_state(tree, hook_state_slot(component_local_path(group_name, key_name), index))
+
+pub fun clear_component_indexed_state_effect(group_name : string, key_name : string, index : int) : <clear_local_state,div> ()
+  clear_local_state(state_slot/path(hook_state_slot(component_local_path(group_name, key_name), index)))
+
 pub fun clear_component_local_state(group_name : string, key_name : string) : <clear_local_state,div> ()
   clear_local_state(component_local_path(group_name, key_name))
 
