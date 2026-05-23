@@ -9,8 +9,8 @@ import demo/view
 import library/bridge
 import library/dialog
 import library/route
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 pub fun dialog_alert_open_test() : <div> test_result
   with fun confirm_action(_message) False

@@ -10,16 +10,16 @@ import demo/effectspanel
 import demo/testspanel
 import library/dialog
 import library/route
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 fun intro_panel(item : model) : <div> vnode
   header([class_attr("panel intro-panel")], [
     div([class_attr("intro-top")], [
-      h1([class_attr("page-title")], "Respo core + dense debug demo"),
+      h1([class_attr("page-title")], "explore-react core + dense debug demo"),
       span([class_attr("route-indicator")], "route: #" ++ item.route_name),
     ]),
-    p([class_attr("section-note")], "`respo/*` holds VDOM helpers; `demo/*` now exposes finer subroutes so search, bridge, dialogs, workflow, and timing demos are easier to inspect in isolation."),
+    p([class_attr("section-note")], "`explore/react/*` holds VDOM helpers; `demo/*` now exposes finer subroutes so search, bridge, dialogs, workflow, and timing demos are easier to inspect in isolation."),
   ])
 
 fun wrap_single_stage(node : vnode) : vnode

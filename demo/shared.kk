@@ -1,6 +1,6 @@
 module demo/shared
 
-import respo/core
+import explore/react/core
 
 pub fun panel(title : string, note : string, key : string, class_name : string, children : list<vnode>) : vnode
   section_key(key, [class_attr("panel " ++ class_name)], [

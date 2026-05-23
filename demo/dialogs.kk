@@ -3,8 +3,8 @@ module demo/dialogs
 import library/dialog
 import demo/model
 import runtime/dom
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 alias dialog_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,use_effect,register_listener<model,browser_event_effect>,div>
 alias dialog_demo_effect = <current_hook_scope_name,register_listener<model,browser_event_effect>,div>
@@ -37,11 +37,11 @@ fun dialog_primary_action(owner : model) : <audit,div> model
 
 pub fun handle_dialog_click(payload : string, owner : model) : <audit,div> maybe<model>
   if payload == dialog_open_payload("alert") then
-    Just(open_dialog_demo(owner, Dialog_alert, "Alert demo", "A controlled alert surface rendered inside the app tree, similar to the Respo demos in the MoonBit and Rust implementations.", "", "Opened alert overlay demo."))
+    Just(open_dialog_demo(owner, Dialog_alert, "Alert demo", "A controlled alert surface rendered inside the app tree, similar to the explore-react demos in the MoonBit and Rust implementations.", "", "Opened alert overlay demo."))
   else if payload == dialog_open_payload("prompt") then
-    Just(open_dialog_demo(owner, Dialog_prompt, "Prompt demo", "Type 3-8 characters. This mimics a controlled prompt instead of delegating to a native browser API.", "respo", "Opened prompt overlay demo."))
+    Just(open_dialog_demo(owner, Dialog_prompt, "Prompt demo", "Type 3-8 characters. This mimics a controlled prompt instead of delegating to a native browser API.", "explore-react", "Opened prompt overlay demo."))
   else if payload == dialog_open_payload("dialog") then
-    Just(open_dialog_demo(owner, Dialog_dialog, "Dialog demo", "This is a centered custom dialog body, closer to a React/Respo modal component than a native browser API.", "", "Opened dialog overlay demo."))
+    Just(open_dialog_demo(owner, Dialog_dialog, "Dialog demo", "This is a centered custom dialog body, closer to an explore-react modal component than a native browser API.", "", "Opened dialog overlay demo."))
   else if payload == dialog_open_payload("drawer") then
     Just(open_dialog_demo(owner, Dialog_drawer, "Drawer demo", "This side sheet keeps the background visible while secondary actions happen in a dedicated panel.", "", "Opened drawer overlay demo."))
   else Nothing
@@ -51,9 +51,9 @@ fun render_log_items(lines : list<string>) : <div> list<vnode>
 
 pub fun dialog_demo_case(owner : model) : dialog_demo_effect vnode
   val current = owner.dialog
-  val open_alert = on_local_click("open-alert", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_alert, "Alert demo", "A controlled alert surface rendered inside the app tree, similar to the Respo demos in the MoonBit and Rust implementations.", "", "Opened alert overlay demo."))
-  val open_prompt = on_local_click("open-prompt", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_prompt, "Prompt demo", "Type 3-8 characters. This mimics a controlled prompt instead of delegating to a native browser API.", "respo", "Opened prompt overlay demo."))
-  val open_dialog_listener = on_local_click("open-dialog", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_dialog, "Dialog demo", "This is a centered custom dialog body, closer to a React/Respo modal component than a native browser API.", "", "Opened dialog overlay demo."))
+  val open_alert = on_local_click("open-alert", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_alert, "Alert demo", "A controlled alert surface rendered inside the app tree, similar to the explore-react demos in the MoonBit and Rust implementations.", "", "Opened alert overlay demo."))
+  val open_prompt = on_local_click("open-prompt", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_prompt, "Prompt demo", "Type 3-8 characters. This mimics a controlled prompt instead of delegating to a native browser API.", "explore-react", "Opened prompt overlay demo."))
+  val open_dialog_listener = on_local_click("open-dialog", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_dialog, "Dialog demo", "This is a centered custom dialog body, closer to an explore-react modal component than a native browser API.", "", "Opened dialog overlay demo."))
   val open_drawer = on_local_click("open-drawer", fn(next_owner : model) open_dialog_demo(next_owner, Dialog_drawer, "Drawer demo", "This side sheet keeps the background visible while secondary actions happen in a dedicated panel.", "", "Opened drawer overlay demo."))
   div([class_attr("stack")], [
     div([class_attr("button-row")], [
@@ -78,7 +78,7 @@ pub fun dialog_demo_case(owner : model) : dialog_demo_effect vnode
 fun prompt_body(current : dialog_demo, prompt_input_listener : listener, submit_enter_listener : listener) : <div> list<vnode>
   [
     input_text_key("dialog-prompt-input", [class_attr("input"), text_attr("data-k-effect", dialog_prompt_focus_marker())], [prompt_input_listener, submit_enter_listener], current.prompt_value, "3-8 chars"),
-    if current.prompt_error == "" then p([class_attr("case-detail")], "Validation runs on submit, similar to the other Respo prompt demos.") else p([class_attr("dialog-error")], current.prompt_error),
+    if current.prompt_error == "" then p([class_attr("case-detail")], "Validation runs on submit, similar to the other explore-react prompt demos.") else p([class_attr("dialog-error")], current.prompt_error),
   ]
 
 fun dialog_custom_body(label : string, current : dialog_demo) : <div> list<vnode>

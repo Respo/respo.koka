@@ -1,6 +1,6 @@
 module library/search
 
-import respo/core
+import explore/react/core
 
 pub struct search_case
   query : string
@@ -231,13 +231,25 @@ pub fun decode_search_pick_payload(payload : string) : <div> maybe<string>
 
 pub fun prepare_search_query_update(demo : search_demo, value : string, idle_note : string, armed_note : string, visible_note : string) : <div> (search_demo, bool)
   val trimmed = trim(value)
-  val should_arm = should_arm_auto_search(demo, trimmed)
-  val next_auto_request_id = if should_arm then demo.auto_request_id + 1 else demo.auto_request_id
-  (demo(
-    query_input = value,
-    auto_status = if should_arm then "armed" else "idle",
-    auto_request_id = next_auto_request_id,
-    stage_note = if trimmed == "" then idle_note else if should_arm then armed_note else if demo.status == "ready" && trimmed == demo.visible_query then visible_note else demo.stage_note), should_arm)
+  if trimmed == "" then
+    (demo(
+      query_input = value,
+      requested_query = "",
+      visible_query = "",
+      status = "idle",
+      timeout_status = "idle",
+      auto_status = "idle",
+      results = Nil,
+      stage_note = idle_note), False)
+  else {
+    val should_arm = should_arm_auto_search(demo, trimmed)
+    val next_auto_request_id = if should_arm then demo.auto_request_id + 1 else demo.auto_request_id
+    (demo(
+      query_input = value,
+      auto_status = if should_arm then "armed" else "idle",
+      auto_request_id = next_auto_request_id,
+      stage_note = if should_arm then armed_note else if demo.status == "ready" && trimmed == demo.visible_query then visible_note else demo.stage_note), should_arm)
+  }
 
 pub fun prepare_search_start(demo : search_demo, query : string, pending_note : string, refreshing_note : string) : (search_demo, bool)
   val next_request_id = demo.request_id + 1

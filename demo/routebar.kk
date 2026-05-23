@@ -2,8 +2,8 @@ module demo/routebar
 
 import demo/model
 import library/route
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 alias route_bar_effect = <current_hook_scope_name,register_listener<model,browser_event_effect>,div>
 

@@ -7,8 +7,8 @@ import demo/shared
 import demo/lab/state
 import library/bridge
 import library/search
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 alias lab_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,lab_local_effect,register_listener<model,browser_event_effect>>
 

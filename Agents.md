@@ -1,4 +1,4 @@
-# Koka Respo Developer Guide
+# explore-react Developer Guide
 
 这份文档不是零碎备忘录，而是重新上手这个仓库时的开发引导。目标是：先跑起来，再改 Koka 代码，再验证浏览器和测试链路，最后再扩展新的 demo。
 
@@ -8,14 +8,14 @@
 
 1. 先看 `package.json` 里的脚本，确认日常入口还是 `yarn dev`、`yarn build`、`yarn test:koka`。
 2. 再看 `app.kk`，确认当前浏览器桥只暴露哪些 Koka 入口。
-3. 然后看 `respo/*` 和 `demo/*` 的边界：前者是库，后者是 demo 和业务。
+3. 然后看 `explore/react/*` 和 `demo/*` 的边界：前者是库，后者是 demo 和业务。
 4. 开始改代码前，先跑一次 `yarn build`，确认自己不是站在坏状态上继续开发。
 
 ## 仓库结构
 
 - 仓库根目录：就是 Koka 源码根目录，编译时直接把 repo root 当成模块搜索根。
 - `app.kk`：浏览器入口，负责 boot、事件桥接、状态提交、路由同步。
-- `respo/*`：核心 VDOM、render、diff/patch。这里尽量保持通用。
+- `explore/react/*`：核心 VDOM、render、diff/patch。这里尽量保持通用。
 - `demo/*`：具体 demo、布局、组件、路由和测试辅助。
 - `runtime/*`：只放 DOM 和系统边界的 FFI，不要把业务逻辑塞进来。
 - `scripts/build-koka.mjs`：从仓库根目录调用 Koka，输出到 `src/generated/koka`。

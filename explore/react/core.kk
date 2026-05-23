@@ -1,4 +1,4 @@
-module respo/core
+module explore/react/core
 
 pub type dom_event_kind
   Click_event
@@ -140,7 +140,7 @@ pub fun text_attr(name : string, value : string) : attr
   Attr(name, value)
 
 // Low-level click listener constructor.
-// In feature code, prefer `on_click(...)` from `respo/state` so handlers stay typed and can participate in the registry.
+// In feature code, prefer `on_click(...)` from `explore/react/state` so handlers stay typed and can participate in the registry.
 pub fun click_listener(payload : string) : listener
   Listener(Click_event, payload)
 

@@ -1,6 +1,6 @@
-module respo/state
+module explore/react/state
 
-import respo/core
+import explore/react/core
 
 pub effect fun use_named_state<a>(entry_slot : state_slot, codec : state_codec<a>, fallback : a) : a
 pub effect fun set_named_state<a>(entry_slot : state_slot, codec : state_codec<a>, value : a) : ()

@@ -4,8 +4,8 @@ import demo/model
 import demo/lab/events
 import demo/lab/view
 import library/bridge
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 pub fun lab_panel(item : model) : <div> vnode
   val (_next_item, panel_node, _pending_effects, _handlers) = run_lab_panel(item)

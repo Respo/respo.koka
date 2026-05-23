@@ -3,8 +3,8 @@ module demo/todo/events
 import demo/model
 import demo/todo/state
 import library/maybe
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 pub type todo_action
   Add_task

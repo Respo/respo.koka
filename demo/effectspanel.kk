@@ -4,8 +4,8 @@ import demo/dialogs
 import demo/model
 import demo/tests/support
 import demo/shared
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 alias effects_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,register_listener<model,browser_event_effect>,div>
 
@@ -46,7 +46,7 @@ fun core_effect_cases(item : model) : <div> list<vnode>
 
 fun route_effect_cases(item : model, results : list<test_result>) : effects_view_effect list<vnode>
   if item.route_name == "effects-dialogs" then
-    [effect_case("Dialog overlays", "Inspired by the MoonBit and Rust Respo demos: trigger controlled alert, prompt, dialog, and drawer surfaces without leaving the app tree.", component(component_local_path("effects", "dialog-demo"), fn() dialog_demo_case(item)))]
+    [effect_case("Dialog overlays", "Inspired by the MoonBit and Rust explore-react demos: trigger controlled alert, prompt, dialog, and drawer surfaces without leaving the app tree.", component(component_local_path("effects", "dialog-demo"), fn() dialog_demo_case(item)))]
   else if item.route_name == "effects-workflow" then
     [effect_case("Workflow lab", "The richer demo composes `wait_ms`, mocked server fetch/send, and an ambient operator identity into one deterministic workflow.", case_detail("Workflow sync captures waits", "workflow-empty", "workflow-detail", "Workflow case unavailable.", results))]
   else if item.route_name == "effects-state" then

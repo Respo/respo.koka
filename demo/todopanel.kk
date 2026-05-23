@@ -4,8 +4,8 @@ import demo/model
 import demo/todo/events
 import demo/todo/view
 import demo/todo/viewmodel
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 pub fun run_todo_panel(item : model) : <div> (model, vnode, list<scheduled_effect>, event_registry<model,browser_event_effect>)
   run_stateful_component(

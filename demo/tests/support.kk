@@ -8,8 +8,8 @@ import demo/todopanel
 import library/bridge
 import library/route
 import library/search
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 pub struct test_result(name : string, detail : string, passed : bool)
 

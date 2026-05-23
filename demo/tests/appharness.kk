@@ -5,8 +5,8 @@ import demo/model
 import demo/view
 import demo/tests/support
 import library/bridge
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 pub fun app_harness(owner : model) : <div> component_harness
   val (next_model, tree, effects, registry) = render_app(owner, Nil)

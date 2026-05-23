@@ -1,7 +1,7 @@
 module demo/lab/state
 
 import demo/model
-import respo/state
+import explore/react/state
 
 pub struct incident_local_state(expanded : bool, draft : string)
 pub alias lab_local_effect = <set_named_state,clear_local_state,use_state,use_state_pair,use_effect,div>

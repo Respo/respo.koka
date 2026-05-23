@@ -1,4 +1,4 @@
-# Koka Respo Plan
+# explore-react Plan
 
 ## Goal
 
@@ -11,7 +11,7 @@ The target is not "React compatibility" as branding. The target is a clearer Rea
 
 ## Directory View
 
-### `respo/*`
+### `explore/react/*`
 
 Framework core. This directory should keep moving toward the real component runtime boundary.
 
@@ -117,7 +117,7 @@ Target:
 Tasks:
 
 - factor repeated child runner merge patterns behind framework helpers
-- decide whether stateful child composition belongs in `respo/state.kk` or a thin app-shell helper layer
+- decide whether stateful child composition belongs in `explore/react/state.kk` or a thin app-shell helper layer
 - keep effect/registry merging explicit only where ownership boundaries are real
 
 ### Phase 3: Move local runtime state out of domain model shape

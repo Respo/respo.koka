@@ -9,9 +9,9 @@ import demo/tests/support
 import demo/todo/events
 import demo/todo/state
 import demo/todopanel
-import respo/core
-import respo/renderer
-import respo/state
+import explore/react/core
+import explore/react/renderer
+import explore/react/state
 
 fun timer_logic() : <wait_ms> string
   wait_ms(20)

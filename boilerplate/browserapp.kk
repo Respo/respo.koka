@@ -2,8 +2,8 @@ module boilerplate/browserapp
 
 import std/core/unsafe
 import runtime/dom
-import respo/core
-import respo/renderer
+import explore/react/core
+import explore/react/renderer
 import demo/model
 import demo/seed
 import demo/controller
@@ -11,7 +11,7 @@ import demo/view
 import demo/tests
 import library/bridge
 import library/route
-import respo/state
+import explore/react/state
 
 noinline val root_id_ref : ref<global,string> = unsafe-total { ref("app") }
 noinline val model_ref : ref<global,model> = unsafe-total { ref(initial_model()) }
@@ -41,7 +41,7 @@ fun log_registry_warnings(messages : list<string>) : _e ()
   match messages
     Nil -> ()
     Cons(message, rest) -> {
-      browser_log("[respo listener] " ++ message)
+      browser_log("[explore-react listener] " ++ message)
       log_registry_warnings(rest)
     }
 

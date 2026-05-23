@@ -6,8 +6,8 @@ import demo/todo/events
 import demo/todo/state
 import demo/todo/viewmodel
 import runtime/dom
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 alias todo_view_effect = <current_hook_scope_name,push_hook_scope,pop_hook_scope,todo_local_effect,register_listener<model,browser_event_effect>>
 

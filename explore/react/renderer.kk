@@ -1,7 +1,7 @@
-module respo/renderer
+module explore/react/renderer
 
 import runtime/dom
-import respo/core
+import explore/react/core
 
 fun attr_eq(left : attr, right : attr) : bool
   attr/name(left) == attr/name(right) && attr/value(left) == attr/value(right)

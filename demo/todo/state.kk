@@ -1,7 +1,7 @@
 module demo/todo/state
 
 import demo/model
-import respo/state
+import explore/react/state
 
 pub struct task_editor_state(editing : bool, draft : string)
 pub alias todo_local_effect = <set_named_state,clear_local_state,use_state,use_state_pair,use_effect,div>

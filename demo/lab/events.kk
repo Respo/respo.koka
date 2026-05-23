@@ -7,7 +7,7 @@ import demo/lab/workflow
 import library/bridge
 import library/maybe
 import library/search
-import respo/core
+import explore/react/core
 
 pub type lab_action
   Load_board

@@ -1,8 +1,8 @@
 module demo/tests/statecases
 
 import demo/tests/support
-import respo/core
-import respo/state
+import explore/react/core
+import explore/react/state
 
 pub fun state_tree_test() : <div> test_result
   val incident_base = "lab/incidents/101"

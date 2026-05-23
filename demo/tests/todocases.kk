@@ -6,9 +6,9 @@ import demo/seed
 import demo/tests/support
 import demo/todo/state
 import demo/todopanel
-import respo/core
-import respo/renderer
-import respo/state
+import explore/react/core
+import explore/react/renderer
+import explore/react/state
 
 pub fun todo_edit_local_state_test() : <div> test_result
   with fun confirm_action(_message) False

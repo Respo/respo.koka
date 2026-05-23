@@ -3,7 +3,7 @@ module demo/lab/workflow
 import demo/model
 import demo/lab/state
 import library/bridge
-import respo/state
+import explore/react/state
 
 fun append_lines(lines : list<string>, value : string) : <div> list<string>
   match lines
